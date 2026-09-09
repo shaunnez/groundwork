@@ -12,6 +12,8 @@ The source and implementation were inspected together in the comparison canvas. 
 
 Before: `qa/comparison-before.jpg`, `qa/awards-mobile-before.jpg`. After: `qa/comparison-after.jpg`, `qa/comparison-detail.jpg`, `qa/awards-mobile-after.jpg`. The browser capture service scales outer screenshots; these are comparison evidence, not a pixel-exact image diff. The reference and app use the same normalised canvas. Ivory surfaces, green actions, amber review states, serif headings, evidence placement and information hierarchy match the selected direction. No unresolved P0, P1 or P2 visual findings remain in this review.
 
+The final public-site check also exposed a missing accessible name when the prototype guide label hides at compact widths. The guide button now has an explicit accessible label at every width.
+
 ## Verification
 
 - TypeScript check passed.

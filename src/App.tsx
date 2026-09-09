@@ -411,7 +411,11 @@ function Shell() {
       )}
       {!hideChrome && (
         <footer className="prototype-bar" aria-label="Prototype controls">
-          <button className="prototype-home" onClick={() => go("guide")}>
+          <button
+            className="prototype-home"
+            aria-label="Prototype guide"
+            onClick={() => go("guide")}
+          >
             <I.List size={18} />
             <strong>Prototype guide</strong>
           </button>
