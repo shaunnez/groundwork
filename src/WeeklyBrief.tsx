@@ -7,7 +7,7 @@ export function WeeklyBrief() {
     {
       tag: "Deadline changed",
       title: "More time to review the digital programme.",
-      body: "Harbour Regional Council extended the close from 17 to 24 September. Your certification and delivery checks still need review.",
+      body: "Harbour Regional Council extended the close from 17 to 24 September. The extra week creates time to resolve scope and competitive position before allocating a bid team.",
       source: "GETS notice · revision 3 · captured 9 Sep",
       action: "Review opportunity",
       page: "pursuit",
@@ -76,9 +76,36 @@ export function WeeklyBrief() {
           <article className="report-body">
             <h2>Three things worth your attention.</h2>
             <p className="lead">
-              A short reading list, grounded in the sources. Your firm’s pursuit
-              decisions remain yours.
+              The examples point to near-term advisory demand and a longer
+              planning window. They do not yet establish a sector-wide trend.
             </p>
+            <section className="brief-item">
+              <Badge>Commercial synthesis</Badge>
+              <h2>
+                Prepare specialist evidence; avoid assuming a wider wave of
+                tenders.
+              </h2>
+              <p>
+                The open digital programme and the planned service-design panel
+                both point toward advisory capability. Together they justify
+                preparing relevant case studies and checking team availability.
+                One extension and one forward plan are too little evidence to
+                infer a market-wide shift.
+              </p>
+              <p className="muted small">
+                Basis: notice revision 3 and agency plan v2 below.
+                Interpretation: limited, cross-source synthesis.
+              </p>
+              <h3>Competitor activity</h3>
+              <p>
+                No new bidder-intention statement was found in this week’s
+                captured sources. An adjacent supplier relationship remains
+                commercially relevant but does not establish direct incumbency.
+              </p>
+              <Button kind="text" onClick={() => go("pursuit")}>
+                Inspect the competitive field <I.ArrowRight size={16} />
+              </Button>
+            </section>
             {items.map((item, index) => (
               <section className="brief-item" key={item.title}>
                 <Badge tone={index === 0 ? "warning" : "neutral"}>

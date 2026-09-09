@@ -30,6 +30,7 @@ import {
   Delivery,
 } from "./Operations";
 import { useErrors } from "./diagnostics";
+import { CompetitorProfile } from "./Intelligence";
 import { WeeklyBrief } from "./WeeklyBrief";
 
 function Guide() {
@@ -48,7 +49,7 @@ function Guide() {
     <>
       <header className="guide-heading">
         <span className="eyebrow">INTERACTIVE PRODUCT WALKTHROUGH</span>
-        <h1>A considered view of Procint.</h1>
+        <h1>Groundwork. Know before you bid.</h1>
         <p className="lead">
           Every customer and operator screen. The states in between, too.
         </p>
@@ -56,16 +57,18 @@ function Guide() {
           <div>
             <h2>What your reviewer should know</h2>
             <p>
-              Procint combines structured analysis, historical procurement data
-              and monitoring of competitors and the commercial environment to
-              help firms make better pursuit decisions. Evidence supports each
-              conclusion; uncertainty remains visible.
+              Groundwork by BidEdge combines structured analysis, historical
+              procurement data and monitoring of competitors and the commercial
+              environment to help firms make better pursuit decisions. Evidence
+              supports each conclusion; uncertainty remains visible.
             </p>
             <p>
               The design is selected; business rules remain proposals.
               Everything here uses fictional data and simulated processing.
-              Detailed analytical methods and change-monitoring views are the
-              next design priorities.
+              Review the watchlist, public-data pursuit and RFP reassessment
+              first. Release scope, recommendation rules and reviewer ownership
+              remain open. The selected layout and palette are retained; the
+              PDF’s navy/teal branding is still to reconcile.
             </p>
           </div>
           <div>
@@ -76,11 +79,11 @@ function Guide() {
                 .reduce((n, s) => n + s.states.length, 0)}{" "}
               directly accessible screen states
             </span>
-            <Button onClick={() => go("pursuit")}>
-              Start with the pursuit workspace <I.ArrowRight size={17} />
+            <Button onClick={() => go("watchlist")}>
+              Start with the watchlist <I.ArrowRight size={17} />
             </Button>
-            <Button kind="text" onClick={() => go("watchlist")}>
-              Start with the end-to-end journey
+            <Button kind="text" onClick={() => go("pursuit", "reassessed")}>
+              Preview the RFP reassessment
             </Button>
           </div>
         </div>
@@ -188,7 +191,7 @@ function Screen() {
     case "competitors":
       return <Directory competitors />;
     case "competitor":
-      return <EntityProfile competitor />;
+      return <CompetitorProfile />;
     case "awards":
       return <Awards />;
     case "signal":
@@ -315,7 +318,7 @@ function Shell() {
           ? page
           : "watchlist";
   useEffect(() => {
-    document.title = "Procint · " + (meta?.name || "Prototype");
+    document.title = "Groundwork · " + (meta?.name || "Prototype");
   }, [meta]);
   if (page === "compare") return <Comparison />;
   return (
@@ -335,7 +338,7 @@ function Shell() {
           className="wordmark"
           onClick={() => go(publicView ? page : "watchlist")}
         >
-          Procint
+          Groundwork
         </button>
         {operator && <Badge>Operations</Badge>}
         {publicView ? (

@@ -3,6 +3,7 @@ export type RequestStage =
   | "queued"
   | "reading"
   | "assessing"
+  | "review"
   | "preparing"
   | "ready"
   | "failed"
@@ -39,6 +40,8 @@ export type DemoState = {
     published: boolean;
     inputRevision: number;
     targetId: string;
+    listingId: string;
+    reviewReason?: string;
   } | null;
   reportVersion: number;
   reportHistory: {
@@ -46,8 +49,15 @@ export type DemoState = {
     kind: string;
     reviewed: boolean;
     coverageComplete: boolean;
+    reviewReason?: string;
+  }[];
+  analystReviews: {
+    requestId: number | null;
+    action: string;
+    reason: string;
   }[];
   competitorReportReady: boolean;
+  competitorReports: { targetId: string; listingId: string }[];
   saved: string[];
   files: string[];
   share: "none" | "active" | "revoked";
@@ -89,6 +99,8 @@ export const initialDemo = (): DemoState => ({
     },
   ],
   competitorReportReady: false,
+  competitorReports: [],
+  analystReviews: [],
   saved: [],
   files: [],
   share: "none",
@@ -120,9 +132,15 @@ export function acceptRequest(
   d: DemoState,
   kind: string,
   targetId = "0",
+  listingId = "",
 ): DemoState {
   if (d.request && !["ready", "failed", "cancelled"].includes(d.request.stage))
     return d;
+  if (
+    kind === "Competitor profile" &&
+    (listingId !== "HRC-2026-041" || !["0", "1", "2"].includes(targetId))
+  )
+    throw new Error("Select a listing and a verified sample firm.");
   return {
     ...d,
     request: {
@@ -132,11 +150,15 @@ export function acceptRequest(
       published: false,
       inputRevision: d.changed ? 3 : 2,
       targetId,
+      listingId,
     },
   };
 }
 export function advanceRequest(d: DemoState): DemoState {
-  if (!d.request || ["ready", "failed", "cancelled"].includes(d.request.stage))
+  if (
+    !d.request ||
+    ["ready", "failed", "cancelled", "review"].includes(d.request.stage)
+  )
     return d;
   const order: RequestStage[] = [
     "queued",
@@ -145,12 +167,18 @@ export function advanceRequest(d: DemoState): DemoState {
     "preparing",
     "ready",
   ];
-  const next = order[order.indexOf(d.request.stage) + 1];
+  const next =
+    d.request.kind === "Document assessment" && d.request.stage === "assessing"
+      ? "review"
+      : order[order.indexOf(d.request.stage) + 1];
   if (
     (next === "assessing" &&
       d.request.kind === "Document assessment" &&
       !d.coverageComplete) ||
-    (next === "ready" && d.request.inputRevision !== (d.changed ? 3 : 2))
+    (next === "ready" &&
+      (d.request.inputRevision !== (d.changed ? 3 : 2) ||
+        (d.request.kind === "Document assessment" &&
+          (!d.coverageComplete || !d.request.reviewReason))))
   )
     return {
       ...d,
@@ -166,6 +194,17 @@ export function advanceRequest(d: DemoState): DemoState {
     competitorReportReady:
       d.competitorReportReady ||
       (next === "ready" && d.request.kind === "Competitor profile"),
+    competitorReports:
+      next === "ready" && d.request.kind === "Competitor profile"
+        ? [
+            ...d.competitorReports.filter(
+              (r) =>
+                r.targetId !== d.request!.targetId ||
+                r.listingId !== d.request!.listingId,
+            ),
+            { targetId: d.request.targetId, listingId: d.request.listingId },
+          ]
+        : d.competitorReports,
     reportHistory:
       next === "ready" && d.request.kind !== "Competitor profile"
         ? [
@@ -176,9 +215,31 @@ export function advanceRequest(d: DemoState): DemoState {
               reviewed: d.request.kind === "Document assessment" && eligible(d),
               coverageComplete:
                 d.request.kind === "Document assessment" && d.coverageComplete,
+              reviewReason: d.request.reviewReason,
             },
           ]
         : d.reportHistory,
+  };
+}
+export function resolveAnalyticalReview(
+  d: DemoState,
+  reason: string,
+  action: "correct" | "research" = "correct",
+): DemoState {
+  if (!d.request || d.request.stage !== "review")
+    throw new Error("No analytical review is waiting.");
+  if (!reason.trim())
+    throw new Error("Record why the corrected scope is supported.");
+  return {
+    ...d,
+    request:
+      action === "correct"
+        ? { ...d.request, stage: "preparing", reviewReason: reason.trim() }
+        : d.request,
+    analystReviews: [
+      ...d.analystReviews,
+      { requestId: d.request.id, action, reason: reason.trim() },
+    ],
   };
 }
 export function completeFixture(d: DemoState): DemoState {
@@ -201,9 +262,11 @@ export function recordDecision(
   d: DemoState,
   outcome: string,
   reason: string,
+  enforceEligibility = false,
 ): DemoState {
   if (!reason.trim()) throw new Error("Add a reason for this decision.");
-  if (outcome === "Pursue" && !eligible(d)) throw new Error(blockers(d)[0]);
+  if (enforceEligibility && outcome === "Pursue" && !eligible(d))
+    throw new Error(blockers(d)[0]);
   return {
     ...d,
     decisions: [

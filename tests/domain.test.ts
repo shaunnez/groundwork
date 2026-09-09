@@ -8,6 +8,7 @@ import {
   recordDecision,
   acceptRequest,
   advanceRequest,
+  resolveAnalyticalReview,
 } from "../src/model.ts";
 
 test("promising fit cannot bypass independent eligibility, coverage and capability gaps", () => {
@@ -15,7 +16,7 @@ test("promising fit cannot bypass independent eligibility, coverage and capabili
   assert.equal(eligible(d), false);
   assert.equal(blockers(d).length, 3);
   assert.throws(
-    () => recordDecision(d, "Pursue", "Commercially attractive"),
+    () => recordDecision(d, "Pursue", "Commercially attractive", true),
     /Mandatory/,
   );
 });
@@ -33,7 +34,7 @@ test("reviewed conditions do not erase missing coverage or capability work", () 
 test("changed inputs require renewed review", () => {
   const d = { ...completeFixture(initialDemo()), changed: true };
   assert.throws(
-    () => recordDecision(d, "Pursue", "Previous review"),
+    () => recordDecision(d, "Pursue", "Previous review", true),
     /changed/,
   );
 });
@@ -77,6 +78,12 @@ test("required document extraction failure blocks later stages and retains the p
 });
 test("covered documents can publish only once", () => {
   let d = acceptRequest(completeFixture(initialDemo()), "Document assessment");
+  for (let i = 0; i < 3; i++) d = advanceRequest(d);
+  assert.equal(d.request?.stage, "review");
+  d = resolveAnalyticalReview(
+    d,
+    "RFP pages 4 and 6 separate the advisory scope.",
+  );
   for (let i = 0; i < 8; i++) d = advanceRequest(d);
   assert.equal(d.reportVersion, 2);
   assert.equal(d.request?.published, true);
@@ -86,7 +93,12 @@ test("covered documents can publish only once", () => {
 });
 
 test("competitor completion does not replace pursuit report versions", () => {
-  let d = acceptRequest(initialDemo(), "Competitor profile");
+  let d = acceptRequest(
+    initialDemo(),
+    "Competitor profile",
+    "0",
+    "HRC-2026-041",
+  );
   for (let i = 0; i < 4; i++) d = advanceRequest(d);
   assert.equal(d.request?.stage, "ready");
   assert.equal(d.competitorReportReady, true);
@@ -108,4 +120,87 @@ test("cancelled work cannot advance or replace accepted reports", () => {
   };
   assert.equal(advanceRequest(cancelled), cancelled);
   assert.equal(acceptRequest(cancelled, "Document assessment").request?.id, 2);
+});
+
+test("a firm decision can acknowledge gaps without changing analytical eligibility", () => {
+  const d = recordDecision(
+    initialDemo(),
+    "Pursue",
+    "Will resolve conditions before submission.",
+  );
+  assert.equal(d.decisions[0].outcome, "Pursue");
+  assert.equal(eligible(d), false);
+});
+test("RFP reassessment waits for attributed review and preserves the public version", () => {
+  const before = initialDemo().reportHistory[0];
+  let d = acceptRequest(
+    { ...initialDemo(), coverageComplete: true },
+    "Document assessment",
+  );
+  for (let i = 0; i < 8; i++) d = advanceRequest(d);
+  assert.equal(d.request?.stage, "review");
+  assert.equal(d.request?.published, false);
+  assert.equal(d.reportVersion, 1);
+  assert.throws(() => resolveAnalyticalReview(d, "  "), /Record why/);
+  d = advanceRequest(
+    resolveAnalyticalReview(d, "The RFP defines a separate advisory scope."),
+  );
+  assert.equal(d.request?.published, true);
+  assert.equal(d.reportHistory[1].kind, "Document assessment");
+  assert.deepEqual(d.reportHistory[0], before);
+  assert.equal(eligible(d), false);
+});
+test("a source change after analyst review still blocks stale publication", () => {
+  let d = acceptRequest(
+    { ...initialDemo(), coverageComplete: true },
+    "Document assessment",
+  );
+  for (let i = 0; i < 3; i++) d = advanceRequest(d);
+  d = resolveAnalyticalReview(d, "RFP scope checked.");
+  d = advanceRequest({ ...d, changed: true });
+  assert.equal(d.request?.stage, "failed");
+  assert.equal(d.reportVersion, 1);
+});
+test("competitor requests require listing context and keep firm-specific results", () => {
+  assert.throws(
+    () => acceptRequest(initialDemo(), "Competitor profile"),
+    /listing/,
+  );
+  assert.throws(
+    () =>
+      acceptRequest(initialDemo(), "Competitor profile", "99", "HRC-2026-041"),
+    /listing/,
+  );
+  let d = acceptRequest(
+    initialDemo(),
+    "Competitor profile",
+    "2",
+    "HRC-2026-041",
+  );
+  for (let i = 0; i < 4; i++) d = advanceRequest(d);
+  assert.deepEqual(d.competitorReports, [
+    { targetId: "2", listingId: "HRC-2026-041" },
+  ]);
+  assert.equal(d.reportVersion, 1);
+});
+
+test("requesting more evidence retains the review hold and its attributed rationale", () => {
+  let d = acceptRequest(
+    { ...initialDemo(), coverageComplete: true },
+    "Document assessment",
+  );
+  for (let i = 0; i < 3; i++) d = advanceRequest(d);
+  d = resolveAnalyticalReview(
+    d,
+    "Need the current agency scope schedule.",
+    "research",
+  );
+  assert.equal(d.request?.stage, "review");
+  assert.equal(advanceRequest(d), d);
+  assert.equal(d.analystReviews[0].action, "research");
+  assert.equal(
+    d.analystReviews[0].reason,
+    "Need the current agency scope schedule.",
+  );
+  assert.equal(d.reportVersion, 1);
 });

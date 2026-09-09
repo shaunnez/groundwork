@@ -1,6 +1,8 @@
 import { useState, type FormEvent } from "react";
 import { useDemo } from "./context";
 import { acceptRequest } from "./model";
+import { AssessmentBody } from "./Intelligence";
+import { listingId, recommendation, requestLabel } from "./intelligence-data";
 import { supplierNames } from "./catalogue";
 import {
   Badge,
@@ -15,10 +17,18 @@ import {
   StateBoundary,
 } from "./ui";
 
+const rfpStages = [
+  "Request accepted",
+  "Reading scope, criteria and requirements",
+  "Reassessing competition and recommendation",
+  "Analyst checks incumbent scope",
+  "Preparing revised report",
+  "Report published",
+];
 const stages = [
   "Request accepted",
   "Reading sources",
-  "Assessing requirements",
+  "Reassessing scope and competition",
   "Preparing report",
   "Report published",
 ];
@@ -31,6 +41,7 @@ export function ProgressSteps({
   operator?: boolean;
   labels?: string[];
 }) {
+  const last = labels.length - 1;
   const current =
     (
       {
@@ -38,9 +49,10 @@ export function ProgressSteps({
         reading: 1,
         processing: 2,
         assessing: 2,
-        preparing: 3,
-        ready: 4,
-        complete: 4,
+        review: 3,
+        preparing: last - 1,
+        ready: last,
+        complete: last,
         retrying: 2,
         failed: 1,
         cancelled: 1,
@@ -52,7 +64,7 @@ export function ProgressSteps({
         <li
           key={label}
           className={
-            index < current || current === 4
+            index < current || current === last
               ? "done"
               : index === current
                 ? "current"
@@ -60,13 +72,14 @@ export function ProgressSteps({
           }
         >
           <div className="step-icon">
-            {index < current || current === 4 ? (
+            {index < current || current === last ? (
               <I.CheckCircle size={25} weight="fill" />
             ) : index === current && stage === "failed" ? (
               <I.WarningCircle size={25} />
             ) : index === current &&
               stage !== "cancelled" &&
-              stage !== "queued" ? (
+              stage !== "queued" &&
+              stage !== "review" ? (
               <I.Spinner className="spin" size={25} />
             ) : (
               <I.Circle size={25} />
@@ -75,7 +88,7 @@ export function ProgressSteps({
           <div>
             <h3>{label}</h3>
             <p>
-              {index < current || current === 4
+              {index < current || current === last
                 ? operator
                   ? "Succeeded · output accepted"
                   : "Complete"
@@ -84,11 +97,13 @@ export function ProgressSteps({
                     ? "Required source extraction failed"
                     : stage === "cancelled"
                       ? "Cancelled; no new output published"
-                      : stage === "retrying"
-                        ? "Retrying after a temporary interruption"
-                        : stage === "queued"
-                          ? "Saved in the queue; waiting for a worker"
-                          : "Work is in progress"
+                      : stage === "review"
+                        ? "Awaiting an attributed analytical review"
+                        : stage === "retrying"
+                          ? "Retrying after a temporary interruption"
+                          : stage === "queued"
+                            ? "Saved in the queue; waiting for a worker"
+                            : "Work is in progress"
                   : stage === "cancelled"
                     ? "Not run; request cancelled"
                     : stage === "failed"
@@ -106,7 +121,7 @@ export function ProgressSteps({
           </div>
           <Badge
             tone={
-              index < current || current === 4
+              index < current || current === last
                 ? "success"
                 : index === current && stage === "failed"
                   ? "error"
@@ -115,16 +130,18 @@ export function ProgressSteps({
                     : "neutral"
             }
           >
-            {index < current || current === 4
+            {index < current || current === last
               ? "Succeeded"
               : index === current
                 ? stage === "failed"
                   ? "Failed"
                   : stage === "cancelled"
                     ? "Cancelled"
-                    : stage === "queued"
-                      ? "Queued"
-                      : "Running"
+                    : stage === "review"
+                      ? "Review needed"
+                      : stage === "queued"
+                        ? "Queued"
+                        : "Running"
                 : stage === "cancelled"
                   ? "Not run"
                   : stage === "failed"
@@ -141,8 +158,17 @@ export function RequestAnalysis() {
   const [kind, setKind] = useState(
     params.get("kind") === "competitor"
       ? "Competitor profile"
-      : "Notice-only assessment",
+      : params.get("kind") === "rfp"
+        ? "Document assessment"
+        : "Notice-only assessment",
   );
+  const [listing, setListing] = useState(
+    params.get("listing") === listingId ? listingId : "",
+  );
+  const [identityChecked, setIdentityChecked] = useState(false);
+  const activeRequest =
+    !!demo.request &&
+    !["ready", "failed", "cancelled"].includes(demo.request.stage);
   const targetId = String(
     Math.max(
       0,
@@ -154,7 +180,12 @@ export function RequestAnalysis() {
   const [ack, setAck] = useState(false);
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    if (!ack) return;
+    if (
+      !ack ||
+      activeRequest ||
+      (kind === "Competitor profile" && (!listing || !identityChecked))
+    )
+      return;
     setBusy(true);
     setTimeout(() => {
       setBusy(false);
@@ -162,7 +193,14 @@ export function RequestAnalysis() {
         setError(true);
         return;
       }
-      setDemo((d) => acceptRequest(d, kind, targetId));
+      setDemo((d) =>
+        acceptRequest(
+          d,
+          kind,
+          targetId,
+          kind === "Competitor profile" ? listing : listingId,
+        ),
+      );
       go("processing");
     }, 500);
   };
@@ -191,6 +229,15 @@ export function RequestAnalysis() {
                 Your selections are preserved. Submit again to retry.
               </Notice>
             )}
+            {activeRequest && (
+              <Notice title="An assessment is already open" tone="info">
+                Resume or cancel the existing sample request before starting
+                another.
+                <Button kind="text" onClick={() => go("processing")}>
+                  Resume existing request
+                </Button>
+              </Notice>
+            )}
             <h2>What would you like to know?</h2>
             {[
               "Notice-only assessment",
@@ -209,17 +256,50 @@ export function RequestAnalysis() {
                   onChange={() => setKind(value)}
                 />
                 <span>
-                  <strong>{value}</strong>
+                  <strong>{requestLabel(value)}</strong>
                   <small>
                     {value === "Notice-only assessment"
-                      ? "A scoped view using the public notice and firm context."
+                      ? "Opportunity, incumbent position, reasoned bidders and a separate firm layer."
                       : value === "Document assessment"
-                        ? "Requirements and evidence across the included tender documents."
-                        : "Historical participation and qualitative competitive context."}
+                        ? "Revisit scope, criteria and competitors; change or retract findings and reassess the recommendation."
+                        : "A verified sample firm assessed against a specific listing using the named analytical methods."}
                   </small>
                 </span>
               </label>
             ))}
+            {kind === "Competitor profile" && (
+              <div className="competitor-request-context">
+                <label>
+                  Required listing context
+                  <select
+                    value={listing}
+                    onChange={(e) => setListing(e.target.value)}
+                  >
+                    <option value="">Select a listing</option>
+                    <option value={listingId}>
+                      Digital service transformation · {listingId}
+                    </option>
+                  </select>
+                </label>
+                <p>
+                  <strong>{supplierNames[Number(targetId)]}</strong> · DEMO-ORG-
+                  {Number(targetId) + 1}
+                  <br />
+                  <small>
+                    Identity matched in the fictional dataset; not a live
+                    company verification.
+                  </small>
+                </p>
+                <label className="check-row">
+                  <input
+                    type="checkbox"
+                    checked={identityChecked}
+                    onChange={(e) => setIdentityChecked(e.target.checked)}
+                  />
+                  This is the intended firm for this listing.
+                </label>
+              </div>
+            )}
             {kind === "Document assessment" && !demo.coverageComplete && (
               <Notice title="Two pages need extraction or review">
                 A full document assessment cannot be published until required
@@ -244,7 +324,14 @@ export function RequestAnalysis() {
               </Button>
               <Button
                 type="submit"
-                disabled={!ack || busy || scene === "submitting"}
+                disabled={
+                  !ack ||
+                  activeRequest ||
+                  busy ||
+                  scene === "submitting" ||
+                  (kind === "Competitor profile" &&
+                    (!listing || !identityChecked))
+                }
               >
                 {busy || scene === "submitting" ? (
                   <>
@@ -265,6 +352,12 @@ export function RequestAnalysis() {
             <KeyFacts
               items={[
                 ["Firm", demo.firm],
+                [
+                  "Listing",
+                  kind === "Competitor profile"
+                    ? listing || "Required · select a listing"
+                    : listingId,
+                ],
                 [
                   kind === "Competitor profile" ? "Supplier" : "Opportunity",
                   kind === "Competitor profile"
@@ -329,14 +422,27 @@ export function Processing() {
         ? "assessing"
         : scene === "complete"
           ? "ready"
-          : scene;
+          : scene === "partial"
+            ? "assessing"
+            : scene;
   const ready = stage === "ready";
+  const review = stage === "review";
+  const rfp =
+    demo.request?.kind === "Document assessment" || scene === "review";
   const failed = stage === "failed";
   const cancelled = stage === "cancelled";
   const retry = () => {
     setDemo((d) =>
       d.request
-        ? { ...d, request: { ...d.request, stage: "queued" } }
+        ? {
+            ...d,
+            request: {
+              ...d.request,
+              stage: "queued",
+              inputRevision: d.changed ? 3 : 2,
+              reviewReason: undefined,
+            },
+          }
         : acceptRequest(d, "Notice-only assessment"),
     );
     go("processing");
@@ -347,16 +453,20 @@ export function Processing() {
         title={
           ready
             ? "Your report is ready."
-            : failed
-              ? "Your request needs attention."
-              : cancelled
-                ? "Request cancelled."
-                : "Good decisions take groundwork."
+            : review
+              ? "A finding needs an analyst’s review."
+              : failed
+                ? "Your request needs attention."
+                : cancelled
+                  ? "Request cancelled."
+                  : "Good decisions take groundwork."
         }
         description={
           ready
             ? "A new report version is available in your library."
-            : "Your request is saved. You can leave this page and return at any time."
+            : review
+              ? "The draft revision is held. Your previous report remains available."
+              : "Your request is saved. You can leave this page and return at any time."
         }
         breadcrumb="Reports"
         actions={
@@ -367,7 +477,11 @@ export function Processing() {
                 ? "Required stage failed"
                 : cancelled
                   ? "Cancelled"
-                  : "Processing"}
+                  : review
+                    ? "Awaiting review"
+                    : stage === "queued"
+                      ? "Queued"
+                      : "Processing"}
           </Badge>
         }
       />
@@ -377,11 +491,38 @@ export function Processing() {
             "Request",
             "PR-2026-" + String(demo.request?.id || 1).padStart(3, "0"),
           ],
-          ["Scope", demo.request?.kind || "Document assessment"],
+          [
+            "Scope",
+            requestLabel(rfp ? "Document assessment" : demo.request?.kind),
+          ],
           ["Firm", demo.firm],
           ["Submitted", "9 Sep 2026 · 10:18 NZST"],
         ]}
       />
+      {review && (
+        <Notice title="Incumbent scope differs between sources">
+          The agency register lists Aster for platform support; the RFP defines
+          a separate advisory package. An analyst must resolve the
+          interpretation before this example publishes.
+          <Button kind="text" onClick={() => go("run", "review", { job: "1" })}>
+            Open analyst review
+          </Button>
+        </Notice>
+      )}
+      {scene === "partial" && (
+        <Notice title="Optional supplier context unavailable">
+          The required notice and award inputs remain available. The report will
+          identify the missing web material and limit conclusions that depend on
+          it.
+        </Notice>
+      )}
+      {rfp && (
+        <p className="prototype-policy">
+          Proposed publication policy: hold a changed incumbent finding for an
+          attributed analyst review. Reviewer ownership and response time await
+          Bobby’s confirmation.
+        </p>
+      )}
       {failed && (
         <Notice
           title={
@@ -407,7 +548,7 @@ export function Processing() {
         </Notice>
       )}
       <div className="two-col progress-layout">
-        <ProgressSteps stage={stage} />
+        <ProgressSteps stage={stage} labels={rfp ? rfpStages : stages} />
         <aside className="inset">
           <h2>{ready ? "What’s next" : "While we work"}</h2>
           <p>
@@ -423,11 +564,21 @@ export function Processing() {
                     ? "competitor"
                     : "report",
                   "normal",
-                  { id: demo.request?.targetId || "0" },
+                  {
+                    id: demo.request?.targetId || "0",
+                    listing: demo.request?.listingId || "",
+                    ...(scene === "complete" && !demo.request?.published
+                      ? { state: "reassessed" }
+                      : {}),
+                  },
                 )
               }
             >
               Read report <I.ArrowRight size={17} />
+            </Button>
+          ) : review ? (
+            <Button onClick={() => go("run", "review", { job: "1" })}>
+              Inspect review item
             </Button>
           ) : failed || cancelled ? (
             <Button onClick={retry}>
@@ -560,7 +711,13 @@ export function ReportLibrary() {
           (demo.request &&
             !["ready", "cancelled"].includes(demo.request.stage))) && (
           <Notice
-            title="An assessment is in progress"
+            title={
+              demo.request?.stage === "review"
+                ? "An assessment is awaiting analyst review"
+                : demo.request?.stage === "failed"
+                  ? "An assessment needs attention"
+                  : "An assessment is in progress"
+            }
             tone="info"
             action={
               <Button kind="text" onClick={() => go("processing")}>
@@ -588,7 +745,15 @@ export function ReportLibrary() {
                   <td>
                     <button
                       className="table-title"
-                      onClick={() => go(row.page)}
+                      onClick={() =>
+                        go(
+                          row.page,
+                          "normal",
+                          row.page === "competitor"
+                            ? { id: "0", listing: listingId }
+                            : {},
+                        )
+                      }
                     >
                       {row.title}
                     </button>
@@ -600,7 +765,18 @@ export function ReportLibrary() {
                     <Badge>v{row.version}</Badge>
                   </td>
                   <td>
-                    <Button kind="text" onClick={() => go(row.page)}>
+                    <Button
+                      kind="text"
+                      onClick={() =>
+                        go(
+                          row.page,
+                          "normal",
+                          row.page === "competitor"
+                            ? { id: "0", listing: listingId }
+                            : {},
+                        )
+                      }
+                    >
                       Read <I.ArrowRight size={16} />
                     </Button>
                   </td>
@@ -637,14 +813,20 @@ export function ReportReader({
   shared?: boolean;
   brief?: boolean;
 }) {
-  const { demo, scene, go, notify } = useDemo();
+  const { demo, scene, params, go, notify } = useDemo();
   const [version, setVersion] = useState(
-    shared ? demo.shareVersion : demo.reportVersion,
+    shared
+      ? demo.shareVersion
+      : Math.min(
+          demo.reportVersion,
+          Number(params.get("version")) || demo.reportVersion,
+        ),
   );
   const record =
     demo.reportHistory.find((r) => r.version === version) ||
     demo.reportHistory[0];
-  const documentReport = record.kind === "Document assessment";
+  const documentReport =
+    scene === "reassessed" || record.kind === "Document assessment";
   if (
     shared &&
     (scene === "expired" || scene === "revoked" || demo.share === "revoked")
@@ -666,21 +848,19 @@ export function ReportReader({
     );
   const download = () => {
     const text =
-      "# Procint · fictional sample report\n\nDigital service transformation\nVersion " +
+      "# Groundwork by BidEdge · fictional sample report\n\nDigital service transformation\nVersion " +
       version +
       "\nScope: " +
       record.kind +
       "\n\n" +
-      (record.reviewed
-        ? "Evidence reviewed. The firm decision remains separate."
-        : "Hold for review. Certification and required evidence remain unresolved.") +
+      recommendation(documentReport) +
       "\n\nThis is a UX prototype, not procurement advice.";
     const url = URL.createObjectURL(
       new Blob([text], { type: "text/markdown" }),
     );
     const a = document.createElement("a");
     a.href = url;
-    a.download = "procint-sample-report-v" + version + ".md";
+    a.download = "groundwork-sample-report-v" + version + ".md";
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     notify("Fictional report summary downloaded.");
@@ -700,8 +880,12 @@ export function ReportReader({
         breadcrumb="Reports"
         actions={
           <>
-            <Badge tone="success">Published · v{version}</Badge>
-            {!shared && (
+            <Badge tone={scene === "reassessed" ? "info" : "success"}>
+              {scene === "reassessed"
+                ? "RFP result preview"
+                : "Published · v" + version}
+            </Badge>
+            {!shared && scene !== "reassessed" && (
               <Button
                 kind="secondary"
                 onClick={() =>
@@ -720,6 +904,12 @@ export function ReportReader({
         emptyDescription="There were no matching published opportunities in this fixture."
         loadingLabel="Opening the report version"
       >
+        {scene === "reassessed" && (
+          <Notice title="Illustrative RFP result · preview" tone="info">
+            This scene previews the revised assessment. Complete the upload and
+            processing journey to publish a new sample version.
+          </Notice>
+        )}
         {shared && (
           <Notice title="Recipient preview · fictional share" tone="info">
             Read-only report version {version}. Private source files are not
@@ -728,8 +918,8 @@ export function ReportReader({
         )}
         {(scene === "stale" || version < demo.reportVersion) && (
           <Notice title="You’re reading an earlier evidence snapshot">
-            This report preserves its original facts. A newer notice closes on
-            24 Sep 2026.
+            This report preserves its original facts. A newer assessment may use
+            additional sources or a different interpretation.
             <Button
               kind="text"
               onClick={() => {
@@ -755,25 +945,22 @@ export function ReportReader({
         <div className="report-layout">
           <aside className="report-outline">
             <span className="eyebrow">IN THIS REPORT</span>
-            {[
-              "Summary",
-              "Opportunity",
-              "Evidence & gaps",
-              "Recommended next steps",
-            ].map((name, index) => (
-              <a
-                href={"#section-" + index}
-                key={name}
-                onClick={(e) => {
-                  e.preventDefault();
-                  document
-                    .getElementById("section-" + index)
-                    ?.scrollIntoView({ behavior: "smooth" });
-                }}
-              >
-                {name}
-              </a>
-            ))}
+            {["Summary", "Opportunity", "Your firm", "Gaps & next steps"].map(
+              (name, index) => (
+                <a
+                  href={"#section-" + index}
+                  key={name}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    document
+                      .getElementById("section-" + index)
+                      ?.scrollIntoView({ behavior: "smooth" });
+                  }}
+                >
+                  {name}
+                </a>
+              ),
+            )}
             {!shared && (
               <>
                 <label>
@@ -797,113 +984,15 @@ export function ReportReader({
             )}
           </aside>
           <article className="report-body">
-            <div className="eyebrow">
-              {brief
-                ? "WEEKLY BRIEF"
-                : documentReport
-                  ? "DOCUMENT ASSESSMENT"
-                  : "NOTICE-ONLY ASSESSMENT"}{" "}
-              · 9 SEPTEMBER 2026
-            </div>
-            <h2 id="section-0">
-              {brief
-                ? "Three things worth your attention."
-                : record.reviewed
-                  ? "The evidence is ready for a considered decision."
-                  : "A relevant opportunity, with questions to resolve."}
-            </h2>
-            <p className="lead">
-              {brief
-                ? "A deadline extension creates time for a closer review. A planned panel may offer a future opportunity. One renewal forecast needs better evidence."
-                : record.reviewed
-                  ? "The recorded mandatory requirements, document coverage and delivery capability were reviewed for this report version. Commercial fit remains a separate consideration."
-                  : "The digital advisory scope aligns with your firm’s stated services. Mandatory eligibility and delivery capability still need review before a pursuit decision."}
-            </p>
-            <Notice
-              title={
-                record.reviewed
-                  ? "Assessment: Evidence reviewed"
-                  : "Assessment: Hold for review"
-              }
-              tone={record.reviewed ? "success" : "warning"}
-            >
-              This conclusion is separate from your firm’s recorded decision.
-            </Notice>
-            <h2 id="section-1">The opportunity</h2>
-            <p>
-              Harbour Regional Council is seeking support for a digital service
-              transformation programme. The captured public notice closes on 24
-              September 2026 at 5pm NZST. Contract value has not been disclosed.
-            </p>
-            <KeyFacts
-              items={[
-                [
-                  "Scope",
-                  documentReport
-                    ? "Notice, tender documents and firm evidence"
-                    : "Public notice and firm context",
-                ],
-                ["Incumbent", "Unknown"],
-                ["Value", "Not disclosed"],
-              ]}
-            />
-            <h2 id="section-2">Evidence and open questions</h2>
-            <ol className="report-findings">
-              <li>
-                <strong>
-                  {record.reviewed
-                    ? "Mandatory certification reviewed."
-                    : "Mandatory certification is not confirmed."}
-                </strong>
-                <p>
-                  {record.reviewed
-                    ? "The firm attributed a current certificate and rationale to its requirement review."
-                    : "The requirement appears in the tender documents. This report does not establish that a current certificate satisfies it."}
-                </p>
-                <button
-                  className="citation"
-                  onClick={() =>
-                    shared
-                      ? notify(
-                          "Private source files are outside this share grant.",
-                        )
-                      : go("document")
-                  }
-                >
-                  [1] Tender requirements, p. 12 · v2
-                  {shared ? " · firm access required" : ""}
-                </button>
-              </li>
-              <li>
-                <strong>
-                  {record.coverageComplete
-                    ? "Required document coverage is complete."
-                    : "Document coverage is outside this report’s scope."}
-                </strong>
-                <p>
-                  {record.coverageComplete
-                    ? "All 18 sample pages were readable or reviewed before publication."
-                    : "This notice-only report does not claim to identify every mandatory requirement in the tender documents."}
-                </p>
-              </li>
-              <li>
-                <strong>Incumbency is unknown.</strong>
-                <p>
-                  Historical participation alone does not establish the current
-                  contract holder or future bidders.
-                </p>
-              </li>
-            </ol>
-            <h2 id="section-3">Recommended next steps</h2>
-            <p>
-              {record.reviewed
-                ? "Review the commercial context and record the firm’s decision with a rationale. This published report does not itself record a pursuit decision."
-                : "Review the certification requirement, document coverage and delivery capability. Record the firm’s decision with its rationale once the relevant evidence is available."}
-            </p>
-            {!shared && (
-              <Button onClick={() => go("pursuit")}>
-                Open pursuit workspace <I.ArrowRight size={17} />
-              </Button>
+            <AssessmentBody rfp={documentReport} shared={shared} />
+            {record.reviewReason && (
+              <details className="section-gap">
+                <summary>Analyst correction retained with this version</summary>
+                <p>{record.reviewReason}</p>
+                <small>
+                  Alex Morgan · sample analyst · 9 Sep 2026, 10:24 NZST
+                </small>
+              </details>
             )}
             <footer className="report-end">
               Fictional demonstration · version {version} · evidence and review

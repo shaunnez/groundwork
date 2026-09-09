@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useDemo } from "./context";
+import { AssessmentBody } from "./Intelligence";
+import { assessmentChanges, listingId } from "./intelligence-data";
 import { requirements, sources } from "./catalogue";
 import {
   blockers,
@@ -50,6 +52,10 @@ export function Evidence({ compact = false }: { compact?: boolean }) {
   const [textView, setTextView] = useState(false);
   const [version, setVersion] = useState(source.version);
   const currentReq = requirements.find((r) => r.page === page);
+  const revisedFinding =
+    sourceIndex === 0
+      ? assessmentChanges.find((c) => c.page === page)
+      : undefined;
   const complete = scene === "complete" || demo.coverageComplete;
   const missing =
     sourceIndex === 0 && !complete && (page === 17 || page === 18);
@@ -162,7 +168,9 @@ export function Evidence({ compact = false }: { compact?: boolean }) {
                   ? "Notice overview"
                   : missing
                     ? "Schedule 2 · Delivery details"
-                    : currentReq?.section || "Source page " + page}
+                    : revisedFinding?.topic ||
+                      currentReq?.section ||
+                      "Source page " + page}
           </h3>
           <p>
             {sourceIndex === 2
@@ -191,7 +199,8 @@ export function Evidence({ compact = false }: { compact?: boolean }) {
                       ? version === 3
                         ? "The closing date is 24 September 2026 at 5pm NZST. This notice replaces the earlier 17 September deadline."
                         : "The original closing date was 17 September 2026 at 5pm NZST. A later notice replaces this deadline."
-                      : currentReq?.detail ||
+                      : revisedFinding?.after ||
+                        currentReq?.detail ||
                         "This sample page contains supporting context. No additional mandatory condition has been recorded for this page."}
               </mark>
             </p>
@@ -258,263 +267,118 @@ export function Evidence({ compact = false }: { compact?: boolean }) {
 }
 
 export function Pursuit() {
-  const { demo, setDemo, scene, params, go, notify } = useDemo();
-  const [capability, setCapability] = useState(false);
-  const [research, setResearch] = useState(false);
-  const req =
-    requirements.find((r) => r.id === params.get("req")) || requirements[0];
-  const d =
-    scene === "complete"
-      ? completeFixture(demo)
-      : scene === "partial"
-        ? { ...completeFixture(demo), coverageComplete: false }
-        : scene === "stale"
-          ? { ...demo, changed: true }
-          : demo;
-  const outcome = d.reviews[req.id]?.outcome || "unresolved";
-  const met = outcome === "met";
-  const ready = eligible(d);
-  const stale = d.changed;
+  const { demo, scene, go } = useDemo();
+  const latest = demo.reportHistory.find(
+    (r) => r.version === demo.reportVersion,
+  );
+  const rfp =
+    scene === "reassessed" ||
+    scene === "complete" ||
+    latest?.kind === "Document assessment";
   return (
     <>
-      <div className="breadcrumb">
-        <button onClick={() => go("watchlist")}>Watchlist</button>
-        <span>/</span>
-        <span>Digital service transformation</span>
-      </div>
-      <header className="pursuit-heading">
-        <div>
-          <h1>Build a defensible pursuit decision.</h1>
-          <p className="subtitle">
-            Digital service transformation <span>·</span> Harbour Regional
-            Council
-          </p>
-        </div>
-        <div className="header-status">
-          <small>Fictional demo data · 9 Sep 2026</small>
-          <Badge tone={ready ? "success" : "warning"} dot>
-            {ready ? "Assessment reviewed" : "Working assessment"} ·{" "}
-            {d.decisions[0] ? "Decision recorded" : "Decision pending"}
+      <PageHeader
+        eyebrow="PURSUIT ROOM"
+        title="Understand the field before you bid."
+        description="Digital service transformation · Harbour Regional Council"
+        breadcrumb="Watchlist"
+        actions={
+          <Badge tone={rfp ? "success" : "warning"}>
+            {rfp ? "RFP reassessed" : "Public-data assessment"}
           </Badge>
-        </div>
-      </header>
-      {stale && (
-        <Notice title="Deadline changed · your assessment needs review">
-          Closes 24 Sep, previously 17 Sep. The certificate in the previous
-          review expires 20 Sep.
-          <Button kind="text" onClick={() => go("decisions", "stale")}>
-            Inspect the previous decision <I.ArrowRight size={16} />
+        }
+      />
+      {scene === "stale" && (
+        <Notice title="The notice changed after this assessment">
+          The latest deadline is 24 September. Review the changed input before
+          relying on the earlier assessment.
+          <Button kind="text" onClick={() => go("request")}>
+            Request updated assessment
           </Button>
         </Notice>
       )}
       {scene === "processing" && (
-        <Notice title="Your document assessment is in progress" tone="info">
-          The public-notice summary remains available. Requirements are still
-          being reconciled.
+        <Notice title="RFP reassessment is in progress" tone="info">
+          The previous public-data assessment remains available below.
           <Button kind="text" onClick={() => go("processing", "processing")}>
-            View saved request
+            View progress
           </Button>
         </Notice>
       )}
       {scene === "conflict" && (
-        <Notice title="Conflicting mandatory requirements">
-          The original clause and later addendum need an explicit resolution.
-          Commercial fit has not changed this result.
+        <Notice title="Incumbent scope needs an attributed review">
+          The agency register and the RFP describe different services. The draft
+          revision is held for review.
+          <Button kind="text" onClick={() => go("run", "review", { job: "1" })}>
+            Inspect review example
+          </Button>
+        </Notice>
+      )}
+      {scene === "partial" && (
+        <Notice title="Some research sources were not accessible">
+          The report distinguishes inaccessible material from searches that
+          found no result. The limited assessment remains readable.
         </Notice>
       )}
       <StateBoundary errorTitle="We couldn’t load this assessment">
-        <div className="pursuit-grid">
-          <section className="assessment">
-            <div className="assessment-summary">
-              <h2 className="small-heading">Current assessment</h2>
-              <h2
-                className={"assessment-verdict " + (ready ? "green" : "amber")}
-              >
-                <I.Circle weight="fill" size={20} />
-                {stale
-                  ? "Needs review"
-                  : ready
-                    ? "Ready for your decision"
-                    : outcome === "not-met"
-                      ? "Mandatory condition not met"
-                      : "Hold for review"}
-              </h2>
-              <p>
-                {ready
-                  ? "The required evidence has been reviewed. The pursuit decision is yours."
-                  : met
-                    ? "Certification reviewed. Other required evidence and capability checks remain."
-                    : "Mandatory certification has not been confirmed. Commercial fit cannot resolve this gap."}
-              </p>
-            </div>
-            <div className="dimensions">
-              <button onClick={() => setResearch(true)}>
-                <strong>Commercial fit</strong>
-                <b className="green">Promising</b>
-                <span>
-                  Strong alignment with our services and strategic priorities.
-                </span>
-              </button>
-              <button
-                onClick={() =>
-                  go(
-                    "requirements",
-                    scene === "complete" ? "complete" : "normal",
-                  )
-                }
-              >
-                <strong>Mandatory eligibility</strong>
-                <b className={ready ? "green" : "amber"}>
-                  {ready
-                    ? "Reviewed as met"
-                    : outcome === "not-met"
-                      ? "Not met"
-                      : "Unresolved"}
-                </b>
-                <span>
-                  {ready
-                    ? "All applicable fixture requirements reviewed."
-                    : "At least one mandatory requirement is not confirmed."}
-                </span>
-              </button>
-              <button onClick={() => setCapability(true)}>
-                <strong>Delivery capability</strong>
-                <b>{d.capabilityReviewed ? "Reviewed" : "Needs review"}</b>
-                <span>
-                  {d.capabilityReviewed
-                    ? "Firm capability evidence reviewed."
-                    : "Some capability areas require further investigation."}
-                </span>
-              </button>
-            </div>
-            <div className="requirement-heading">
-              <h2>Requirement to resolve</h2>
-              <Button kind="text" onClick={() => go("requirements")}>
-                View all <I.ArrowRight size={15} />
-              </Button>
-            </div>
-            <section className={"focused-requirement " + (met ? "is-met" : "")}>
-              <h3>{req.title}</h3>
-              <button
-                className="citation"
-                onClick={() =>
-                  go("document", "normal", {
-                    req: req.id,
-                    page: String(req.page),
-                  })
-                }
-              >
-                [1] Tender requirements, p. {req.page}
-              </button>
-              <p>
-                <strong>Source requirement:</strong>{" "}
-                {req.id === "security"
-                  ? "Evidence of certification is mandatory."
-                  : req.detail}
-                <br />
-                <strong>Your firm:</strong>{" "}
-                {met
-                  ? d.reviews[req.id]?.evidence || "Sample evidence reviewed."
-                  : req.firm}
-              </p>
-              <div className="inline">
-                <Button onClick={() => go("review", "normal", { req: req.id })}>
-                  {met ? "Review evidence" : "Resolve requirement"}
-                </Button>
-                <span className="muted small">
-                  Record evidence before making a pursuit decision.
-                </span>
-              </div>
-            </section>
-            <section className="other-research">
-              <button
-                className="text-button"
-                onClick={() => setResearch(!research)}
-              >
-                Other research <I.Info size={17} />
-              </button>
-              <strong>Incumbent unknown</strong>
-              <p>
-                Current incumbent has not been identified in the available
-                sources.
-              </p>
-              {research && (
-                <div className="inset">
-                  <strong>Possible bidders · qualitative research</strong>
-                  <p>
-                    Aster Consulting has relevant historical participation. That
-                    is not proof it will bid for this opportunity.
-                  </p>
-                  <Button kind="text" onClick={() => go("competitor")}>
-                    View supplier evidence <I.ArrowRight size={16} />
-                  </Button>
-                </div>
+        <div className="intelligence-layout">
+          <article>
+            <AssessmentBody rfp={rfp} />
+          </article>
+          <aside className="pursuit-rail">
+            <span className="eyebrow">THE NEXT STEP</span>
+            <h2>
+              {rfp ? "Make your firm’s decision" : "Add the tender documents"}
+            </h2>
+            <p>
+              {rfp
+                ? "Scope and competitive conclusions have been revisited. Your eligibility and capacity checks remain separate."
+                : "Reassess scope, criteria, incumbency and the recommendation against the actual RFP."}
+            </p>
+            <Button onClick={() => go(rfp ? "decisions" : "upload")}>
+              {rfp ? "Record decision" : "Add RFP for reassessment"}
+            </Button>
+            <hr />
+            <h3>Assessment basis</h3>
+            <p className="small">
+              {listingId}
+              <br />
+              GETS notice · revision 3<br />
+              Captured web research · 8 Sep
+              <br />
+              Held historical awards · 1 Sep
+              {rfp && (
+                <>
+                  <br />
+                  Tender requirements.pdf · v2
+                </>
               )}
-            </section>
-            {d.decisions[0] && (
-              <Notice
-                title={"Your recorded decision: " + d.decisions[0].outcome}
-                tone={stale ? "warning" : "info"}
-              >
-                {d.decisions[0].reason}
-              </Notice>
-            )}
-          </section>
-          <Evidence compact />
-        </div>
-        <footer className="workspace-footer">
-          <span>Assessment saved · visible only to {demo.firm}</span>
-          <div>
+            </p>
+            <Button kind="text" onClick={() => go("sources")}>
+              Inspect source library
+            </Button>
+            <hr />
+            <h3>Read the fixed report</h3>
+            <p className="small">
+              A published version keeps the facts and scope used at the time.
+            </p>
             <Button
               kind="text"
               onClick={() =>
-                go("decisions", scene === "complete" ? "complete" : "normal")
+                go("report", scene === "reassessed" ? "reassessed" : "normal")
               }
             >
-              Record decision
+              Open report <I.ArrowRight size={16} />
             </Button>
-            <Button kind="text" onClick={() => go("request")}>
-              Request report
-            </Button>
-            <Button kind="text" onClick={() => go("sources")}>
-              View all sources <I.ArrowRight size={19} />
-            </Button>
-          </div>
+          </aside>
+        </div>
+        <footer className="workspace-footer">
+          <span>Fictional analysis · prepared for {demo.firm}</span>
+          <Button kind="text" onClick={() => go("requirements")}>
+            Requirements & evidence review <I.ArrowRight size={17} />
+          </Button>
         </footer>
       </StateBoundary>
-      {capability && (
-        <Modal
-          title="Review delivery capability"
-          onClose={() => setCapability(false)}
-        >
-          <p>
-            The firm’s capability statement lists two comparable programmes and
-            a delivery team.
-          </p>
-          <p className="muted">
-            Source: Koru capability statement, version 1 · firm supplied, not
-            independently authenticated.
-          </p>
-          <Notice title="Capability is a separate assessment" tone="info">
-            Recording this review will not resolve mandatory requirements or
-            missing document pages.
-          </Notice>
-          <div className="form-actions">
-            <Button kind="secondary" onClick={() => setCapability(false)}>
-              Keep unresolved
-            </Button>
-            <Button
-              onClick={() => {
-                setDemo((v) => ({ ...v, capabilityReviewed: true }));
-                setCapability(false);
-                notify("Delivery capability review recorded.");
-              }}
-            >
-              Record capability review
-            </Button>
-          </div>
-        </Modal>
-      )}
     </>
   );
 }
@@ -779,6 +643,7 @@ export function Decisions() {
         ? { ...demo, changed: true }
         : demo;
   const [outcome, setOutcome] = useState("Hold");
+  const [enforceGate, setEnforceGate] = useState(false);
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(
@@ -790,7 +655,7 @@ export function Decisions() {
   const save = (e: FormEvent) => {
     e.preventDefault();
     try {
-      const next = recordDecision(d, outcome, reason);
+      const next = recordDecision(d, outcome, reason, enforceGate);
       setBusy(true);
       setTimeout(() => {
         setBusy(false);
@@ -818,15 +683,29 @@ export function Decisions() {
       <div className="two-col">
         <form className="form-surface" onSubmit={save}>
           <h2>Record a decision</h2>
+          <label className="check-row">
+            <input
+              type="checkbox"
+              checked={enforceGate}
+              onChange={(e) => {
+                setEnforceGate(e.target.checked);
+                if (e.target.checked) setOutcome("Hold");
+              }}
+            />
+            Preview proposed restriction: require all eligibility checks before
+            Pursue
+          </label>
           {!eligible(d) && (
-            <Notice title="Pursue is not available yet">
+            <Notice title="Outstanding checks to consider">
               <ul>
                 {blockers(d).map((b) => (
                   <li key={b}>{b}</li>
                 ))}
               </ul>
               <p className="small">
-                This conservative gate is a proposed policy for review.
+                A missing check does not change the generated commercial
+                assessment. Any restriction on recording your decision is an
+                unresolved product policy.
               </p>
             </Notice>
           )}
@@ -838,7 +717,7 @@ export function Decisions() {
               onChange={(e) => setOutcome(e.target.value)}
             >
               <option>Hold</option>
-              <option disabled={!eligible(d)}>Pursue</option>
+              <option disabled={enforceGate && !eligible(d)}>Pursue</option>
               <option>Do not pursue</option>
             </select>
           </label>

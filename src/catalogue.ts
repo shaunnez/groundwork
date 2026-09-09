@@ -35,11 +35,13 @@ export const screens: Screen[] = [
       "processing",
       "partial",
       "complete",
+      "reassessed",
       "conflict",
       "stale",
       "error",
     ],
-    purpose: "Review fit, eligibility, capability and supporting evidence.",
+    purpose:
+      "Understand the competitive field, incumbent position and separate firm context.",
   },
   {
     id: "requirements",
@@ -106,6 +108,8 @@ export const screens: Screen[] = [
       "queued",
       "processing",
       "retrying",
+      "review",
+      "partial",
       "failed",
       "cancelled",
       "complete",
@@ -123,7 +127,14 @@ export const screens: Screen[] = [
     id: "report",
     name: "Report reader",
     group: "Reports",
-    states: ["normal", "loading", "partial", "stale", "unavailable"],
+    states: [
+      "normal",
+      "loading",
+      "partial",
+      "stale",
+      "unavailable",
+      "reassessed",
+    ],
     purpose: "Read a fixed report version and its evidence basis.",
   },
   {
@@ -251,6 +262,7 @@ export const screens: Screen[] = [
       "queued",
       "processing",
       "retrying",
+      "review",
       "failed",
       "cancelled",
       "complete",
@@ -296,6 +308,8 @@ export const screens: Screen[] = [
 export const stateLabel = (state: string) =>
   ({
     normal: "Default",
+    review: "Awaiting analyst review",
+    reassessed: "After RFP reassessment",
     error: "Failed / recovery",
     partial: "Partial / missing evidence",
     complete: "Complete",

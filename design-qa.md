@@ -1,30 +1,39 @@
-# Procint design QA
+# Groundwork prototype revision QA
 
-final result: passed
+9 September 2026 · final result: passed
 
-Reviewed 9 September 2026. This result covers the fictional UX prototype and selected visual direction. It does not certify production accessibility, security, analytical quality or operational reliability.
+## Findings and fixes
 
-Source: `../docs/design/pursuit-room-selected.png`, 1487 × 1058 pixels. Comparison normalises its width to 1440 CSS pixels (approximately 1024 high). The live comparison iframe uses 1440 × 1024 CSS pixels, the default unresolved pursuit fixture and no prototype toolbar. The outer comparison capture shows both inputs together.
+- **P2, mobile navigation:** the longer Groundwork wordmark pushed the customer header 8px beyond a 390px viewport. Reduced the wordmark, gaps and mobile padding. After correction, all 34 default screens have no document overflow at 390×844; six revised primary screens also fit 320×740.
+- **P2, sample consistency:** new competitor-history examples initially differed from the older award table. Reconciled the held fictional records, excluding unallocated multi-supplier totals from the competitor stat grid. The no-history candidate remains in the field without an unsupported capability exclusion.
+- **P2, historical report reasoning:** the public-data candidate drill-down initially included the later RFP interpretation. Scoped its copy to the selected report stage. The original report retains its provisional reasoning.
 
-## Visual comparison and corrections
+- **P2, listing input:** the new opportunity selector initially used compact native styling. Matched the existing field treatment and a 44px minimum control height.
 
-The source and implementation were inspected together in the comparison canvas. The first comparison identified excess vertical spacing that cropped the footer at the reference viewport. Reduced spacing and adjusted heading sizes preserve the selected layout while bringing the footer inside the 1440 × 1024 iframe (observed bottom: 1016 CSS pixels). The award table also caused document-level overflow on mobile; its action label now stays inside the scrollable table.
+No outstanding P0/P1/P2 findings within the reviewed prototype scope.
 
-Before: `qa/comparison-before.jpg`, `qa/awards-mobile-before.jpg`. After: `qa/comparison-after.jpg`, `qa/comparison-detail.jpg`, `qa/awards-mobile-after.jpg`. The browser capture service scales outer screenshots; these are comparison evidence, not a pixel-exact image diff. The reference and app use the same normalised canvas. Ivory surfaces, green actions, amber review states, serif headings, evidence placement and information hierarchy match the selected direction. No unresolved P0, P1 or P2 visual findings remain in this review.
+## Visual comparison
 
-The final public-site check also exposed a missing accessible name when the prototype guide label hides at compact widths. The guide button now has an explicit accessible label at every width.
+Opened the selected image and rendered implementation together in `#/compare`, captured in `qa/groundwork-v3-comparison.jpg`. Both are normalized to a 1440px wide product canvas; the implementation iframe is 1440×1024 CSS pixels. The supplied image is 1487×1058 pixels, scaled proportionally. Content and product name intentionally differ: this is the user-requested competitive-intelligence revision, not a fresh attempt to copy the certification-first content.
 
-## Verification
+Inspected focused desktop pursuit and RFP comparison views, plus the mobile watchlist and reassessment. Evidence: `qa/groundwork-v3-pursuit.jpg`, `qa/groundwork-v3-rfp-comparison.jpg`, `qa/groundwork-v3-mobile-watchlist.jpg`, `qa/groundwork-v3-mobile-reassessment.jpg`, `qa/groundwork-v3-competitor.jpg`. Screenshots use browser capture; full-page images include content below the viewport.
 
-- TypeScript check passed.
-- 13 domain tests passed: independent decision gates, request reuse, required-stage failure, accepted report preservation, competitor isolation, input changes and cancellation.
-- Production build passed; all four Sites worker/packaging tests passed.
-- All 180 catalogue screen/state entries rendered with the requested screen and state and no document overflow. Evidence: `qa/browser-state-checks.json`.
-- All 34 product screens checked at the mobile viewport setting (390 × 844); measured document width did not exceed the observed viewport. Evidence: `qa/mobile-screen-checks.json`.
-- Browser journeys exercised: review validation and saved evidence; capability and source-gap review; deliberate Pursue decision with snapshot; successful document assessment and retained previous report; sharing and revocation; required extraction failure, retry and cancellation; filtered operator navigation; notification retry without report regeneration; preference save and reload.
-- Source viewer, pursuit, review, processing, market, sharing and operator mobile screenshots were visually inspected. Modal Escape behaviour and labelled form controls were checked; a full assistive-technology audit remains outside this prototype review.
-- Fresh browser load and guide diagnostic: zero captured runtime errors. A transient development hot-reload context error cleared on reload and was not reproduced in the final checks.
+- **Fonts:** Source Serif 4 headlines and Inter UI/body retained. Revised headings, long analytical labels and mobile text wrap legibly.
+- **Spacing/layout:** selected page margins, restrained dividers and two-column working surface retained. Competitive assessment replaces the requirement card; a narrower next-step/source rail replaces the large document viewer. Mobile content stacks without overflow.
+- **Colours:** original green/ivory/amber tokens retained. The PDF's navy/teal palette is an open branding decision, documented in the guide.
+- **Images/icons:** existing Phosphor icons and comparison source retained; this text/data workflow requires no new raster assets. No source images were altered.
+- **Copy/content:** distinguishes public facts, interpretation, client context, missing vs inaccessible evidence and illustrative policies. No retention percentage, win probability or composite opportunity score is invented.
 
-## Known prototype limits
+## Behaviour verified
 
-Data, progress, documents and notifications are simulated. Scene presets include intentional failures and partial results. Some default scenes already represent an empty, partial, queued or failed fixture; 180 entries do not mean 180 unique layouts. Forms persist only in browser storage. Structured analytical methodologies and monitoring accuracy remain unimplemented and unvalidated. Public operator and recipient screens demonstrate presentation, not access control.
+- All 185 catalogue entries render nonempty, with their selected screen/state, without desktop document overflow: `qa/groundwork-v3-states.json`.
+- All 34 default screens fit 390×844: `qa/groundwork-v3-mobile.json`.
+- Browser journey: watchlist → pursuit → sample upload/extraction → RFP request → reading/assessment → analyst hold → attributed correction → report publication. Version 2 contains changed, retracted, added and confirmed findings; version 1 remains selectable with the earlier recommendation.
+- Competitor method navigation works. Listing context is required, and request submission also requires the sample firm identity acknowledgement.
+- A fresh browser guide reported zero captured runtime errors.
+- Domain checks cover incomplete extraction, duplicate submission, retained versions, cancelled work, stale inputs, attributed review holds, further-research holds, scoped competitor publication and optional user-decision restrictions.
+- TypeScript passed; 18 domain tests passed; production build passed; four Sites packaging/worker tests passed.
+
+## Limits
+
+These checks validate fictional frontend behaviour, not analytical accuracy, production tenancy, job durability, company verification or source authenticity. Browser-local records are demonstration state. Recommendation wording, reviewer ownership, review response time and first-release scope need Bobby's confirmation. No accessibility certification is claimed.

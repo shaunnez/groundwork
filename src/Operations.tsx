@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
+import { resolveAnalyticalReview } from "./model";
+import { listingId } from "./intelligence-data";
 import { useDemo } from "./context";
 import { ProgressSteps } from "./Reports";
 import {
@@ -91,7 +93,7 @@ const sourceRows = [
   ],
 ];
 export function OperatorQueue() {
-  const { scene, go } = useDemo();
+  const { demo, scene, go } = useDemo();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("All states");
   const rows = runs
@@ -142,6 +144,20 @@ export function OperatorQueue() {
           <Button onClick={() => go("schedules")}>Inspect schedules</Button>
         }
       >
+        <Notice
+          title={
+            demo.request?.stage === "review"
+              ? "Pursuit revision awaiting analyst review"
+              : "Review example · incumbent scope changed"
+          }
+          tone="info"
+        >
+          Inspect the conflicting sources, record a correction and see the
+          downstream effect.
+          <Button kind="text" onClick={() => go("run", "review", { job: "1" })}>
+            Review incumbent finding
+          </Button>
+        </Notice>
         {scene === "partial" && (
           <Notice title="The latest intake was not published">
             Required parsing failed. The customer portal retains the last
@@ -213,7 +229,7 @@ export function OperatorQueue() {
     </>
   );
 }
-export function Run() {
+function StandardRun() {
   const { scene, params, go } = useDemo();
   const job = Math.max(
     0,
@@ -879,6 +895,208 @@ export function Delivery() {
           request.
         </Notice>
       </StateBoundary>
+    </>
+  );
+}
+
+export function Run() {
+  const { scene } = useDemo();
+  return scene === "review" ? <AnalyticalReview /> : <StandardRun />;
+}
+function AnalyticalReview() {
+  const { demo, setDemo, go } = useDemo();
+  const [reason, setReason] = useState("");
+  const [action, setAction] = useState<"correct" | "research">("correct");
+  const [saved, setSaved] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const liveReview = demo.request?.stage === "review";
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    if (!reason.trim()) {
+      setError("Add a source-based rationale.");
+      return;
+    }
+    setBusy(true);
+    setTimeout(() => {
+      setDemo((d) =>
+        liveReview
+          ? resolveAnalyticalReview(d, reason, action)
+          : {
+              ...d,
+              analystReviews: [
+                ...d.analystReviews,
+                { requestId: null, action, reason: reason.trim() },
+              ],
+            },
+      );
+      setBusy(false);
+      setSaved(true);
+      setError("");
+    }, 450);
+  };
+  return (
+    <>
+      <PageHeader
+        eyebrow="ANALYTICAL REVIEW · PROPOSED WORKFLOW"
+        title="Resolve the incumbent’s actual scope."
+        description="Digital service transformation · Harbour Regional Council"
+        breadcrumb="Operations"
+        actions={
+          <Badge tone={saved && action === "correct" ? "success" : "warning"}>
+            {saved && action === "correct"
+              ? "Correction recorded"
+              : "Publication held"}
+          </Badge>
+        }
+      />
+      <KeyFacts
+        items={[
+          ["Listing", listingId],
+          ["Review owner", "Sample analyst · assignment policy open"],
+          ["Affected outputs", "Watchlist intelligence + pursuit revision"],
+          ["Previous report", "Retained and readable"],
+        ]}
+      />
+      {!liveReview && !saved && (
+        <Notice title="Standalone review example" tone="info">
+          Saving this scene previews a correction. To resume an actual sample
+          report request, reach this review through the RFP reassessment
+          journey.
+        </Notice>
+      )}
+      <div className="two-col">
+        <section>
+          <article className="review-diff">
+            <h2>Draft finding to correct</h2>
+            <p className="old-finding">
+              “Aster is the incumbent for this advisory scope.”
+            </p>
+            <h3>Evidence in tension</h3>
+            <p>
+              <strong>Agency supplier register · captured 8 Sep:</strong> Aster
+              provides platform support. The service is adjacent to, but not the
+              same as, transformation advisory.
+            </p>
+            <p>
+              <strong>RFP v2 · page 4:</strong> this procurement is a new,
+              separate advisory package. Platform implementation is excluded on
+              page 6.
+            </p>
+            <Button
+              kind="text"
+              onClick={() => go("document", "complete", { page: "4" })}
+            >
+              Inspect RFP page 4
+            </Button>
+            {demo.analystReviews.length > 0 && (
+              <details className="section-gap">
+                <summary>
+                  Review history · {demo.analystReviews.length} recorded
+                </summary>
+                {demo.analystReviews.map((r, i) => (
+                  <article className="editorial-row" key={i}>
+                    <Badge>
+                      {r.requestId ? "Request " + r.requestId : "Preview only"}{" "}
+                      ·{" "}
+                      {r.action === "correct"
+                        ? "Correction"
+                        : "Further research"}
+                    </Badge>
+                    <p>{r.reason}</p>
+                    <small>
+                      Alex Morgan · sample analyst · 9 Sep 2026, 10:24 NZST
+                    </small>
+                  </article>
+                ))}
+              </details>
+            )}
+            <h3 className="section-gap">Proposed correction</h3>
+            <p className="new-finding">
+              Aster has an existing agency relationship in adjacent services.
+              Direct incumbency for this advisory scope is not established.
+            </p>
+            <Notice title="Downstream effect" tone="info">
+              Use the corrected scope in the shared incumbent finding. Revisit
+              bidder reasoning and the pursuit recommendation before
+              publication. Keep the old report intact.
+            </Notice>
+          </article>
+        </section>
+        <section className="form-surface">
+          {saved ? (
+            <>
+              <h2>
+                {action === "correct"
+                  ? "Correction recorded"
+                  : "Further research requested"}
+              </h2>
+              <p>
+                <strong>Alex Morgan · sample analyst</strong>
+                <br />9 Sep 2026 · 10:24 NZST
+              </p>
+              <p>{reason}</p>
+              <Notice
+                title={
+                  action === "correct"
+                    ? liveReview || demo.request?.reviewReason
+                      ? "Revision can proceed to preparation"
+                      : "Preview correction saved"
+                    : "Publication remains held"
+                }
+                tone={action === "correct" ? "success" : "warning"}
+              >
+                The original claim and this attributed correction remain in the
+                review history. No published report was overwritten.
+              </Notice>
+              <Button
+                onClick={() =>
+                  go("processing", demo.request ? "normal" : "review")
+                }
+              >
+                Return to request
+              </Button>
+            </>
+          ) : (
+            <form onSubmit={submit}>
+              <h2>Record an analytical review</h2>
+              <label>
+                Review outcome
+                <select
+                  value={action}
+                  onChange={(e) =>
+                    setAction(e.target.value as "correct" | "research")
+                  }
+                >
+                  <option value="correct">Accept the scoped correction</option>
+                  <option value="research">
+                    Keep held · request more evidence
+                  </option>
+                </select>
+              </label>
+              <label>
+                Evidence and rationale
+                <textarea
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  rows={5}
+                  required
+                  placeholder="Explain which claim the RFP resolves and what remains unknown."
+                />
+              </label>
+              {error && <Notice title={error} tone="error" />}
+              <Button type="submit" disabled={busy}>
+                {busy ? "Saving review…" : "Record review"}
+              </Button>
+              <p className="prototype-policy">
+                This review gate is a proposal. The product owner still needs to
+                confirm who reviews, when publication is held and how
+                escalations work.
+              </p>
+            </form>
+          )}
+        </section>
+      </div>
     </>
   );
 }

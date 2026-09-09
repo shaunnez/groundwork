@@ -1,3 +1,4 @@
+import { incumbent, awardRows } from "./intelligence-data";
 import { supplierNames } from "./catalogue";
 import { useState } from "react";
 import { useDemo } from "./context";
@@ -117,7 +118,7 @@ export function Watchlist() {
         )}
         <div className="list-heading">
           <strong>{rows.length} relevant opportunities</strong>
-          <span>Sorted by relevance, then closing date</span>
+          <span>Relevant sample notices · no combined score</span>
         </div>
         <div className="opportunity-list">
           {rows.map((v) => (
@@ -135,19 +136,64 @@ export function Watchlist() {
                 <p>
                   {v.sector} <span>·</span> {v.region}
                 </p>
-                <Badge
-                  tone={v.index === 0 || v.index === 2 ? "warning" : "neutral"}
-                >
-                  {v.tag}
-                </Badge>
+                <div className="opportunity-badges">
+                  <Badge>{v.sector}</Badge>
+                  <Badge>
+                    {v.index === 4 ? "Indicative" : "Value undisclosed"}
+                  </Badge>
+                  <Badge
+                    tone={
+                      v.index === 0 || v.index === 2 ? "warning" : "neutral"
+                    }
+                  >
+                    {v.tag}
+                  </Badge>
+                </div>
+                <div className="watch-intelligence">
+                  {v.index === 0 ? (
+                    <>
+                      <p>
+                        <strong>Competitive field:</strong> Aster · agency
+                        relationship; Tern · delivery experience; Ridgeline ·
+                        advisory fit.
+                      </p>
+                      <p>
+                        <strong>Incumbent:</strong>{" "}
+                        {demo.reportHistory.at(-1)?.kind ===
+                        "Document assessment"
+                          ? incumbent.rfp
+                          : incumbent.public}
+                        .
+                      </p>
+                      <p>
+                        <strong>Watch point:</strong>{" "}
+                        {demo.reportHistory.at(-1)?.kind ===
+                        "Document assessment"
+                          ? "RFP excludes platform delivery; the earlier bundling flag is retracted."
+                          : "The notice leaves advisory and platform scope unclear."}
+                      </p>
+                    </>
+                  ) : v.index === 2 ? (
+                    <p>
+                      <strong>Enrichment queued.</strong> The notice is
+                      available; bidders and incumbent have not been assessed.
+                    </p>
+                  ) : v.index === 4 ? (
+                    <p>
+                      <strong>Planning signal.</strong> This is not yet an open
+                      tender; no bidder assessment is implied.
+                    </p>
+                  ) : (
+                    <p>
+                      <strong>Limited research.</strong> No reasoned bidder
+                      assessment is available in this sample.
+                    </p>
+                  )}
+                </div>
               </div>
               <div className="opportunity-deadline">
                 <small>{v.type}</small>
-                <strong>
-                  {v.index === 4
-                    ? "Indicative " + v.close
-                    : "Closes " + v.close}
-                </strong>
+                <strong>{v.index === 4 ? v.close : "Closes " + v.close}</strong>
                 <button
                   className="text-button"
                   onClick={() =>
@@ -562,29 +608,9 @@ export function Awards() {
   const { scene, go } = useDemo();
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<number | null>(null);
-  const rows = [
-    [
-      "Digital advisory services",
-      "Harbour Regional Council",
-      "Aster Consulting + Tern Digital",
-      "2024",
-      "NZ$1,200,000",
-    ],
-    [
-      "Service research programme",
-      "Southern Services Agency",
-      "Ridgeline Advisory",
-      "2023",
-      "NZ$480,000",
-    ],
-    [
-      "Analytics support",
-      "North Coast Council",
-      "Tern Digital",
-      "2022",
-      "NZ$760,000",
-    ],
-  ].filter((r) => r.join(" ").toLowerCase().includes(search.toLowerCase()));
+  const rows = awardRows.filter((r) =>
+    r.join(" ").toLowerCase().includes(search.toLowerCase()),
+  );
   return (
     <>
       <PageHeader
@@ -638,7 +664,11 @@ export function Awards() {
                   <td>{r[3]}</td>
                   <td>
                     {r[4]}
-                    <small>Supplier allocation unknown</small>
+                    <small>
+                      {r[2].includes("+")
+                        ? "Supplier allocation unknown"
+                        : "Single named supplier"}
+                    </small>
                   </td>
                   <td>
                     <Button
@@ -666,7 +696,12 @@ export function Awards() {
           <KeyFacts
             items={[
               ["Contract value", rows[selected][4]],
-              ["Supplier allocation", "Unknown"],
+              [
+                "Supplier allocation",
+                rows[selected][2].includes("+")
+                  ? "Unknown · do not attribute the whole value"
+                  : "Single named supplier",
+              ],
               ["Categories", "Digital services; professional advice"],
               ["Regions", "Auckland; nationwide"],
             ]}
@@ -679,7 +714,9 @@ export function Awards() {
             kind="text"
             onClick={() => {
               setSelected(null);
-              go("competitor");
+              go("competitor", "normal", {
+                id: rows[selected][2] === "Tern Digital" ? "1" : "0",
+              });
             }}
           >
             Open supplier profile

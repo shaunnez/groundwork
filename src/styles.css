@@ -2537,3 +2537,333 @@ td small svg {
   font-size: 12px;
   color: var(--muted);
 }
+
+/* Groundwork analytical journey, using the selected Pursuit Room tokens. */
+.intelligence-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 48px;
+  align-items: start;
+}
+.intelligence-layout > article {
+  min-width: 0;
+}
+.pursuit-rail {
+  background: #f0f3ed;
+  padding: 26px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+.pursuit-rail .button {
+  text-align: left;
+}
+.pursuit-rail hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 26px 0;
+}
+.commercial-summary {
+  padding: 0 0 30px;
+  margin-bottom: 30px;
+  border-bottom: 1px solid var(--line);
+}
+.commercial-summary .assessment-verdict {
+  color: var(--green);
+  font-size: 32px;
+  line-height: 1.25;
+}
+.section-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.section-heading h2,
+.section-heading h3 {
+  margin-bottom: 10px;
+}
+.incumbent-panel {
+  padding: 22px;
+  background: var(--amber-light);
+  border-left: 3px solid var(--amber);
+  margin: 24px 0 32px;
+}
+.incumbent-panel p:last-child {
+  margin-bottom: 0;
+}
+.candidate-row {
+  display: grid;
+  grid-template-columns: minmax(170px, 0.7fr) minmax(0, 1.4fr);
+  gap: 24px;
+  border-top: 1px solid var(--line);
+  padding: 22px 0;
+}
+.candidate-row h3 {
+  margin-bottom: 8px;
+}
+.candidate-row p {
+  margin-bottom: 10px;
+}
+.candidate-row small {
+  display: block;
+}
+.candidate-row .button {
+  margin-top: 8px;
+  padding-left: 0;
+}
+.candidate-identity .badge {
+  white-space: normal;
+}
+.client-layer {
+  border-top: 2px solid var(--line);
+  margin-top: 34px;
+  padding-top: 32px;
+}
+.rfp-comparison {
+  margin: 32px 0;
+  border-top: 2px solid var(--line);
+  padding-top: 32px;
+}
+.verdict-comparison {
+  display: grid;
+  grid-template-columns: 1fr 24px 1fr;
+  gap: 18px;
+  align-items: center;
+  background: #eef3ed;
+  padding: 24px;
+  margin: 18px 0;
+}
+.verdict-comparison p {
+  margin: 0;
+  font-size: 14px;
+}
+.change-row {
+  padding: 26px 0;
+  border-bottom: 1px solid var(--line);
+}
+.change-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 26px;
+  margin-top: 16px;
+}
+.retracted-finding {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+.gap-list {
+  padding-left: 20px;
+}
+.gap-list li {
+  margin: 12px 0;
+}
+.listing-context {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 22px;
+  padding: 22px 0;
+  border-block: 1px solid var(--line);
+  margin-bottom: 24px;
+}
+.listing-context label {
+  display: grid;
+  gap: 8px;
+  flex: 1;
+  min-width: 220px;
+}
+.listing-context select {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #fff;
+}
+.method-layout {
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  gap: 30px;
+  margin: 32px 0;
+}
+.method-nav {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.method-nav button {
+  text-align: left;
+  border-left: 2px solid var(--line);
+  padding: 14px 18px;
+}
+.method-nav button[aria-pressed="true"] {
+  border-color: var(--green);
+  background: var(--green-light);
+  color: var(--green);
+  font-weight: 600;
+}
+.method-panel {
+  padding: 28px;
+  border: 1px solid var(--line);
+  background: #fff;
+}
+.watch-intelligence {
+  margin: 15px 0 0;
+  display: grid;
+  gap: 7px;
+  max-width: 65ch;
+}
+.watch-intelligence p {
+  font-size: 13px;
+  margin: 0;
+}
+.opportunity-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.review-diff {
+  border: 1px solid var(--line);
+  background: #fff;
+  padding: 26px;
+  margin-bottom: 24px;
+}
+.review-diff .old-finding {
+  border-left: 3px solid var(--amber);
+  padding-left: 18px;
+}
+.review-diff .new-finding {
+  border-left: 3px solid var(--green);
+  padding-left: 18px;
+}
+.prototype-policy {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 20px;
+}
+@media (max-width: 1100px) {
+  .intelligence-layout {
+    grid-template-columns: minmax(0, 1fr) 250px;
+    gap: 24px;
+  }
+  .topbar nav {
+    margin-left: 16px;
+    gap: 25px;
+  }
+}
+@media (max-width: 800px) {
+  .intelligence-layout {
+    grid-template-columns: 1fr;
+  }
+  .pursuit-rail hr,
+  .pursuit-rail hr ~ * {
+    display: none;
+  }
+  .method-layout {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  .method-nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .method-nav button {
+    border-left: 0;
+    border-bottom: 2px solid var(--line);
+    padding: 10px;
+  }
+  .candidate-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .change-columns {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .verdict-comparison {
+    grid-template-columns: 1fr;
+  }
+  .verdict-comparison > svg {
+    transform: rotate(90deg);
+  }
+  .method-panel {
+    padding: 20px;
+  }
+  .commercial-summary .assessment-verdict {
+    font-size: 28px;
+  }
+}
+@media (max-width: 480px) {
+  .topbar {
+    gap: 16px;
+  }
+  .wordmark {
+    font-size: 27px;
+  }
+  .topbar nav {
+    margin-left: 0;
+    gap: 14px;
+  }
+}
+
+@media (max-width: 800px) {
+  [data-screen="watchlist"] .page-heading {
+    padding-bottom: 16px;
+    margin-bottom: 14px;
+  }
+  [data-screen="watchlist"] .page-heading h1 {
+    font-size: 30px;
+  }
+  [data-screen="watchlist"] .page-heading .subtitle {
+    display: none;
+  }
+  [data-screen="watchlist"] .heading-actions .button {
+    padding: 7px 0;
+    border: 0;
+    background: none;
+    text-decoration: underline;
+  }
+  [data-screen="watchlist"] .watchlist-summary {
+    margin-bottom: 16px;
+  }
+  [data-screen="watchlist"] .filter-row {
+    margin-bottom: 16px;
+  }
+}
+@media (max-width: 480px) {
+  .topbar {
+    padding: 0 12px;
+    gap: 12px;
+  }
+  .wordmark {
+    font-size: 24px;
+    letter-spacing: -0.8px;
+  }
+  .topbar nav {
+    gap: 12px;
+  }
+  [data-screen="watchlist"] .breadcrumb,
+  [data-screen="watchlist"] .page-heading > .eyebrow {
+    display: none;
+  }
+}
+@media (max-width: 360px) {
+  .topbar {
+    padding: 0 10px;
+    gap: 9px;
+  }
+  .wordmark {
+    font-size: 21px;
+  }
+  .topbar nav {
+    gap: 9px;
+  }
+  .topbar nav button {
+    font-size: 11px;
+  }
+  .avatar {
+    width: 26px;
+    height: 26px;
+  }
+}

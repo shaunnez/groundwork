@@ -132,12 +132,12 @@ export function Upload() {
   const [files, setFiles] = useState<string[]>(
     scene === "normal"
       ? demo.files
-      : ["Tender requirements.pdf", "Koru capability statement.docx"],
+      : ["Tender requirements.pdf", "Koru capability statement.pdf"],
   );
   const [phase, setPhase] = useState(scene);
   const [error, setError] = useState(scene === "error");
   const add = () => {
-    setFiles(["Tender requirements.pdf", "Koru capability statement.docx"]);
+    setFiles(["Tender requirements.pdf", "Koru capability statement.pdf"]);
     setPhase("uploading");
     setTimeout(() => setPhase("processing"), 900);
   };
@@ -149,8 +149,8 @@ export function Upload() {
   return (
     <>
       <PageHeader
-        title="Give the assessment its evidence."
-        description="Add tender documents and inspect the outcome for every file."
+        title="Reassess with the actual RFP."
+        description="Add the tender scope and criteria, then revisit the competition and recommendation."
         breadcrumb="Watchlist"
       />
       <div className="two-col">
@@ -245,8 +245,8 @@ export function Upload() {
               Back to sources
             </Button>
             {phase === "complete" ? (
-              <Button onClick={() => go("request")}>
-                Review request inputs
+              <Button onClick={() => go("request", "normal", { kind: "rfp" })}>
+                Reassess this pursuit
               </Button>
             ) : (
               <Button
@@ -601,7 +601,7 @@ export function Access() {
           }, 500);
         }}
       >
-        <h2>{sent ? "Your demo link is ready" : "Welcome to Procint"}</h2>
+        <h2>{sent ? "Your demo link is ready" : "Welcome to Groundwork"}</h2>
         {error && (
           <Notice
             title={
