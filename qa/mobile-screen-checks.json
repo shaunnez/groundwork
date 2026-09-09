@@ -1,0 +1,206 @@
+[
+  {
+    "overflow": false,
+    "screen": "watchlist",
+    "viewport": 355,
+    "width": 352
+  },
+  {
+    "overflow": false,
+    "screen": "pursuit",
+    "viewport": 355,
+    "width": 352
+  },
+  {
+    "overflow": false,
+    "screen": "requirements",
+    "viewport": 355,
+    "width": 352
+  },
+  {
+    "overflow": false,
+    "screen": "review",
+    "viewport": 355,
+    "width": 352
+  },
+  {
+    "overflow": false,
+    "screen": "decisions",
+    "viewport": 355,
+    "width": 352
+  },
+  {
+    "overflow": false,
+    "screen": "sources",
+    "viewport": 355,
+    "width": 352
+  },
+  {
+    "overflow": false,
+    "screen": "document",
+    "viewport": 355,
+    "width": 352
+  },
+  {
+    "overflow": false,
+    "screen": "upload",
+    "viewport": 355,
+    "width": 352
+  },
+  {
+    "overflow": false,
+    "screen": "request",
+    "viewport": 355,
+    "width": 351
+  },
+  {
+    "overflow": false,
+    "screen": "processing",
+    "viewport": 355,
+    "width": 351
+  },
+  {
+    "overflow": false,
+    "screen": "reports",
+    "viewport": 355,
+    "width": 351
+  },
+  {
+    "overflow": false,
+    "screen": "report",
+    "viewport": 355,
+    "width": 351
+  },
+  {
+    "overflow": false,
+    "screen": "sharing",
+    "viewport": 355,
+    "width": 351
+  },
+  {
+    "overflow": false,
+    "screen": "shared",
+    "viewport": 355,
+    "width": 341
+  },
+  {
+    "overflow": false,
+    "screen": "brief",
+    "viewport": 355,
+    "width": 351
+  },
+  {
+    "overflow": false,
+    "screen": "market",
+    "viewport": 355,
+    "width": 351
+  },
+  {
+    "overflow": false,
+    "screen": "agencies",
+    "viewport": 355,
+    "width": 351
+  },
+  {
+    "overflow": false,
+    "screen": "agency",
+    "viewport": 355,
+    "width": 351
+  },
+  {
+    "overflow": false,
+    "screen": "competitors",
+    "viewport": 355,
+    "width": 351
+  },
+  {
+    "overflow": false,
+    "screen": "competitor",
+    "viewport": 355,
+    "width": 351
+  },
+  {
+    "overflow": false,
+    "screen": "awards",
+    "viewport": 355,
+    "width": 351
+  },
+  {
+    "overflow": false,
+    "screen": "signal",
+    "viewport": 355,
+    "width": 351
+  },
+  {
+    "overflow": false,
+    "screen": "renewals",
+    "viewport": 355,
+    "width": 351
+  },
+  {
+    "overflow": false,
+    "screen": "firm",
+    "viewport": 355,
+    "width": 352
+  },
+  {
+    "overflow": false,
+    "screen": "preferences",
+    "viewport": 355,
+    "width": 352
+  },
+  {
+    "overflow": false,
+    "screen": "access",
+    "viewport": 355,
+    "width": 341
+  },
+  {
+    "overflow": false,
+    "screen": "onboarding",
+    "viewport": 355,
+    "width": 341
+  },
+  {
+    "overflow": false,
+    "screen": "ops",
+    "viewport": 355,
+    "width": 341
+  },
+  {
+    "overflow": false,
+    "screen": "run",
+    "viewport": 355,
+    "width": 341
+  },
+  {
+    "overflow": false,
+    "screen": "source-health",
+    "viewport": 355,
+    "width": 341
+  },
+  {
+    "overflow": false,
+    "screen": "source-detail",
+    "viewport": 355,
+    "width": 341
+  },
+  {
+    "overflow": false,
+    "screen": "schedules",
+    "viewport": 355,
+    "width": 341
+  },
+  {
+    "overflow": false,
+    "screen": "usage",
+    "viewport": 355,
+    "width": 341
+  },
+  {
+    "overflow": false,
+    "screen": "delivery",
+    "viewport": 355,
+    "width": 341
+  }
+]

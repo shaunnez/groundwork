@@ -1,0 +1,1622 @@
+[
+  {
+    "overflow": false,
+    "screen": "watchlist",
+    "state": "normal",
+    "expectedScreen": "watchlist",
+    "expectedState": "normal",
+    "rendered": true,
+    "text": "Workspace\n/\nFocus on the right opportunities.\nYOUR OPPORTUNITY WATCHLIST\nFocus on the right opportunities.\n\nRelevant government work, important changes and a clearer next step.\n\nEdit your interests\nNotice feed checked 9 Sep, 08:15 NZST\nDigital & advisory · Auckland\nRead your weekly brief\nFor your firm\nSaved\nAll regions\nAuckland\nWellington\nNationwide\n5 relevant opportunities\nSorted by relevance, then closing date\nHarbour Regional Council\nDigital service transformation\n\nDigital advisory · Auckland\n\nDeadline extended\nOpen tender\nCloses 24 Sep 2026\nReview opportunity\nSouthern Services Agency\nCustomer experience research\n\nResearch · Wellington\n\nNew this week\nOpen tender\nCloses 30 Sep 2026\nView notice\nNorth Coast Council\nData governance advisory\n\nDigital advisory · Auckland\n\nAnalysis pending\nOpen tender\nCloses 6 Oct 2026\nView notice\nCentral Infrastructure Office\nProgramme assurance panel\n\nAssurance · Nationwide\n\nRelevant experience\nOpen tender\nCloses 12 Oct 2026\nView notice\nSouthern Services Agency\nService design panel\n\nDigital advisory · Nationwide\n\nPlanning signal\nFuture opportunity\nIndicative Q4 2026 · indicative\nView notice"
+  },
+  {
+    "overflow": false,
+    "screen": "watchlist",
+    "state": "loading",
+    "expectedScreen": "watchlist",
+    "expectedState": "loading",
+    "rendered": true,
+    "text": "Workspace\n/\nFocus on the right opportunities.\nYOUR OPPORTUNITY WATCHLIST\nFocus on the right opportunities.\n\nRelevant government work, important changes and a clearer next step.\n\nEdit your interests\nNotice feed checked 9 Sep, 08:15 NZST\nDigital & advisory · Auckland\nRead your weekly brief\nFor your firm\nSaved\nAll regions\nAuckland\nWellington\nNationwide\n\nLoading your workspace…\n\nYour saved work will appear here."
+  },
+  {
+    "overflow": false,
+    "screen": "watchlist",
+    "state": "empty",
+    "expectedScreen": "watchlist",
+    "expectedState": "empty",
+    "rendered": true,
+    "text": "Workspace\n/\nFocus on the right opportunities.\nYOUR OPPORTUNITY WATCHLIST\nFocus on the right opportunities.\n\nRelevant government work, important changes and a clearer next step.\n\nEdit your interests\nNotice feed checked 9 Sep, 08:15 NZST\nDigital & advisory · Auckland\nRead your weekly brief\nFor your firm\nSaved\nAll regions\nAuckland\nWellington\nNationwide\nLet’s find the right work for your firm\n\nNo matching notices are available in this sample. Broaden your regions or services to see more opportunities.\n\nEdit interests"
+  },
+  {
+    "overflow": false,
+    "screen": "watchlist",
+    "state": "error",
+    "expectedScreen": "watchlist",
+    "expectedState": "error",
+    "rendered": true,
+    "text": "Workspace\n/\nFocus on the right opportunities.\nYOUR OPPORTUNITY WATCHLIST\nFocus on the right opportunities.\n\nRelevant government work, important changes and a clearer next step.\n\nEdit your interests\nNotice feed checked 9 Sep, 08:15 NZST\nDigital & advisory · Auckland\nRead your weekly brief\nFor your firm\nSaved\nAll regions\nAuckland\nWellington\nNationwide\nThe notice feed could not be refreshed\n\nYour previously saved work is safe. Try again to load the last accepted version.\n\nTry again"
+  },
+  {
+    "overflow": false,
+    "screen": "watchlist",
+    "state": "stale",
+    "expectedScreen": "watchlist",
+    "expectedState": "stale",
+    "rendered": true,
+    "text": "Workspace\n/\nFocus on the right opportunities.\nYOUR OPPORTUNITY WATCHLIST\nFocus on the right opportunities.\n\nRelevant government work, important changes and a clearer next step.\n\nEdit your interests\nNotice feed checked 9 Sep, 08:15 NZST\nDigital & advisory · Auckland\nRead your weekly brief\nFor your firm\nSaved\nAll regions\nAuckland\nWellington\nNationwide\nRefresh interrupted · showing the last accepted feed\nLast successful check: 8 Sep, 08:15 NZST. Closing dates may have changed.Retry refresh\n5 relevant opportunities\nSorted by relevance, then closing date\nHarbour Regional Council\nDigital service transformation\n\nDigital advisory · Auckland\n\nDeadline extended\nOpen tender\nCloses 24 Sep 2026\nReview opportunity\nSouthern Services Agency\nCustomer experience research\n\nResearch · Wellington\n\nNew this week\nOpen tender\nCloses 30 Sep 2026\nView notice\nNorth Coast Council\nData governance advisory\n\nDigital advisory · Auckland\n\nAnalysis pending\nOpen tender\nCloses 6 Oct 2026\nView notice\nCentral Infrastructure Office\nProgramme assurance panel\n\nAssurance · Nationwide\n\nRelevant experience\nOpen tender\nCloses 12 Oct 2026\nView notice\nSouthern Services Agency\nService design panel\n\nDigital advisory · Nationwide\n\nPlanning signal\nFuture opportunity\nIndicative Q4 2026 · indicative\nView notice"
+  },
+  {
+    "overflow": false,
+    "screen": "pursuit",
+    "state": "normal",
+    "expectedScreen": "pursuit",
+    "expectedState": "normal",
+    "rendered": true,
+    "text": "Watchlist\n/\nDigital service transformation\nBuild a defensible pursuit decision.\n\nDigital service transformation · Harbour Regional Council\n\nFictional demo data · 9 Sep 2026\nWorking assessment · Decision pending\nCurrent assessment\nHold for review\n\nMandatory certification has not been confirmed. Commercial fit cannot resolve this gap.\n\nCommercial fit\nPromising\nStrong alignment with our services and strategic priorities.\nMandatory eligibility\nUnresolved\nAt least one mandatory requirement is not confirmed.\nDelivery capability\nNeeds review\nSome capability areas require further investigation.\nRequirement to resolve\nView all\nProvide current information-security certification.\n[1] Tender requirements, p. 12\n\nSource requirement: Evidence of certification is mandatory.\nYour firm: No current certificate supplied.\n\nResolve requirement\nRecord evidence before making a pursuit decision.\nOther research\nIncumbent unknown\n\nCurrent incumbent has not been identified in the available sources.\n\nEvidence\n\nTender requirements.pdf\n\nUploaded by your firm · Private\nPage 12 of 18 · version 2\nHarbour Regional Council\nRequest for Proposal\nDigital service transformation\n4.2 Information security\n\nThe supplier must demonstrate a strong approach to information security, including governance, risk management and incident response. The solution must meet all applicable New Zealand legislative and regulatory requirements.\n\nThe supplier must provide evidence of current information-security certification with its response.\n\nAcceptable certifications include ISO/IEC 27001 or an equivalent standard. The certification must be valid at the time of tender close.\n\nThe supplier should also describe how information security will be maintained throughout the term of the contract, including with any third-party providers.\n\nFictional source · private\nPage 12 of 18\nCoverage incomplete: 2 scanned pages need review.\nAssessment saved · visible only to Koru Advisory\nRecord decision\nRequest report\nView all sources"
+  },
+  {
+    "overflow": false,
+    "screen": "pursuit",
+    "state": "loading",
+    "expectedScreen": "pursuit",
+    "expectedState": "loading",
+    "rendered": true,
+    "text": "Watchlist\n/\nDigital service transformation\nBuild a defensible pursuit decision.\n\nDigital service transformation · Harbour Regional Council\n\nFictional demo data · 9 Sep 2026\nWorking assessment · Decision pending\n\nLoading your workspace…\n\nYour saved work will appear here."
+  },
+  {
+    "overflow": false,
+    "screen": "pursuit",
+    "state": "processing",
+    "expectedScreen": "pursuit",
+    "expectedState": "processing",
+    "rendered": true,
+    "text": "Watchlist\n/\nDigital service transformation\nBuild a defensible pursuit decision.\n\nDigital service transformation · Harbour Regional Council\n\nFictional demo data · 9 Sep 2026\nWorking assessment · Decision pending\nYour document assessment is in progress\nThe public-notice summary remains available. Requirements are still being reconciled.View saved request\nCurrent assessment\nHold for review\n\nMandatory certification has not been confirmed. Commercial fit cannot resolve this gap.\n\nCommercial fit\nPromising\nStrong alignment with our services and strategic priorities.\nMandatory eligibility\nUnresolved\nAt least one mandatory requirement is not confirmed.\nDelivery capability\nNeeds review\nSome capability areas require further investigation.\nRequirement to resolve\nView all\nProvide current information-security certification.\n[1] Tender requirements, p. 12\n\nSource requirement: Evidence of certification is mandatory.\nYour firm: No current certificate supplied.\n\nResolve requirement\nRecord evidence before making a pursuit decision.\nOther research\nIncumbent unknown\n\nCurrent incumbent has not been identified in the available sources.\n\nEvidence\n\nTender requirements.pdf\n\nUploaded by your firm · Private\nPage 12 of 18 · version 2\nHarbour Regional Council\nRequest for Proposal\nDigital service transformation\n4.2 Information security\n\nThe supplier must demonstrate a strong approach to information security, including governance, risk management and incident response. The solution must meet all applicable New Zealand legislative and regulatory requirements.\n\nThe supplier must provide evidence of current information-security certification with its response.\n\nAcceptable certifications include ISO/IEC 27001 or an equivalent standard. The certification must be valid at the time of tender close.\n\nThe supplier should also describe how information security will be maintained throughout the term of the contract, including with any third-party providers.\n\nFictional source · private\nPage 12 of 18\nCoverage incomplete: 2 scanned pages need review.\nAssessment saved · visible only to Koru Advisory\nRecord decision\nRequest report\nView all sources"
+  },
+  {
+    "overflow": false,
+    "screen": "pursuit",
+    "state": "partial",
+    "expectedScreen": "pursuit",
+    "expectedState": "partial",
+    "rendered": true,
+    "text": "Watchlist\n/\nDigital service transformation\nBuild a defensible pursuit decision.\n\nDigital service transformation · Harbour Regional Council\n\nFictional demo data · 9 Sep 2026\nWorking assessment · Decision pending\nCurrent assessment\nHold for review\n\nCertification reviewed. Other required evidence and capability checks remain.\n\nCommercial fit\nPromising\nStrong alignment with our services and strategic priorities.\nMandatory eligibility\nUnresolved\nAt least one mandatory requirement is not confirmed.\nDelivery capability\nReviewed\nFirm capability evidence reviewed.\nRequirement to resolve\nView all\nProvide current information-security certification.\n[1] Tender requirements, p. 12\n\nSource requirement: Evidence of certification is mandatory.\nYour firm: Sample certificate.pdf\n\nReview evidence\nRecord evidence before making a pursuit decision.\nOther research\nIncumbent unknown\n\nCurrent incumbent has not been identified in the available sources.\n\nEvidence\n\nTender requirements.pdf\n\nUploaded by your firm · Private\nPage 12 of 18 · version 2\nHarbour Regional Council\nRequest for Proposal\nDigital service transformation\n4.2 Information security\n\nThe supplier must demonstrate a strong approach to information security, including governance, risk management and incident response. The solution must meet all applicable New Zealand legislative and regulatory requirements.\n\nThe supplier must provide evidence of current information-security certification with its response.\n\nAcceptable certifications include ISO/IEC 27001 or an equivalent standard. The certification must be valid at the time of tender close.\n\nThe supplier should also describe how information security will be maintained throughout the term of the contract, including with any third-party providers.\n\nFictional source · private\nPage 12 of 18\nCoverage incomplete: 2 scanned pages need review.\nAssessment saved · visible only to Koru Advisory\nRecord decision\nRequest report\nView all sources"
+  },
+  {
+    "overflow": false,
+    "screen": "pursuit",
+    "state": "complete",
+    "expectedScreen": "pursuit",
+    "expectedState": "complete",
+    "rendered": true,
+    "text": "Watchlist\n/\nDigital service transformation\nBuild a defensible pursuit decision.\n\nDigital service transformation · Harbour Regional Council\n\nFictional demo data · 9 Sep 2026\nAssessment reviewed · Decision pending\nCurrent assessment\nReady for your decision\n\nThe required evidence has been reviewed. The pursuit decision is yours.\n\nCommercial fit\nPromising\nStrong alignment with our services and strategic priorities.\nMandatory eligibility\nReviewed as met\nAll applicable fixture requirements reviewed.\nDelivery capability\nReviewed\nFirm capability evidence reviewed.\nRequirement to resolve\nView all\nProvide current information-security certification.\n[1] Tender requirements, p. 12\n\nSource requirement: Evidence of certification is mandatory.\nYour firm: Sample certificate.pdf\n\nReview evidence\nRecord evidence before making a pursuit decision.\nOther research\nIncumbent unknown\n\nCurrent incumbent has not been identified in the available sources.\n\nEvidence\n\nTender requirements.pdf\n\nUploaded by your firm · Private\nPage 12 of 18 · version 2\nHarbour Regional Council\nRequest for Proposal\nDigital service transformation\n4.2 Information security\n\nThe supplier must demonstrate a strong approach to information security, including governance, risk management and incident response. The solution must meet all applicable New Zealand legislative and regulatory requirements.\n\nThe supplier must provide evidence of current information-security certification with its response.\n\nAcceptable certifications include ISO/IEC 27001 or an equivalent standard. The certification must be valid at the time of tender close.\n\nThe supplier should also describe how information security will be maintained throughout the term of the contract, including with any third-party providers.\n\nFictional source · private\nPage 12 of 18\nAssessment saved · visible only to Koru Advisory\nRecord decision\nRequest report\nView all sources"
+  },
+  {
+    "overflow": false,
+    "screen": "pursuit",
+    "state": "conflict",
+    "expectedScreen": "pursuit",
+    "expectedState": "conflict",
+    "rendered": true,
+    "text": "Watchlist\n/\nDigital service transformation\nBuild a defensible pursuit decision.\n\nDigital service transformation · Harbour Regional Council\n\nFictional demo data · 9 Sep 2026\nWorking assessment · Decision pending\nConflicting mandatory requirements\nThe original clause and later addendum need an explicit resolution. Commercial fit has not changed this result.\nCurrent assessment\nHold for review\n\nMandatory certification has not been confirmed. Commercial fit cannot resolve this gap.\n\nCommercial fit\nPromising\nStrong alignment with our services and strategic priorities.\nMandatory eligibility\nUnresolved\nAt least one mandatory requirement is not confirmed.\nDelivery capability\nNeeds review\nSome capability areas require further investigation.\nRequirement to resolve\nView all\nProvide current information-security certification.\n[1] Tender requirements, p. 12\n\nSource requirement: Evidence of certification is mandatory.\nYour firm: No current certificate supplied.\n\nResolve requirement\nRecord evidence before making a pursuit decision.\nOther research\nIncumbent unknown\n\nCurrent incumbent has not been identified in the available sources.\n\nEvidence\n\nTender requirements.pdf\n\nUploaded by your firm · Private\nPage 12 of 18 · version 2\nHarbour Regional Council\nRequest for Proposal\nDigital service transformation\n4.2 Information security\n\nThe supplier must demonstrate a strong approach to information security, including governance, risk management and incident response. The solution must meet all applicable New Zealand legislative and regulatory requirements.\n\nThe supplier must provide evidence of current information-security certification with its response.\n\nAcceptable certifications include ISO/IEC 27001 or an equivalent standard. The certification must be valid at the time of tender close.\n\nThe supplier should also describe how information security will be maintained throughout the term of the contract, including with any third-party providers.\n\nFictional source · private\nPage 12 of 18\nA later addendum conflicts with this clause\nBoth versions remain available. An attributed review is required.Compare the other version\nCoverage incomplete: 2 scanned pages need review.\nAssessment saved · visible only to Koru Advisory\nRecord decision\nRequest report\nView all sources"
+  },
+  {
+    "overflow": false,
+    "screen": "pursuit",
+    "state": "stale",
+    "expectedScreen": "pursuit",
+    "expectedState": "stale",
+    "rendered": true,
+    "text": "Watchlist\n/\nDigital service transformation\nBuild a defensible pursuit decision.\n\nDigital service transformation · Harbour Regional Council\n\nFictional demo data · 9 Sep 2026\nWorking assessment · Decision pending\nDeadline changed · your assessment needs review\nCloses 24 Sep, previously 17 Sep. The certificate in the previous review expires 20 Sep.Inspect the previous decision\nCurrent assessment\nNeeds review\n\nMandatory certification has not been confirmed. Commercial fit cannot resolve this gap.\n\nCommercial fit\nPromising\nStrong alignment with our services and strategic priorities.\nMandatory eligibility\nUnresolved\nAt least one mandatory requirement is not confirmed.\nDelivery capability\nNeeds review\nSome capability areas require further investigation.\nRequirement to resolve\nView all\nProvide current information-security certification.\n[1] Tender requirements, p. 12\n\nSource requirement: Evidence of certification is mandatory.\nYour firm: No current certificate supplied.\n\nResolve requirement\nRecord evidence before making a pursuit decision.\nOther research\nIncumbent unknown\n\nCurrent incumbent has not been identified in the available sources.\n\nEvidence\n\nTender requirements.pdf\n\nUploaded by your firm · Private\nPage 12 of 18 · version 2\nHarbour Regional Council\nRequest for Proposal\nDigital service transformation\n4.2 Information security\n\nThe supplier must demonstrate a strong approach to information security, including governance, risk management and incident response. The solution must meet all applicable New Zealand legislative and regulatory requirements.\n\nThe supplier must provide evidence of current information-security certification with its response.\n\nAcceptable certifications include ISO/IEC 27001 or an equivalent standard. The certification must be valid at the time of tender close.\n\nThe supplier should also describe how information security will be maintained throughout the term of the contract, including with any third-party providers.\n\nFictional source · private\nPage 12 of 18\nCoverage incomplete: 2 scanned pages need review.\nAssessment saved · visible only to Koru Advisory\nRecord decision\nRequest report\nView all sources"
+  },
+  {
+    "overflow": false,
+    "screen": "pursuit",
+    "state": "error",
+    "expectedScreen": "pursuit",
+    "expectedState": "error",
+    "rendered": true,
+    "text": "Watchlist\n/\nDigital service transformation\nBuild a defensible pursuit decision.\n\nDigital service transformation · Harbour Regional Council\n\nFictional demo data · 9 Sep 2026\nWorking assessment · Decision pending\nWe couldn’t load this assessment\n\nYour previously saved work is safe. Try again to load the last accepted version.\n\nTry again"
+  },
+  {
+    "overflow": false,
+    "screen": "requirements",
+    "state": "normal",
+    "expectedScreen": "requirements",
+    "expectedState": "normal",
+    "rendered": true,
+    "text": "Watchlist\n/\nRequirements, in full.\nRequirements, in full.\n\nEvery recorded condition, its evidence and your firm’s review.\n\nBack to assessment\nThe requirement inventory is incomplete\nPages 17–18 still need review. The list below contains the conditions extracted so far.\n3 recorded conditions\nMandatory first\n01\nMandatory\nProvide current information-security certification.\n\nThe supplier must provide evidence of current information-security certification with its response.\n\nTender requirements · p. 12 · v2\nNeeds review\nReview\n02\nMandatory\nMaintain professional indemnity insurance.\n\nThe supplier must maintain professional indemnity insurance for the term of the contract.\n\nTender requirements · p. 14 · v2\nReviewed as met\nReview\n03\nMandatory\nProvide two comparable delivery references.\n\nProvide two examples of comparable service transformation programmes completed within the last three years.\n\nTender requirements · p. 16 · v2\nReviewed as met\nReview"
+  },
+  {
+    "overflow": false,
+    "screen": "requirements",
+    "state": "loading",
+    "expectedScreen": "requirements",
+    "expectedState": "loading",
+    "rendered": true,
+    "text": "Watchlist\n/\nRequirements, in full.\nRequirements, in full.\n\nEvery recorded condition, its evidence and your firm’s review.\n\nBack to assessment\n\nLoading your workspace…\n\nYour saved work will appear here."
+  },
+  {
+    "overflow": false,
+    "screen": "requirements",
+    "state": "empty",
+    "expectedScreen": "requirements",
+    "expectedState": "empty",
+    "rendered": true,
+    "text": "Watchlist\n/\nRequirements, in full.\nRequirements, in full.\n\nEvery recorded condition, its evidence and your firm’s review.\n\nBack to assessment\nNo requirements extracted yet\n\nAn empty list does not establish eligibility. Add source documents or inspect extraction progress.\n\nAdd documents"
+  },
+  {
+    "overflow": false,
+    "screen": "requirements",
+    "state": "partial",
+    "expectedScreen": "requirements",
+    "expectedState": "partial",
+    "rendered": true,
+    "text": "Watchlist\n/\nRequirements, in full.\nRequirements, in full.\n\nEvery recorded condition, its evidence and your firm’s review.\n\nBack to assessment\nThe requirement inventory is incomplete\nPages 17–18 still need review. The list below contains the conditions extracted so far.\n3 recorded conditions\nMandatory first\n01\nMandatory\nProvide current information-security certification.\n\nThe supplier must provide evidence of current information-security certification with its response.\n\nTender requirements · p. 12 · v2\nReviewed as met\nReview\n02\nMandatory\nMaintain professional indemnity insurance.\n\nThe supplier must maintain professional indemnity insurance for the term of the contract.\n\nTender requirements · p. 14 · v2\nReviewed as met\nReview\n03\nMandatory\nProvide two comparable delivery references.\n\nProvide two examples of comparable service transformation programmes completed within the last three years.\n\nTender requirements · p. 16 · v2\nReviewed as met\nReview"
+  },
+  {
+    "overflow": false,
+    "screen": "requirements",
+    "state": "complete",
+    "expectedScreen": "requirements",
+    "expectedState": "complete",
+    "rendered": true,
+    "text": "Watchlist\n/\nRequirements, in full.\nRequirements, in full.\n\nEvery recorded condition, its evidence and your firm’s review.\n\nBack to assessment\n3 recorded conditions\nMandatory first\n01\nMandatory\nProvide current information-security certification.\n\nThe supplier must provide evidence of current information-security certification with its response.\n\nTender requirements · p. 12 · v2\nReviewed as met\nReview\n02\nMandatory\nMaintain professional indemnity insurance.\n\nThe supplier must maintain professional indemnity insurance for the term of the contract.\n\nTender requirements · p. 14 · v2\nReviewed as met\nReview\n03\nMandatory\nProvide two comparable delivery references.\n\nProvide two examples of comparable service transformation programmes completed within the last three years.\n\nTender requirements · p. 16 · v2\nReviewed as met\nReview"
+  },
+  {
+    "overflow": false,
+    "screen": "requirements",
+    "state": "conflict",
+    "expectedScreen": "requirements",
+    "expectedState": "conflict",
+    "rendered": true,
+    "text": "Watchlist\n/\nRequirements, in full.\nRequirements, in full.\n\nEvery recorded condition, its evidence and your firm’s review.\n\nBack to assessment\nThe requirement inventory is incomplete\nPages 17–18 still need review. The list below contains the conditions extracted so far.\nOne condition has conflicting evidence\nReview both the tender clause and the later addendum.\n3 recorded conditions\nMandatory first\n01\nMandatory\nProvide current information-security certification.\n\nThe supplier must provide evidence of current information-security certification with its response.\n\nTender requirements · p. 12 · v2\nNeeds review\nReview\n02\nMandatory\nMaintain professional indemnity insurance.\n\nThe supplier must maintain professional indemnity insurance for the term of the contract.\n\nTender requirements · p. 14 · v2\nReviewed as met\nReview\n03\nMandatory\nProvide two comparable delivery references.\n\nProvide two examples of comparable service transformation programmes completed within the last three years.\n\nTender requirements · p. 16 · v2\nReviewed as met\nReview"
+  },
+  {
+    "overflow": false,
+    "screen": "review",
+    "state": "normal",
+    "expectedScreen": "review",
+    "expectedState": "normal",
+    "rendered": true,
+    "text": "Watchlist\n/\nResolve the requirement.\nResolve the requirement.\n\nProvide current information-security certification.\n\nReview outcome\nReviewed as met\nNot met\nNeeds clarification\nSupporting evidence\nSelect evidence\nSample certificate.pdf · valid to 31 Dec 2026\nKoru capability statement.pdf · v1\nInsurance schedule.pdf · v1\nAttach sample certificate\n\nDemo attachments only. No private files are uploaded.\n\nYour rationale\n\nRecorded as Koru Advisory · reviewer Alex Morgan · source version 2.\n\nCancel\nSave review\nEvidence\n\nTender requirements.pdf\n\nUploaded by your firm · Private\nPage 12 of 18 · version 2\nHarbour Regional Council\nRequest for Proposal\nDigital service transformation\n4.2 Information security\n\nThe supplier must demonstrate a strong approach to information security, including governance, risk management and incident response. The solution must meet all applicable New Zealand legislative and regulatory requirements.\n\nThe supplier must provide evidence of current information-security certification with its response.\n\nAcceptable certifications include ISO/IEC 27001 or an equivalent standard. The certification must be valid at the time of tender close.\n\nThe supplier should also describe how information security will be maintained throughout the term of the contract, including with any third-party providers.\n\nFictional source · private\nPage 12 of 18\nCoverage incomplete: 2 scanned pages need review."
+  },
+  {
+    "overflow": false,
+    "screen": "review",
+    "state": "saving",
+    "expectedScreen": "review",
+    "expectedState": "saving",
+    "rendered": true,
+    "text": "Watchlist\n/\nResolve the requirement.\nResolve the requirement.\n\nProvide current information-security certification.\n\nReview outcome\nReviewed as met\nNot met\nNeeds clarification\nSupporting evidence\nSelect evidence\nSample certificate.pdf · valid to 31 Dec 2026\nKoru capability statement.pdf · v1\nInsurance schedule.pdf · v1\nAttach sample certificate\n\nDemo attachments only. No private files are uploaded.\n\nYour rationale\n\nRecorded as Koru Advisory · reviewer Alex Morgan · source version 2.\n\nCancel\nSaving review…\nEvidence\n\nTender requirements.pdf\n\nUploaded by your firm · Private\nPage 12 of 18 · version 2\nHarbour Regional Council\nRequest for Proposal\nDigital service transformation\n4.2 Information security\n\nThe supplier must demonstrate a strong approach to information security, including governance, risk management and incident response. The solution must meet all applicable New Zealand legislative and regulatory requirements.\n\nThe supplier must provide evidence of current information-security certification with its response.\n\nAcceptable certifications include ISO/IEC 27001 or an equivalent standard. The certification must be valid at the time of tender close.\n\nThe supplier should also describe how information security will be maintained throughout the term of the contract, including with any third-party providers.\n\nFictional source · private\nPage 12 of 18\nCoverage incomplete: 2 scanned pages need review."
+  },
+  {
+    "overflow": false,
+    "screen": "review",
+    "state": "success",
+    "expectedScreen": "review",
+    "expectedState": "success",
+    "rendered": true,
+    "text": "Watchlist\n/\nResolve the requirement.\nResolve the requirement.\n\nProvide current information-security certification.\n\nYour review is recorded\n\nThe other requirements, coverage and pursuit decision remain separate.\n\nReturn to assessment"
+  },
+  {
+    "overflow": false,
+    "screen": "review",
+    "state": "error",
+    "expectedScreen": "review",
+    "expectedState": "error",
+    "rendered": true,
+    "text": "Watchlist\n/\nResolve the requirement.\nResolve the requirement.\n\nProvide current information-security certification.\n\nYour last save failed. Your changes are still here.\nReview outcome\nReviewed as met\nNot met\nNeeds clarification\nSupporting evidence\nSelect evidence\nSample certificate.pdf · valid to 31 Dec 2026\nKoru capability statement.pdf · v1\nInsurance schedule.pdf · v1\nAttach sample certificate\n\nDemo attachments only. No private files are uploaded.\n\nYour rationale\n\nRecorded as Koru Advisory · reviewer Alex Morgan · source version 2.\n\nCancel\nRetry save\nEvidence\n\nTender requirements.pdf\n\nUploaded by your firm · Private\nPage 12 of 18 · version 2\nHarbour Regional Council\nRequest for Proposal\nDigital service transformation\n4.2 Information security\n\nThe supplier must demonstrate a strong approach to information security, including governance, risk management and incident response. The solution must meet all applicable New Zealand legislative and regulatory requirements.\n\nThe supplier must provide evidence of current information-security certification with its response.\n\nAcceptable certifications include ISO/IEC 27001 or an equivalent standard. The certification must be valid at the time of tender close.\n\nThe supplier should also describe how information security will be maintained throughout the term of the contract, including with any third-party providers.\n\nFictional source · private\nPage 12 of 18\nCoverage incomplete: 2 scanned pages need review."
+  },
+  {
+    "overflow": false,
+    "screen": "review",
+    "state": "conflict",
+    "expectedScreen": "review",
+    "expectedState": "conflict",
+    "rendered": true,
+    "text": "Watchlist\n/\nResolve the requirement.\nResolve the requirement.\n\nProvide current information-security certification.\n\nThis assessment changed while you were reviewing\nYour draft is preserved. The current version contains an updated closing date.Use current version and retain my draft\nReview outcome\nReviewed as met\nNot met\nNeeds clarification\nSupporting evidence\nSelect evidence\nSample certificate.pdf · valid to 31 Dec 2026\nKoru capability statement.pdf · v1\nInsurance schedule.pdf · v1\nAttach sample certificate\n\nDemo attachments only. No private files are uploaded.\n\nYour rationale\n\nRecorded as Koru Advisory · reviewer Alex Morgan · source version 2.\n\nCancel\nSave review\nEvidence\n\nTender requirements.pdf\n\nUploaded by your firm · Private\nPage 12 of 18 · version 2\nHarbour Regional Council\nRequest for Proposal\nDigital service transformation\n4.2 Information security\n\nThe supplier must demonstrate a strong approach to information security, including governance, risk management and incident response. The solution must meet all applicable New Zealand legislative and regulatory requirements.\n\nThe supplier must provide evidence of current information-security certification with its response.\n\nAcceptable certifications include ISO/IEC 27001 or an equivalent standard. The certification must be valid at the time of tender close.\n\nThe supplier should also describe how information security will be maintained throughout the term of the contract, including with any third-party providers.\n\nFictional source · private\nPage 12 of 18\nA later addendum conflicts with this clause\nBoth versions remain available. An attributed review is required.Compare the other version\nCoverage incomplete: 2 scanned pages need review."
+  },
+  {
+    "overflow": false,
+    "screen": "decisions",
+    "state": "normal",
+    "expectedScreen": "decisions",
+    "expectedState": "normal",
+    "rendered": true,
+    "text": "Watchlist\n/\nYour decision. Your reasoning.\nYour decision. Your reasoning.\n\nRecord the firm’s position separately from the generated assessment.\n\nRecord a decision\nPursue is not available yet\nMandatory requirements still need review.\nTwo required pages have not been reviewed.\nDelivery capability has not been reviewed.\n\nThis conservative gate is a proposed policy for review.\n\nDecision\nHold\nPursue\nDo not pursue\nRationale\nRecord decision\nDecision history\nNo decision recorded\n\nA generated assessment does not automatically record a decision for your firm.\n\nBack to assessment"
+  },
+  {
+    "overflow": false,
+    "screen": "decisions",
+    "state": "empty",
+    "expectedScreen": "decisions",
+    "expectedState": "empty",
+    "rendered": true,
+    "text": "Watchlist\n/\nYour decision. Your reasoning.\nYour decision. Your reasoning.\n\nRecord the firm’s position separately from the generated assessment.\n\nRecord a decision\nPursue is not available yet\nMandatory requirements still need review.\nTwo required pages have not been reviewed.\nDelivery capability has not been reviewed.\n\nThis conservative gate is a proposed policy for review.\n\nDecision\nHold\nPursue\nDo not pursue\nRationale\nRecord decision\nDecision history\nNo decision recorded\n\nA generated assessment does not automatically record a decision for your firm.\n\nBack to assessment"
+  },
+  {
+    "overflow": false,
+    "screen": "decisions",
+    "state": "complete",
+    "expectedScreen": "decisions",
+    "expectedState": "complete",
+    "rendered": true,
+    "text": "Watchlist\n/\nYour decision. Your reasoning.\nYour decision. Your reasoning.\n\nRecord the firm’s position separately from the generated assessment.\n\nRecord a decision\nDecision\nHold\nPursue\nDo not pursue\nRationale\nRecord decision\nDecision history\nNo decision recorded\n\nA generated assessment does not automatically record a decision for your firm.\n\nBack to assessment"
+  },
+  {
+    "overflow": false,
+    "screen": "decisions",
+    "state": "stale",
+    "expectedScreen": "decisions",
+    "expectedState": "stale",
+    "rendered": true,
+    "text": "Watchlist\n/\nYour decision. Your reasoning.\nYour decision. Your reasoning.\n\nRecord the firm’s position separately from the generated assessment.\n\nThe previous decision needs review\nClosing date extended from 17 to 24 Sep. The earlier certificate expires 20 Sep.\nRecord a decision\nPursue is not available yet\nMandatory requirements still need review.\nTwo required pages have not been reviewed.\nDelivery capability has not been reviewed.\nThe notice changed. Review the latest input version.\n\nThis conservative gate is a proposed policy for review.\n\nDecision\nHold\nPursue\nDo not pursue\nRationale\nRecord decision\nDecision history\nPursue · needs review\nPrevious certification was valid at the original closing date.\n\nAlex Morgan · 8 Sep 2026 · 14:20 NZST\n\nInspect input version 2\nBack to assessment"
+  },
+  {
+    "overflow": false,
+    "screen": "decisions",
+    "state": "saving",
+    "expectedScreen": "decisions",
+    "expectedState": "saving",
+    "rendered": true,
+    "text": "Watchlist\n/\nYour decision. Your reasoning.\nYour decision. Your reasoning.\n\nRecord the firm’s position separately from the generated assessment.\n\nRecord a decision\nPursue is not available yet\nMandatory requirements still need review.\nTwo required pages have not been reviewed.\nDelivery capability has not been reviewed.\n\nThis conservative gate is a proposed policy for review.\n\nDecision\nHold\nPursue\nDo not pursue\nRationale\nSaving decision…\nDecision history\nNo decision recorded\n\nA generated assessment does not automatically record a decision for your firm.\n\nBack to assessment"
+  },
+  {
+    "overflow": false,
+    "screen": "decisions",
+    "state": "error",
+    "expectedScreen": "decisions",
+    "expectedState": "error",
+    "rendered": true,
+    "text": "Watchlist\n/\nYour decision. Your reasoning.\nYour decision. Your reasoning.\n\nRecord the firm’s position separately from the generated assessment.\n\nRecord a decision\nPursue is not available yet\nMandatory requirements still need review.\nTwo required pages have not been reviewed.\nDelivery capability has not been reviewed.\n\nThis conservative gate is a proposed policy for review.\n\nCouldn’t save the decision. Your rationale is still here.\nDecision\nHold\nPursue\nDo not pursue\nRationale\nRecord decision\nDecision history\nNo decision recorded\n\nA generated assessment does not automatically record a decision for your firm.\n\nBack to assessment"
+  },
+  {
+    "overflow": false,
+    "screen": "sources",
+    "state": "normal",
+    "expectedScreen": "sources",
+    "expectedState": "normal",
+    "rendered": true,
+    "text": "Watchlist\n/\nEvidence with its context intact.\nEvidence with its context intact.\n\nOriginal sources, recorded versions and the coverage behind an assessment.\n\nAdd documents\nTwo pages need review\nThe requirement inventory is incomplete. A successful upload is not the same as complete evidence coverage.\nSource\tOrigin / access\tVersion\tCoverage\tChecked\t\n\nTender requirements.pdf\n\tFirm upload\nPrivate\n\tv2\t16 / 18 readable\t9 Sep, 08:42\tReview gaps\n\n\nGETS notice · digital transformation\n\tPublic notice\nPublic\n\tv3\t1 / 1 readable\t9 Sep, 08:15\tOpen\n\n\nKoru capability statement.pdf\n\tFirm upload\nPrivate\n\tv1\t8 / 8 readable\t8 Sep, 16:20\tOpen\n\n\nAgency procurement plan\n\tAgency publication\nPublic\n\tv2\t24 / 24 readable\t8 Sep, 11:30\tOpen\nFirm uploads remain private. Public sources retain their publisher and captured version.\nReturn to assessment"
+  },
+  {
+    "overflow": false,
+    "screen": "sources",
+    "state": "loading",
+    "expectedScreen": "sources",
+    "expectedState": "loading",
+    "rendered": true,
+    "text": "Watchlist\n/\nEvidence with its context intact.\nEvidence with its context intact.\n\nOriginal sources, recorded versions and the coverage behind an assessment.\n\nAdd documents\n\nLoading your workspace…\n\nYour saved work will appear here."
+  },
+  {
+    "overflow": false,
+    "screen": "sources",
+    "state": "empty",
+    "expectedScreen": "sources",
+    "expectedState": "empty",
+    "rendered": true,
+    "text": "Watchlist\n/\nEvidence with its context intact.\nEvidence with its context intact.\n\nOriginal sources, recorded versions and the coverage behind an assessment.\n\nAdd documents\nNo source documents yet\n\nAdd the tender documents to begin a document-based assessment.\n\nAdd sample documents"
+  },
+  {
+    "overflow": false,
+    "screen": "sources",
+    "state": "partial",
+    "expectedScreen": "sources",
+    "expectedState": "partial",
+    "rendered": true,
+    "text": "Watchlist\n/\nEvidence with its context intact.\nEvidence with its context intact.\n\nOriginal sources, recorded versions and the coverage behind an assessment.\n\nAdd documents\nTwo pages need review\nThe requirement inventory is incomplete. A successful upload is not the same as complete evidence coverage.\nSource\tOrigin / access\tVersion\tCoverage\tChecked\t\n\nTender requirements.pdf\n\tFirm upload\nPrivate\n\tv2\t16 / 18 readable\t9 Sep, 08:42\tReview gaps\n\n\nGETS notice · digital transformation\n\tPublic notice\nPublic\n\tv3\t1 / 1 readable\t9 Sep, 08:15\tOpen\n\n\nKoru capability statement.pdf\n\tFirm upload\nPrivate\n\tv1\t8 / 8 readable\t8 Sep, 16:20\tOpen\n\n\nAgency procurement plan\n\tAgency publication\nPublic\n\tv2\t24 / 24 readable\t8 Sep, 11:30\tOpen\nFirm uploads remain private. Public sources retain their publisher and captured version.\nReturn to assessment"
+  },
+  {
+    "overflow": false,
+    "screen": "sources",
+    "state": "error",
+    "expectedScreen": "sources",
+    "expectedState": "error",
+    "rendered": true,
+    "text": "Watchlist\n/\nEvidence with its context intact.\nEvidence with its context intact.\n\nOriginal sources, recorded versions and the coverage behind an assessment.\n\nAdd documents\nWe couldn’t load this view\n\nYour previously saved work is safe. Try again to load the last accepted version.\n\nTry again"
+  },
+  {
+    "overflow": false,
+    "screen": "document",
+    "state": "normal",
+    "expectedScreen": "document",
+    "expectedState": "normal",
+    "rendered": true,
+    "text": "Evidence\nAccessible text\n\nTender requirements.pdf\n\nUploaded by your firm · Private\nPage 12 of 18 · version 2\nPage\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\nVersion\n2 · latest captured\n1 · historical\nHarbour Regional Council\nRequest for Proposal\nDigital service transformation\n4.2 Information security\n\nThe supplier must demonstrate a strong approach to information security, including governance, risk management and incident response. The solution must meet all applicable New Zealand legislative and regulatory requirements.\n\nThe supplier must provide evidence of current information-security certification with its response.\n\nAcceptable certifications include ISO/IEC 27001 or an equivalent standard. The certification must be valid at the time of tender close.\n\nThe supplier should also describe how information security will be maintained throughout the term of the contract, including with any third-party providers.\n\nFictional source · private\nPage 12 of 18\nCoverage incomplete: 2 scanned pages need review.\nAll sources\nLast checked 9 Sep, 08:42 · original retained"
+  },
+  {
+    "overflow": false,
+    "screen": "document",
+    "state": "loading",
+    "expectedScreen": "document",
+    "expectedState": "loading",
+    "rendered": true,
+    "text": "Evidence\nAccessible text\n\nTender requirements.pdf\n\nUploaded by your firm · Private\nPage 12 of 18 · version 2\nPage\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\nVersion\n2 · latest captured\n1 · historical\n\nOpening the captured source…\n\nYour saved work will appear here.\nCoverage incomplete: 2 scanned pages need review.\nAll sources\nLast checked 9 Sep, 08:42 · original retained"
+  },
+  {
+    "overflow": false,
+    "screen": "document",
+    "state": "partial",
+    "expectedScreen": "document",
+    "expectedState": "partial",
+    "rendered": true,
+    "text": "Evidence\nAccessible text\n\nTender requirements.pdf\n\nUploaded by your firm · Private\nPage 17 of 18 · version 2\nPage\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\nVersion\n2 · latest captured\n1 · historical\nHarbour Regional Council\nRequest for Proposal\nDigital service transformation\nSchedule 2 · Delivery details\n\nRespondents must provide supporting evidence for the applicable conditions in this section of the tender.\n\nThis page needs review\nThe scan could not be reliably extracted. Its requirements have not been included in the assessment.\n\nThis is fictional source material for reviewing the prototype. It is not a live procurement notice or an authenticated client document.\n\nThe original source date, captured version and interpretation remain separate throughout the assessment.\n\nFictional source · private\nPage 17 of 18\nCoverage incomplete: 2 scanned pages need review.\nRecord sample page review\nAll sources\nLast checked 9 Sep, 08:42 · original retained"
+  },
+  {
+    "overflow": false,
+    "screen": "document",
+    "state": "conflict",
+    "expectedScreen": "document",
+    "expectedState": "conflict",
+    "rendered": true,
+    "text": "Evidence\nAccessible text\n\nTender requirements.pdf\n\nUploaded by your firm · Private\nPage 12 of 18 · version 2\nPage\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\nVersion\n2 · latest captured\n1 · historical\nHarbour Regional Council\nRequest for Proposal\nDigital service transformation\n4.2 Information security\n\nThe supplier must demonstrate a strong approach to information security, including governance, risk management and incident response. The solution must meet all applicable New Zealand legislative and regulatory requirements.\n\nThe supplier must provide evidence of current information-security certification with its response.\n\nAcceptable certifications include ISO/IEC 27001 or an equivalent standard. The certification must be valid at the time of tender close.\n\nThe supplier should also describe how information security will be maintained throughout the term of the contract, including with any third-party providers.\n\nFictional source · private\nPage 12 of 18\nA later addendum conflicts with this clause\nBoth versions remain available. An attributed review is required.Compare the other version\nCoverage incomplete: 2 scanned pages need review.\nAll sources\nLast checked 9 Sep, 08:42 · original retained"
+  },
+  {
+    "overflow": false,
+    "screen": "document",
+    "state": "unavailable",
+    "expectedScreen": "document",
+    "expectedState": "unavailable",
+    "rendered": true,
+    "text": "Evidence\nAccessible text\n\nTender requirements.pdf\n\nUploaded by your firm · Private\nPage 12 of 18 · version 2\nPage\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\nVersion\n2 · latest captured\n1 · historical\nSource unavailable\n\nThis source is unavailable or requires firm access. No other version has been substituted.\n\nAll sources\nLast checked 9 Sep, 08:42 · original retained"
+  },
+  {
+    "overflow": false,
+    "screen": "upload",
+    "state": "normal",
+    "expectedScreen": "upload",
+    "expectedState": "normal",
+    "rendered": true,
+    "text": "Watchlist\n/\nGive the assessment its evidence.\nGive the assessment its evidence.\n\nAdd tender documents and inspect the outcome for every file.\n\nAdd source documents\n\nPDF and DOCX · sample documents only\n\nChoose sample documents\nNo real files are uploaded or processed.\nPreview an unsupported file\nBack to sources\nComplete sample extraction\nWhat happens next\nStore the original\n\nKeep the file and its version, owner and origin.\n\nRead the contents\n\nExtract text, tables and source locations. Show unreadable pages as gaps.\n\nReview the scope\n\nConfirm what to include before requesting an assessment.\n\nUploading does not verify a document\nFirm-supplied evidence remains attributed to the firm. It does not become an authenticated government record."
+  },
+  {
+    "overflow": false,
+    "screen": "upload",
+    "state": "uploading",
+    "expectedScreen": "upload",
+    "expectedState": "uploading",
+    "rendered": true,
+    "text": "Watchlist\n/\nGive the assessment its evidence.\nGive the assessment its evidence.\n\nAdd tender documents and inspect the outcome for every file.\n\nAdd source documents\n\nPDF and DOCX · sample documents only\n\nChoose sample documents\nNo real files are uploaded or processed.\nPreview an unsupported file\nTender requirements.pdf\nStoring original bytes…\nUploading\nKoru capability statement.docx\nStoring original bytes…\nUploading\nBack to sources\nComplete sample extraction\nWhat happens next\nStore the original\n\nKeep the file and its version, owner and origin.\n\nRead the contents\n\nExtract text, tables and source locations. Show unreadable pages as gaps.\n\nReview the scope\n\nConfirm what to include before requesting an assessment.\n\nUploading does not verify a document\nFirm-supplied evidence remains attributed to the firm. It does not become an authenticated government record."
+  },
+  {
+    "overflow": false,
+    "screen": "upload",
+    "state": "processing",
+    "expectedScreen": "upload",
+    "expectedState": "processing",
+    "rendered": true,
+    "text": "Watchlist\n/\nGive the assessment its evidence.\nGive the assessment its evidence.\n\nAdd tender documents and inspect the outcome for every file.\n\nAdd source documents\n\nPDF and DOCX · sample documents only\n\nChoose sample documents\nNo real files are uploaded or processed.\nPreview an unsupported file\nTender requirements.pdf\nReading pages and tables…\nProcessing\nKoru capability statement.docx\nReading pages and tables…\nProcessing\nExtraction is in progress\nPage coverage will be shown separately from upload completion.\nBack to sources\nComplete sample extraction\nWhat happens next\nStore the original\n\nKeep the file and its version, owner and origin.\n\nRead the contents\n\nExtract text, tables and source locations. Show unreadable pages as gaps.\n\nReview the scope\n\nConfirm what to include before requesting an assessment.\n\nUploading does not verify a document\nFirm-supplied evidence remains attributed to the firm. It does not become an authenticated government record."
+  },
+  {
+    "overflow": false,
+    "screen": "upload",
+    "state": "partial",
+    "expectedScreen": "upload",
+    "expectedState": "partial",
+    "rendered": true,
+    "text": "Watchlist\n/\nGive the assessment its evidence.\nGive the assessment its evidence.\n\nAdd tender documents and inspect the outcome for every file.\n\nAdd source documents\n\nPDF and DOCX · sample documents only\n\nChoose sample documents\nNo real files are uploaded or processed.\nPreview an unsupported file\nTender requirements.pdf\n2 scanned pages need review\nNeeds review\nKoru capability statement.docx\nPrivate · 8 pages\nNeeds review\nBack to sources\nComplete sample extraction\nWhat happens next\nStore the original\n\nKeep the file and its version, owner and origin.\n\nRead the contents\n\nExtract text, tables and source locations. Show unreadable pages as gaps.\n\nReview the scope\n\nConfirm what to include before requesting an assessment.\n\nUploading does not verify a document\nFirm-supplied evidence remains attributed to the firm. It does not become an authenticated government record."
+  },
+  {
+    "overflow": false,
+    "screen": "upload",
+    "state": "complete",
+    "expectedScreen": "upload",
+    "expectedState": "complete",
+    "rendered": true,
+    "text": "Watchlist\n/\nGive the assessment its evidence.\nGive the assessment its evidence.\n\nAdd tender documents and inspect the outcome for every file.\n\nAdd source documents\n\nPDF and DOCX · sample documents only\n\nChoose sample documents\nNo real files are uploaded or processed.\nPreview an unsupported file\nTender requirements.pdf\nPrivate · 18 pages\nReadable\nKoru capability statement.docx\nPrivate · 8 pages\nReadable\nSample documents are ready\nAll required sample pages are readable. Eligibility still requires an evidence review.\nBack to sources\nReview request inputs\nWhat happens next\nStore the original\n\nKeep the file and its version, owner and origin.\n\nRead the contents\n\nExtract text, tables and source locations. Show unreadable pages as gaps.\n\nReview the scope\n\nConfirm what to include before requesting an assessment.\n\nUploading does not verify a document\nFirm-supplied evidence remains attributed to the firm. It does not become an authenticated government record."
+  },
+  {
+    "overflow": false,
+    "screen": "upload",
+    "state": "error",
+    "expectedScreen": "upload",
+    "expectedState": "error",
+    "rendered": true,
+    "text": "Watchlist\n/\nGive the assessment its evidence.\nGive the assessment its evidence.\n\nAdd tender documents and inspect the outcome for every file.\n\nAdd source documents\n\nPDF and DOCX · sample documents only\n\nChoose sample documents\nNo real files are uploaded or processed.\nPreview an unsupported file\nOne document could not be accepted\nLegacy .doc is unsupported. Convert it to DOCX or PDF. Accepted files remain available.\nTender requirements.pdf\nPrivate · 18 pages\nNeeds review\nKoru capability statement.docx\nPrivate · 8 pages\nNeeds review\nBack to sources\nComplete sample extraction\nWhat happens next\nStore the original\n\nKeep the file and its version, owner and origin.\n\nRead the contents\n\nExtract text, tables and source locations. Show unreadable pages as gaps.\n\nReview the scope\n\nConfirm what to include before requesting an assessment.\n\nUploading does not verify a document\nFirm-supplied evidence remains attributed to the firm. It does not become an authenticated government record."
+  },
+  {
+    "overflow": false,
+    "screen": "request",
+    "state": "normal",
+    "expectedScreen": "request",
+    "expectedState": "normal",
+    "rendered": true,
+    "text": "Reports\n/\nRequest an assessment.\nRequest an assessment.\n\nChoose the scope. Check the inputs. Keep a record of the work.\n\nWhat would you like to know?\nNotice-only assessment\nA scoped view using the public notice and firm context.\nDocument assessment\nRequirements and evidence across the included tender documents.\nCompetitor profile\nHistorical participation and qualitative competitive context.\nI have checked the scope, firm and source versions.\nBack\nRequest assessment\n\nPrototype only · no paid generation, uploads or email.\n\nIncluded in this request\nFirm\nKoru Advisory\nOpportunity\nDigital service transformation\nNotice\nRevision 3 · closes 24 Sep 2026\nFirm profile\nVersion 1 · 8 Sep 2026\nEvidence sources\nCaptured public notice\nPublic\nA saved request stays available\nYou can leave the page and return to its progress. The browser does not own the work."
+  },
+  {
+    "overflow": false,
+    "screen": "request",
+    "state": "loading",
+    "expectedScreen": "request",
+    "expectedState": "loading",
+    "rendered": true,
+    "text": "Reports\n/\nRequest an assessment.\nRequest an assessment.\n\nChoose the scope. Check the inputs. Keep a record of the work.\n\nLoading your workspace…\n\nYour saved work will appear here."
+  },
+  {
+    "overflow": false,
+    "screen": "request",
+    "state": "empty",
+    "expectedScreen": "request",
+    "expectedState": "empty",
+    "rendered": true,
+    "text": "Reports\n/\nRequest an assessment.\nRequest an assessment.\n\nChoose the scope. Check the inputs. Keep a record of the work.\n\nAdd evidence for document analysis\n\nA notice-only assessment remains available. To assess the tender documents, add sample evidence first.\n\nAdd documents"
+  },
+  {
+    "overflow": false,
+    "screen": "request",
+    "state": "submitting",
+    "expectedScreen": "request",
+    "expectedState": "submitting",
+    "rendered": true,
+    "text": "Reports\n/\nRequest an assessment.\nRequest an assessment.\n\nChoose the scope. Check the inputs. Keep a record of the work.\n\nWhat would you like to know?\nNotice-only assessment\nA scoped view using the public notice and firm context.\nDocument assessment\nRequirements and evidence across the included tender documents.\nCompetitor profile\nHistorical participation and qualitative competitive context.\nI have checked the scope, firm and source versions.\nBack\nSaving request…\n\nPrototype only · no paid generation, uploads or email.\n\nIncluded in this request\nFirm\nKoru Advisory\nOpportunity\nDigital service transformation\nNotice\nRevision 3 · closes 24 Sep 2026\nFirm profile\nVersion 1 · 8 Sep 2026\nEvidence sources\nCaptured public notice\nPublic\nA saved request stays available\nYou can leave the page and return to its progress. The browser does not own the work."
+  },
+  {
+    "overflow": false,
+    "screen": "request",
+    "state": "error",
+    "expectedScreen": "request",
+    "expectedState": "error",
+    "rendered": true,
+    "text": "Reports\n/\nRequest an assessment.\nRequest an assessment.\n\nChoose the scope. Check the inputs. Keep a record of the work.\n\nThe previous request was not accepted\nYour selections are preserved. Submit again to retry.\nWhat would you like to know?\nNotice-only assessment\nA scoped view using the public notice and firm context.\nDocument assessment\nRequirements and evidence across the included tender documents.\nCompetitor profile\nHistorical participation and qualitative competitive context.\nI have checked the scope, firm and source versions.\nBack\nRequest assessment\n\nPrototype only · no paid generation, uploads or email.\n\nIncluded in this request\nFirm\nKoru Advisory\nOpportunity\nDigital service transformation\nNotice\nRevision 3 · closes 24 Sep 2026\nFirm profile\nVersion 1 · 8 Sep 2026\nEvidence sources\nCaptured public notice\nPublic\nA saved request stays available\nYou can leave the page and return to its progress. The browser does not own the work."
+  },
+  {
+    "overflow": false,
+    "screen": "processing",
+    "state": "normal",
+    "expectedScreen": "processing",
+    "expectedState": "normal",
+    "rendered": true,
+    "text": "Reports\n/\nGood decisions take groundwork.\nGood decisions take groundwork.\n\nYour request is saved. You can leave this page and return at any time.\n\nProcessing\nRequest\nPR-2026-001\nScope\nDocument assessment\nFirm\nKoru Advisory\nSubmitted\n9 Sep 2026 · 10:18 NZST\nRequest accepted\n\nComplete\n\nSucceeded\nReading sources\n\nSaved in the queue; waiting for a worker\n\nQueued\nAssessing requirements\n\nWaiting for the preceding step\n\nPending\nPreparing report\n\nWaiting for the preceding step\n\nPending\nReport published\n\nWaiting for the preceding step\n\nPending\nWhile we work\n\nSource facts, analysis and your firm’s decision remain separate. A completed report may still recommend holding.\n\nReturn to watchlist\nView previous reports\nCancel request"
+  },
+  {
+    "overflow": false,
+    "screen": "processing",
+    "state": "queued",
+    "expectedScreen": "processing",
+    "expectedState": "queued",
+    "rendered": true,
+    "text": "Reports\n/\nGood decisions take groundwork.\nGood decisions take groundwork.\n\nYour request is saved. You can leave this page and return at any time.\n\nProcessing\nRequest\nPR-2026-001\nScope\nDocument assessment\nFirm\nKoru Advisory\nSubmitted\n9 Sep 2026 · 10:18 NZST\nRequest accepted\n\nComplete\n\nSucceeded\nReading sources\n\nSaved in the queue; waiting for a worker\n\nQueued\nAssessing requirements\n\nWaiting for the preceding step\n\nPending\nPreparing report\n\nWaiting for the preceding step\n\nPending\nReport published\n\nWaiting for the preceding step\n\nPending\nWhile we work\n\nSource facts, analysis and your firm’s decision remain separate. A completed report may still recommend holding.\n\nReturn to watchlist\nView previous reports\nCancel request"
+  },
+  {
+    "overflow": false,
+    "screen": "processing",
+    "state": "processing",
+    "expectedScreen": "processing",
+    "expectedState": "processing",
+    "rendered": true,
+    "text": "Reports\n/\nGood decisions take groundwork.\nGood decisions take groundwork.\n\nYour request is saved. You can leave this page and return at any time.\n\nProcessing\nRequest\nPR-2026-001\nScope\nDocument assessment\nFirm\nKoru Advisory\nSubmitted\n9 Sep 2026 · 10:18 NZST\nRequest accepted\n\nComplete\n\nSucceeded\nReading sources\n\nComplete\n\nSucceeded\nAssessing requirements\n\nWork is in progress\n\nRunning\nPreparing report\n\nWaiting for the preceding step\n\nPending\nReport published\n\nWaiting for the preceding step\n\nPending\nWhile we work\n\nSource facts, analysis and your firm’s decision remain separate. A completed report may still recommend holding.\n\nReturn to watchlist\nView previous reports\nCancel request"
+  },
+  {
+    "overflow": false,
+    "screen": "processing",
+    "state": "retrying",
+    "expectedScreen": "processing",
+    "expectedState": "retrying",
+    "rendered": true,
+    "text": "Reports\n/\nGood decisions take groundwork.\nGood decisions take groundwork.\n\nYour request is saved. You can leave this page and return at any time.\n\nProcessing\nRequest\nPR-2026-001\nScope\nDocument assessment\nFirm\nKoru Advisory\nSubmitted\n9 Sep 2026 · 10:18 NZST\nRetrying the interrupted assessment\nPreviously accepted work is retained. This is the same saved request.\nRequest accepted\n\nComplete\n\nSucceeded\nReading sources\n\nComplete\n\nSucceeded\nAssessing requirements\n\nRetrying after a temporary interruption\n\nRunning\nPreparing report\n\nWaiting for the preceding step\n\nPending\nReport published\n\nWaiting for the preceding step\n\nPending\nWhile we work\n\nSource facts, analysis and your firm’s decision remain separate. A completed report may still recommend holding.\n\nReturn to watchlist\nView previous reports\nCancel request"
+  },
+  {
+    "overflow": false,
+    "screen": "processing",
+    "state": "failed",
+    "expectedScreen": "processing",
+    "expectedState": "failed",
+    "rendered": true,
+    "text": "Reports\n/\nYour request needs attention.\nYour request needs attention.\n\nYour request is saved. You can leave this page and return at any time.\n\nRequired stage failed\nRequest\nPR-2026-001\nScope\nDocument assessment\nFirm\nKoru Advisory\nSubmitted\n9 Sep 2026 · 10:18 NZST\nTwo required pages could not be read\nA replacement report has not been published. Review the request inputs before retrying. Your previous report is still available.\nRequest accepted\n\nComplete\n\nSucceeded\nReading sources\n\nRequired source extraction failed\n\nFailed\nAssessing requirements\n\nBlocked by required stage\n\nBlocked\nPreparing report\n\nBlocked by required stage\n\nBlocked\nReport published\n\nBlocked by required stage\n\nBlocked\nWhile we work\n\nSource facts, analysis and your firm’s decision remain separate. A completed report may still recommend holding.\n\nRetry this request\nView previous reports"
+  },
+  {
+    "overflow": false,
+    "screen": "processing",
+    "state": "cancelled",
+    "expectedScreen": "processing",
+    "expectedState": "cancelled",
+    "rendered": true,
+    "text": "Reports\n/\nRequest cancelled.\nRequest cancelled.\n\nYour request is saved. You can leave this page and return at any time.\n\nCancelled\nRequest\nPR-2026-001\nScope\nDocument assessment\nFirm\nKoru Advisory\nSubmitted\n9 Sep 2026 · 10:18 NZST\nNo new report will be published\nPreviously published reports remain available.\nRequest accepted\n\nComplete\n\nSucceeded\nReading sources\n\nCancelled; no new output published\n\nCancelled\nAssessing requirements\n\nNot run; request cancelled\n\nNot run\nPreparing report\n\nNot run; request cancelled\n\nNot run\nReport published\n\nNot run; request cancelled\n\nNot run\nWhile we work\n\nSource facts, analysis and your firm’s decision remain separate. A completed report may still recommend holding.\n\nRetry this request\nView previous reports"
+  },
+  {
+    "overflow": false,
+    "screen": "processing",
+    "state": "complete",
+    "expectedScreen": "processing",
+    "expectedState": "complete",
+    "rendered": true,
+    "text": "Reports\n/\nYour report is ready.\nYour report is ready.\n\nA new report version is available in your library.\n\nPublished\nRequest\nPR-2026-001\nScope\nDocument assessment\nFirm\nKoru Advisory\nSubmitted\n9 Sep 2026 · 10:18 NZST\nRequest accepted\n\nComplete\n\nSucceeded\nReading sources\n\nComplete\n\nSucceeded\nAssessing requirements\n\nComplete\n\nSucceeded\nPreparing report\n\nComplete\n\nSucceeded\nReport published\n\nComplete\n\nSucceeded\nWhat’s next\n\nRead the assessment, inspect the sources and record your own decision.\n\nRead report\nView previous reports"
+  },
+  {
+    "overflow": false,
+    "screen": "reports",
+    "state": "normal",
+    "expectedScreen": "reports",
+    "expectedState": "normal",
+    "rendered": true,
+    "text": "Reports\n/\nIntelligence you can return to.\nIntelligence you can return to.\n\nPublished reports, preserved versions and work in progress.\n\nNew assessment\nAll reports\nPursuit assessment\nWeekly brief\nCompetitor profile\nReport\tType\tPublished\tVersion\t\n\nDigital service transformation\nKoru Advisory · private\n\tPursuit assessment\t9 Sep 2026\tv1\tRead\n\n\nYour week in procurement\nKoru Advisory · private\n\tWeekly brief\t7 Sep 2026\tv1\tRead\n\n\nAster Consulting\nKoru Advisory · private\n\tCompetitor profile\t8 Sep 2026\tv1\tRead"
+  },
+  {
+    "overflow": false,
+    "screen": "reports",
+    "state": "loading",
+    "expectedScreen": "reports",
+    "expectedState": "loading",
+    "rendered": true,
+    "text": "Reports\n/\nIntelligence you can return to.\nIntelligence you can return to.\n\nPublished reports, preserved versions and work in progress.\n\nNew assessment\nAll reports\nPursuit assessment\nWeekly brief\nCompetitor profile\n\nLoading your workspace…\n\nYour saved work will appear here."
+  },
+  {
+    "overflow": false,
+    "screen": "reports",
+    "state": "empty",
+    "expectedScreen": "reports",
+    "expectedState": "empty",
+    "rendered": true,
+    "text": "Reports\n/\nIntelligence you can return to.\nIntelligence you can return to.\n\nPublished reports, preserved versions and work in progress.\n\nNew assessment\nAll reports\nPursuit assessment\nWeekly brief\nCompetitor profile\nYour report library starts here\n\nRequest your first assessment from an opportunity or a competitor profile.\n\nRequest assessment"
+  },
+  {
+    "overflow": false,
+    "screen": "reports",
+    "state": "processing",
+    "expectedScreen": "reports",
+    "expectedState": "processing",
+    "rendered": true,
+    "text": "Reports\n/\nIntelligence you can return to.\nIntelligence you can return to.\n\nPublished reports, preserved versions and work in progress.\n\nNew assessment\nAll reports\nPursuit assessment\nWeekly brief\nCompetitor profile\nAn assessment is in progress\nThe previous published reports below remain available.\nView progress\nReport\tType\tPublished\tVersion\t\n\nDigital service transformation\nKoru Advisory · private\n\tPursuit assessment\t9 Sep 2026\tv1\tRead\n\n\nYour week in procurement\nKoru Advisory · private\n\tWeekly brief\t7 Sep 2026\tv1\tRead\n\n\nAster Consulting\nKoru Advisory · private\n\tCompetitor profile\t8 Sep 2026\tv1\tRead"
+  },
+  {
+    "overflow": false,
+    "screen": "reports",
+    "state": "error",
+    "expectedScreen": "reports",
+    "expectedState": "error",
+    "rendered": true,
+    "text": "Reports\n/\nIntelligence you can return to.\nIntelligence you can return to.\n\nPublished reports, preserved versions and work in progress.\n\nNew assessment\nAll reports\nPursuit assessment\nWeekly brief\nCompetitor profile\nWe couldn’t load this view\n\nYour previously saved work is safe. Try again to load the last accepted version.\n\nTry again"
+  },
+  {
+    "overflow": false,
+    "screen": "report",
+    "state": "normal",
+    "expectedScreen": "report",
+    "expectedState": "normal",
+    "rendered": true,
+    "text": "Reports\n/\nDigital service transformation\nDigital service transformation\n\nPursuit assessment · Harbour Regional Council\n\nPublished · v1\nShare report\nIN THIS REPORT\nSummary\nOpportunity\nEvidence & gaps\nRecommended next steps\nReport version\nVersion 1\nDownload summary\nNOTICE-ONLY ASSESSMENT · 9 SEPTEMBER 2026\nA relevant opportunity, with questions to resolve.\n\nThe digital advisory scope aligns with your firm’s stated services. Mandatory eligibility and delivery capability still need review before a pursuit decision.\n\nAssessment: Hold for review\nThis conclusion is separate from your firm’s recorded decision.\nThe opportunity\n\nHarbour Regional Council is seeking support for a digital service transformation programme. The captured public notice closes on 24 September 2026 at 5pm NZST. Contract value has not been disclosed.\n\nScope\nPublic notice and firm context\nIncumbent\nUnknown\nValue\nNot disclosed\nEvidence and open questions\nMandatory certification is not confirmed.\n\nThe requirement appears in the tender documents. This report does not establish that a current certificate satisfies it.\n\n[1] Tender requirements, p. 12 · v2\nDocument coverage is outside this report’s scope.\n\nThis notice-only report does not claim to identify every mandatory requirement in the tender documents.\n\nIncumbency is unknown.\n\nHistorical participation alone does not establish the current contract holder or future bidders.\n\nRecommended next steps\n\nReview the certification requirement, document coverage and delivery capability. Record the firm’s decision with its rationale once the relevant evidence is available.\n\nOpen pursuit workspace\nFictional demonstration · version 1 · evidence and review state preserved"
+  },
+  {
+    "overflow": false,
+    "screen": "report",
+    "state": "loading",
+    "expectedScreen": "report",
+    "expectedState": "loading",
+    "rendered": true,
+    "text": "Reports\n/\nDigital service transformation\nDigital service transformation\n\nPursuit assessment · Harbour Regional Council\n\nPublished · v1\nShare report\n\nOpening the report version…\n\nYour saved work will appear here."
+  },
+  {
+    "overflow": false,
+    "screen": "report",
+    "state": "partial",
+    "expectedScreen": "report",
+    "expectedState": "partial",
+    "rendered": true,
+    "text": "Reports\n/\nDigital service transformation\nDigital service transformation\n\nPursuit assessment · Harbour Regional Council\n\nPublished · v1\nShare report\nLimited scope · some source coverage is missing\nThis is a notice-only assessment. It is not a complete analysis of the tender documents.\nIN THIS REPORT\nSummary\nOpportunity\nEvidence & gaps\nRecommended next steps\nReport version\nVersion 1\nDownload summary\nNOTICE-ONLY ASSESSMENT · 9 SEPTEMBER 2026\nA relevant opportunity, with questions to resolve.\n\nThe digital advisory scope aligns with your firm’s stated services. Mandatory eligibility and delivery capability still need review before a pursuit decision.\n\nAssessment: Hold for review\nThis conclusion is separate from your firm’s recorded decision.\nThe opportunity\n\nHarbour Regional Council is seeking support for a digital service transformation programme. The captured public notice closes on 24 September 2026 at 5pm NZST. Contract value has not been disclosed.\n\nScope\nPublic notice and firm context\nIncumbent\nUnknown\nValue\nNot disclosed\nEvidence and open questions\nMandatory certification is not confirmed.\n\nThe requirement appears in the tender documents. This report does not establish that a current certificate satisfies it.\n\n[1] Tender requirements, p. 12 · v2\nDocument coverage is outside this report’s scope.\n\nThis notice-only report does not claim to identify every mandatory requirement in the tender documents.\n\nIncumbency is unknown.\n\nHistorical participation alone does not establish the current contract holder or future bidders.\n\nRecommended next steps\n\nReview the certification requirement, document coverage and delivery capability. Record the firm’s decision with its rationale once the relevant evidence is available.\n\nOpen pursuit workspace\nFictional demonstration · version 1 · evidence and review state preserved"
+  },
+  {
+    "overflow": false,
+    "screen": "report",
+    "state": "stale",
+    "expectedScreen": "report",
+    "expectedState": "stale",
+    "rendered": true,
+    "text": "Reports\n/\nDigital service transformation\nDigital service transformation\n\nPursuit assessment · Harbour Regional Council\n\nPublished · v1\nShare report\nYou’re reading an earlier evidence snapshot\nThis report preserves its original facts. A newer notice closes on 24 Sep 2026.Review current opportunity\nIN THIS REPORT\nSummary\nOpportunity\nEvidence & gaps\nRecommended next steps\nReport version\nVersion 1\nDownload summary\nNOTICE-ONLY ASSESSMENT · 9 SEPTEMBER 2026\nA relevant opportunity, with questions to resolve.\n\nThe digital advisory scope aligns with your firm’s stated services. Mandatory eligibility and delivery capability still need review before a pursuit decision.\n\nAssessment: Hold for review\nThis conclusion is separate from your firm’s recorded decision.\nThe opportunity\n\nHarbour Regional Council is seeking support for a digital service transformation programme. The captured public notice closes on 24 September 2026 at 5pm NZST. Contract value has not been disclosed.\n\nScope\nPublic notice and firm context\nIncumbent\nUnknown\nValue\nNot disclosed\nEvidence and open questions\nMandatory certification is not confirmed.\n\nThe requirement appears in the tender documents. This report does not establish that a current certificate satisfies it.\n\n[1] Tender requirements, p. 12 · v2\nDocument coverage is outside this report’s scope.\n\nThis notice-only report does not claim to identify every mandatory requirement in the tender documents.\n\nIncumbency is unknown.\n\nHistorical participation alone does not establish the current contract holder or future bidders.\n\nRecommended next steps\n\nReview the certification requirement, document coverage and delivery capability. Record the firm’s decision with its rationale once the relevant evidence is available.\n\nOpen pursuit workspace\nFictional demonstration · version 1 · evidence and review state preserved"
+  },
+  {
+    "overflow": false,
+    "screen": "report",
+    "state": "unavailable",
+    "expectedScreen": "report",
+    "expectedState": "unavailable",
+    "rendered": true,
+    "text": "Reports\n/\nDigital service transformation\nDigital service transformation\n\nPursuit assessment · Harbour Regional Council\n\nPublished · v1\nShare report\nThis content isn’t available\n\nThe source may no longer be available, or it may require access from its owning firm. Another version has not been substituted.\n\nBack to your sources"
+  },
+  {
+    "overflow": false,
+    "screen": "sharing",
+    "state": "normal",
+    "expectedScreen": "sharing",
+    "expectedState": "normal",
+    "rendered": true,
+    "text": "Reports\n/\nShare a considered view.\nShare a considered view.\n\nGive access to one report version, with an expiry you control.\n\nDigital service transformation\nReport\nPublished version 1\nIncluded\nReport text and embedded excerpts\nExcluded\nPrivate source files and firm profile\nPreview what your recipient sees\nThis demo creates a local recipient view. It sends no email and grants no real external access.\nPreview recipient view\nAccess settings\nExpires on\n\nSeven days is a proposed default. Source files remain private.\n\nCreate demo share"
+  },
+  {
+    "overflow": false,
+    "screen": "sharing",
+    "state": "empty",
+    "expectedScreen": "sharing",
+    "expectedState": "empty",
+    "rendered": true,
+    "text": "Reports\n/\nShare a considered view.\nShare a considered view.\n\nGive access to one report version, with an expiry you control.\n\nDigital service transformation\nReport\nPublished version 1\nIncluded\nReport text and embedded excerpts\nExcluded\nPrivate source files and firm profile\nPreview what your recipient sees\nThis demo creates a local recipient view. It sends no email and grants no real external access.\nPreview recipient view\nAccess settings\nExpires on\n\nSeven days is a proposed default. Source files remain private.\n\nCreate demo share"
+  },
+  {
+    "overflow": false,
+    "screen": "sharing",
+    "state": "saving",
+    "expectedScreen": "sharing",
+    "expectedState": "saving",
+    "rendered": true,
+    "text": "Reports\n/\nShare a considered view.\nShare a considered view.\n\nGive access to one report version, with an expiry you control.\n\nDigital service transformation\nReport\nPublished version 1\nIncluded\nReport text and embedded excerpts\nExcluded\nPrivate source files and firm profile\nPreview what your recipient sees\nThis demo creates a local recipient view. It sends no email and grants no real external access.\nPreview recipient view\nAccess settings\nExpires on\n\nSeven days is a proposed default. Source files remain private.\n\nCreating share…"
+  },
+  {
+    "overflow": false,
+    "screen": "sharing",
+    "state": "error",
+    "expectedScreen": "sharing",
+    "expectedState": "error",
+    "rendered": true,
+    "text": "Reports\n/\nShare a considered view.\nShare a considered view.\n\nGive access to one report version, with an expiry you control.\n\nDigital service transformation\nReport\nPublished version 1\nIncluded\nReport text and embedded excerpts\nExcluded\nPrivate source files and firm profile\nPreview what your recipient sees\nThis demo creates a local recipient view. It sends no email and grants no real external access.\nPreview recipient view\nAccess settings\nCouldn’t create the share\nYour selections have been kept. Try again.\nExpires on\n\nSeven days is a proposed default. Source files remain private.\n\nCreate demo share"
+  },
+  {
+    "overflow": false,
+    "screen": "sharing",
+    "state": "revoked",
+    "expectedScreen": "sharing",
+    "expectedState": "revoked",
+    "rendered": true,
+    "text": "Reports\n/\nShare a considered view.\nShare a considered view.\n\nGive access to one report version, with an expiry you control.\n\nDigital service transformation\nReport\nPublished version 1\nIncluded\nReport text and embedded excerpts\nExcluded\nPrivate source files and firm profile\nPreview what your recipient sees\nThis demo creates a local recipient view. It sends no email and grants no real external access.\nPreview recipient view\nAccess settings\nShare revoked\nFuture access through this share is blocked. Downloaded copies cannot be recalled.\nExpires on\n\nSeven days is a proposed default. Source files remain private.\n\nCreate demo share"
+  },
+  {
+    "overflow": false,
+    "screen": "sharing",
+    "state": "expired",
+    "expectedScreen": "sharing",
+    "expectedState": "expired",
+    "rendered": true,
+    "text": "Reports\n/\nShare a considered view.\nShare a considered view.\n\nGive access to one report version, with an expiry you control.\n\nDigital service transformation\nReport\nPublished version 1\nIncluded\nReport text and embedded excerpts\nExcluded\nPrivate source files and firm profile\nPreview what your recipient sees\nThis demo creates a local recipient view. It sends no email and grants no real external access.\nPreview recipient view\nAccess settings\nShare expired\nCreate a new share if access is still required.\nExpires on\n\nSeven days is a proposed default. Source files remain private.\n\nCreate demo share"
+  },
+  {
+    "overflow": false,
+    "screen": "shared",
+    "state": "normal",
+    "expectedScreen": "shared",
+    "expectedState": "normal",
+    "rendered": true,
+    "text": "Reports\n/\nDigital service transformation\nDigital service transformation\n\nPursuit assessment · Harbour Regional Council\n\nPublished · v1\nRecipient preview · fictional share\nRead-only report version 1. Private source files are not included. Demo expiry: 2026-09-16.\nIN THIS REPORT\nSummary\nOpportunity\nEvidence & gaps\nRecommended next steps\nNOTICE-ONLY ASSESSMENT · 9 SEPTEMBER 2026\nA relevant opportunity, with questions to resolve.\n\nThe digital advisory scope aligns with your firm’s stated services. Mandatory eligibility and delivery capability still need review before a pursuit decision.\n\nAssessment: Hold for review\nThis conclusion is separate from your firm’s recorded decision.\nThe opportunity\n\nHarbour Regional Council is seeking support for a digital service transformation programme. The captured public notice closes on 24 September 2026 at 5pm NZST. Contract value has not been disclosed.\n\nScope\nPublic notice and firm context\nIncumbent\nUnknown\nValue\nNot disclosed\nEvidence and open questions\nMandatory certification is not confirmed.\n\nThe requirement appears in the tender documents. This report does not establish that a current certificate satisfies it.\n\n[1] Tender requirements, p. 12 · v2 · firm access required\nDocument coverage is outside this report’s scope.\n\nThis notice-only report does not claim to identify every mandatory requirement in the tender documents.\n\nIncumbency is unknown.\n\nHistorical participation alone does not establish the current contract holder or future bidders.\n\nRecommended next steps\n\nReview the certification requirement, document coverage and delivery capability. Record the firm’s decision with its rationale once the relevant evidence is available.\n\nFictional demonstration · version 1 · evidence and review state preserved"
+  },
+  {
+    "overflow": false,
+    "screen": "shared",
+    "state": "loading",
+    "expectedScreen": "shared",
+    "expectedState": "loading",
+    "rendered": true,
+    "text": "Reports\n/\nDigital service transformation\nDigital service transformation\n\nPursuit assessment · Harbour Regional Council\n\nPublished · v1\n\nOpening the report version…\n\nYour saved work will appear here."
+  },
+  {
+    "overflow": false,
+    "screen": "shared",
+    "state": "expired",
+    "expectedScreen": "shared",
+    "expectedState": "expired",
+    "rendered": true,
+    "text": "This share has expired\n\nThe report is no longer accessible through this link. Ask the report owner for a new share.\n\nGo to sign-in"
+  },
+  {
+    "overflow": false,
+    "screen": "shared",
+    "state": "revoked",
+    "expectedScreen": "shared",
+    "expectedState": "revoked",
+    "rendered": true,
+    "text": "This share was revoked\n\nThe report is no longer accessible through this link. Ask the report owner for a new share.\n\nGo to sign-in"
+  },
+  {
+    "overflow": false,
+    "screen": "shared",
+    "state": "unavailable",
+    "expectedScreen": "shared",
+    "expectedState": "unavailable",
+    "rendered": true,
+    "text": "Reports\n/\nDigital service transformation\nDigital service transformation\n\nPursuit assessment · Harbour Regional Council\n\nPublished · v1\nThis content isn’t available\n\nThe source may no longer be available, or it may require access from its owning firm. Another version has not been substituted.\n\nBack to your sources"
+  },
+  {
+    "overflow": false,
+    "screen": "brief",
+    "state": "normal",
+    "expectedScreen": "brief",
+    "expectedState": "normal",
+    "rendered": true,
+    "text": "Reports\n/\nYour week in procurement.\nWEEKLY INTELLIGENCE BRIEF\nYour week in procurement.\n\n7–13 September 2026 · prepared for Koru Advisory\n\nPublished · version 1\nTHIS WEEK\n\n1 opportunity change\n1 planning signal\n1 inferred renewal\n\nDelivery preferences\nThree things worth your attention.\n\nA short reading list, grounded in the sources. Your firm’s pursuit decisions remain yours.\n\nDeadline changed\nMore time to review the digital programme.\n\nHarbour Regional Council extended the close from 17 to 24 September. Your certification and delivery checks still need review.\n\nGETS notice · revision 3 · captured 9 Sep\n\nReview opportunity\nPlanning signal\nA service design panel is on the horizon.\n\nSouthern Services Agency’s procurement plan indicates Q4 2026. No open tender or confirmed date has been found.\n\nAgency procurement plan · page 8 · version 2\n\nRead the planning signal\nInferred renewal\nA potential renewal needs closer investigation.\n\nA historical award and assumed five-year term suggest January–March 2027. Extensions and the current incumbent remain unconfirmed.\n\nPublished award record + explicit term assumption\n\nInspect the forecast\nFictional sample · prepared 9 Sep 2026 · no email sent"
+  },
+  {
+    "overflow": false,
+    "screen": "brief",
+    "state": "loading",
+    "expectedScreen": "brief",
+    "expectedState": "loading",
+    "rendered": true,
+    "text": "Reports\n/\nYour week in procurement.\nWEEKLY INTELLIGENCE BRIEF\nYour week in procurement.\n\n7–13 September 2026 · prepared for Koru Advisory\n\nPublished · version 1\n\nOpening your weekly brief…\n\nYour saved work will appear here."
+  },
+  {
+    "overflow": false,
+    "screen": "brief",
+    "state": "empty",
+    "expectedScreen": "brief",
+    "expectedState": "empty",
+    "rendered": true,
+    "text": "Reports\n/\nYour week in procurement.\nWEEKLY INTELLIGENCE BRIEF\nYour week in procurement.\n\n7–13 September 2026 · prepared for Koru Advisory\n\nPublished · version 1\nA quiet week for your interests\n\nNo matching accepted notices or signals were available. Your watchlist and earlier briefs are still available.\n\nOpen watchlist"
+  },
+  {
+    "overflow": false,
+    "screen": "brief",
+    "state": "partial",
+    "expectedScreen": "brief",
+    "expectedState": "partial",
+    "rendered": true,
+    "text": "Reports\n/\nYour week in procurement.\nWEEKLY INTELLIGENCE BRIEF\nYour week in procurement.\n\n7–13 September 2026 · prepared for Koru Advisory\n\nPublished · version 1\nOne source could not be included\nThis brief uses the accepted sources below. Policy updates are incomplete and are not presented as current.\nTHIS WEEK\n\n1 opportunity change\n1 planning signal\n1 inferred renewal\n\nDelivery preferences\nThree things worth your attention.\n\nA short reading list, grounded in the sources. Your firm’s pursuit decisions remain yours.\n\nDeadline changed\nMore time to review the digital programme.\n\nHarbour Regional Council extended the close from 17 to 24 September. Your certification and delivery checks still need review.\n\nGETS notice · revision 3 · captured 9 Sep\n\nReview opportunity\nPlanning signal\nA service design panel is on the horizon.\n\nSouthern Services Agency’s procurement plan indicates Q4 2026. No open tender or confirmed date has been found.\n\nAgency procurement plan · page 8 · version 2\n\nRead the planning signal\nInferred renewal\nA potential renewal needs closer investigation.\n\nA historical award and assumed five-year term suggest January–March 2027. Extensions and the current incumbent remain unconfirmed.\n\nPublished award record + explicit term assumption\n\nInspect the forecast\nFictional sample · prepared 9 Sep 2026 · no email sent"
+  },
+  {
+    "overflow": false,
+    "screen": "brief",
+    "state": "processing",
+    "expectedScreen": "brief",
+    "expectedState": "processing",
+    "rendered": true,
+    "text": "Reports\n/\nYour week in procurement.\nWEEKLY INTELLIGENCE BRIEF\nYour week in procurement.\n\n7–13 September 2026 · prepared for Koru Advisory\n\nPublished · version 1\nYour next brief is being prepared\nThe last published brief remains available while new sources are checked.\nTHIS WEEK\n\n1 opportunity change\n1 planning signal\n1 inferred renewal\n\nDelivery preferences\nThree things worth your attention.\n\nA short reading list, grounded in the sources. Your firm’s pursuit decisions remain yours.\n\nDeadline changed\nMore time to review the digital programme.\n\nHarbour Regional Council extended the close from 17 to 24 September. Your certification and delivery checks still need review.\n\nGETS notice · revision 3 · captured 9 Sep\n\nReview opportunity\nPlanning signal\nA service design panel is on the horizon.\n\nSouthern Services Agency’s procurement plan indicates Q4 2026. No open tender or confirmed date has been found.\n\nAgency procurement plan · page 8 · version 2\n\nRead the planning signal\nInferred renewal\nA potential renewal needs closer investigation.\n\nA historical award and assumed five-year term suggest January–March 2027. Extensions and the current incumbent remain unconfirmed.\n\nPublished award record + explicit term assumption\n\nInspect the forecast\nFictional sample · prepared 9 Sep 2026 · no email sent"
+  },
+  {
+    "overflow": false,
+    "screen": "market",
+    "state": "normal",
+    "expectedScreen": "market",
+    "expectedState": "normal",
+    "rendered": true,
+    "text": "Market\n/\nContext before commitment.\nMARKET INTELLIGENCE\nContext before commitment.\n\nUnderstand the agencies, suppliers and plans shaping your market.\n\nOverview\nAgencies\nCompetitors\nAward history\nRenewal forecasts\nPROCUREMENT PLAN · CHECKED 8 SEP\nA service design panel is on the horizon.\n\nSouthern Services Agency’s plan indicates a Q4 2026 panel. Requirements and dates have not been announced.\n\nExplore the signal\nWHAT WE KNOW\nTiming\nQ4 2026 · indicative\nBasis\nAgency procurement plan, p. 8\nTender status\nNo open tender yet\nAgencies in your market\nAll agencies\nHarbour Regional Council\n1 relevant open tender\nSouthern Services Agency\n1 planning signal\nNorth Coast Council\n1 inferred renewal\nWorth a closer look\nInferred renewal\nAnalytics support contract\n\nA potential early-2027 renewal, inferred from historical award data. Timing is unconfirmed.\n\nInspect assumptions\nHistorical evidence\nWho has delivered similar work?\n\nInspect award records and known participation, with contract values at their original grain.\n\nExplore award history"
+  },
+  {
+    "overflow": false,
+    "screen": "market",
+    "state": "loading",
+    "expectedScreen": "market",
+    "expectedState": "loading",
+    "rendered": true,
+    "text": "Market\n/\nContext before commitment.\nMARKET INTELLIGENCE\nContext before commitment.\n\nUnderstand the agencies, suppliers and plans shaping your market.\n\nOverview\nAgencies\nCompetitors\nAward history\nRenewal forecasts\n\nLoading your workspace…\n\nYour saved work will appear here."
+  },
+  {
+    "overflow": false,
+    "screen": "market",
+    "state": "empty",
+    "expectedScreen": "market",
+    "expectedState": "empty",
+    "rendered": true,
+    "text": "Market\n/\nContext before commitment.\nMARKET INTELLIGENCE\nContext before commitment.\n\nUnderstand the agencies, suppliers and plans shaping your market.\n\nOverview\nAgencies\nCompetitors\nAward history\nRenewal forecasts\nYour market view is taking shape\n\nAdd services and regions to your firm profile to identify relevant signals.\n\nSet interests"
+  },
+  {
+    "overflow": false,
+    "screen": "market",
+    "state": "partial",
+    "expectedScreen": "market",
+    "expectedState": "partial",
+    "rendered": true,
+    "text": "Market\n/\nContext before commitment.\nMARKET INTELLIGENCE\nContext before commitment.\n\nUnderstand the agencies, suppliers and plans shaping your market.\n\nOverview\nAgencies\nCompetitors\nAward history\nRenewal forecasts\nOne agency plan could not be refreshed\nSignals from its previous version are marked for review. Current sources remain available.\nPROCUREMENT PLAN · CHECKED 8 SEP\nA service design panel is on the horizon.\n\nSouthern Services Agency’s plan indicates a Q4 2026 panel. Requirements and dates have not been announced.\n\nExplore the signal\nWHAT WE KNOW\nTiming\nQ4 2026 · indicative\nBasis\nAgency procurement plan, p. 8\nTender status\nNo open tender yet\nAgencies in your market\nAll agencies\nHarbour Regional Council\n1 relevant open tender\nSouthern Services Agency\n1 planning signal\nNorth Coast Council\n1 inferred renewal\nWorth a closer look\nInferred renewal\nAnalytics support contract\n\nA potential early-2027 renewal, inferred from historical award data. Timing is unconfirmed.\n\nInspect assumptions\nHistorical evidence\nWho has delivered similar work?\n\nInspect award records and known participation, with contract values at their original grain.\n\nExplore award history"
+  },
+  {
+    "overflow": false,
+    "screen": "market",
+    "state": "error",
+    "expectedScreen": "market",
+    "expectedState": "error",
+    "rendered": true,
+    "text": "Market\n/\nContext before commitment.\nMARKET INTELLIGENCE\nContext before commitment.\n\nUnderstand the agencies, suppliers and plans shaping your market.\n\nOverview\nAgencies\nCompetitors\nAward history\nRenewal forecasts\nWe couldn’t load this view\n\nYour previously saved work is safe. Try again to load the last accepted version.\n\nTry again"
+  },
+  {
+    "overflow": false,
+    "screen": "agencies",
+    "state": "normal",
+    "expectedScreen": "agencies",
+    "expectedState": "normal",
+    "rendered": true,
+    "text": "Market\n/\nUnderstand the buyer.\nUnderstand the buyer.\n\nAgencies relevant to your firm, with"
+  },
+  {
+    "overflow": false,
+    "screen": "agencies",
+    "state": "loading",
+    "expectedScreen": "agencies",
+    "expectedState": "loading",
+    "rendered": true,
+    "text": "Market\n/\nUnderstand the buyer.\nUnderstand the buyer.\n\nAgencies relevant to your firm, with"
+  },
+  {
+    "overflow": false,
+    "screen": "agencies",
+    "state": "empty",
+    "expectedScreen": "agencies",
+    "expectedState": "empty",
+    "rendered": true,
+    "text": "Market\n/\nUnderstand the buyer.\nUnderstand the buyer.\n\nAgencies relevant to your firm, with"
+  },
+  {
+    "overflow": false,
+    "screen": "agencies",
+    "state": "error",
+    "expectedScreen": "agencies",
+    "expectedState": "error",
+    "rendered": true,
+    "text": "Market\n/\nUnderstand the buyer.\nUnderstand the buyer.\n\nAgencies relevant to your firm, with"
+  },
+  {
+    "overflow": false,
+    "screen": "agency",
+    "state": "normal",
+    "expectedScreen": "agency",
+    "expectedState": "normal",
+    "rendered": true,
+    "text": "Market\n/\nHarbour Regional Council\nAGENCY INTELLIGENCE\nHarbour Regional Council\n\nRelevant p"
+  },
+  {
+    "overflow": false,
+    "screen": "agency",
+    "state": "loading",
+    "expectedScreen": "agency",
+    "expectedState": "loading",
+    "rendered": true,
+    "text": "Market\n/\nHarbour Regional Council\nAGENCY INTELLIGENCE\nHarbour Regional Council\n\nRelevant p"
+  },
+  {
+    "overflow": false,
+    "screen": "agency",
+    "state": "partial",
+    "expectedScreen": "agency",
+    "expectedState": "partial",
+    "rendered": true,
+    "text": "Market\n/\nHarbour Regional Council\nAGENCY INTELLIGENCE\nHarbour Regional Council\n\nRelevant p"
+  },
+  {
+    "overflow": false,
+    "screen": "agency",
+    "state": "stale",
+    "expectedScreen": "agency",
+    "expectedState": "stale",
+    "rendered": true,
+    "text": "Market\n/\nHarbour Regional Council\nAGENCY INTELLIGENCE\nHarbour Regional Council\n\nRelevant p"
+  },
+  {
+    "overflow": false,
+    "screen": "agency",
+    "state": "error",
+    "expectedScreen": "agency",
+    "expectedState": "error",
+    "rendered": true,
+    "text": "Market\n/\nHarbour Regional Council\nAGENCY INTELLIGENCE\nHarbour Regional Council\n\nRelevant p"
+  },
+  {
+    "overflow": false,
+    "screen": "competitors",
+    "state": "normal",
+    "expectedScreen": "competitors",
+    "expectedState": "normal",
+    "rendered": true,
+    "text": "Market\n/\nKnow the competitive landscape.\nKnow the competitive landscape.\n\nHistorical parti"
+  },
+  {
+    "overflow": false,
+    "screen": "competitors",
+    "state": "loading",
+    "expectedScreen": "competitors",
+    "expectedState": "loading",
+    "rendered": true,
+    "text": "Market\n/\nKnow the competitive landscape.\nKnow the competitive landscape.\n\nHistorical parti"
+  },
+  {
+    "overflow": false,
+    "screen": "competitors",
+    "state": "empty",
+    "expectedScreen": "competitors",
+    "expectedState": "empty",
+    "rendered": true,
+    "text": "Market\n/\nKnow the competitive landscape.\nKnow the competitive landscape.\n\nHistorical parti"
+  },
+  {
+    "overflow": false,
+    "screen": "competitors",
+    "state": "error",
+    "expectedScreen": "competitors",
+    "expectedState": "error",
+    "rendered": true,
+    "text": "Market\n/\nKnow the competitive landscape.\nKnow the competitive landscape.\n\nHistorical parti"
+  },
+  {
+    "overflow": false,
+    "screen": "competitor",
+    "state": "normal",
+    "expectedScreen": "competitor",
+    "expectedState": "normal",
+    "rendered": true,
+    "text": "Market\n/\nAster Consulting\nSUPPLIER INTELLIGENCE\nAster Consulting\n\nHistorical participation"
+  },
+  {
+    "overflow": false,
+    "screen": "competitor",
+    "state": "loading",
+    "expectedScreen": "competitor",
+    "expectedState": "loading",
+    "rendered": true,
+    "text": "Market\n/\nAster Consulting\nSUPPLIER INTELLIGENCE\nAster Consulting\n\nHistorical participation"
+  },
+  {
+    "overflow": false,
+    "screen": "competitor",
+    "state": "processing",
+    "expectedScreen": "competitor",
+    "expectedState": "processing",
+    "rendered": true,
+    "text": "Market\n/\nAster Consulting\nSUPPLIER INTELLIGENCE\nAster Consulting\n\nHistorical participation"
+  },
+  {
+    "overflow": false,
+    "screen": "competitor",
+    "state": "partial",
+    "expectedScreen": "competitor",
+    "expectedState": "partial",
+    "rendered": true,
+    "text": "Market\n/\nAster Consulting\nSUPPLIER INTELLIGENCE\nAster Consulting\n\nHistorical participation"
+  },
+  {
+    "overflow": false,
+    "screen": "competitor",
+    "state": "error",
+    "expectedScreen": "competitor",
+    "expectedState": "error",
+    "rendered": true,
+    "text": "Market\n/\nAster Consulting\nSUPPLIER INTELLIGENCE\nAster Consulting\n\nHistorical participation"
+  },
+  {
+    "overflow": false,
+    "screen": "awards",
+    "state": "normal",
+    "expectedScreen": "awards",
+    "expectedState": "normal",
+    "rendered": true,
+    "text": "Market\n/\nHistory at its proper scale.\nHistory at its proper scale.\n\nContract-level award r"
+  },
+  {
+    "overflow": false,
+    "screen": "awards",
+    "state": "loading",
+    "expectedScreen": "awards",
+    "expectedState": "loading",
+    "rendered": true,
+    "text": "Market\n/\nHistory at its proper scale.\nHistory at its proper scale.\n\nContract-level award r"
+  },
+  {
+    "overflow": false,
+    "screen": "awards",
+    "state": "empty",
+    "expectedScreen": "awards",
+    "expectedState": "empty",
+    "rendered": true,
+    "text": "Market\n/\nHistory at its proper scale.\nHistory at its proper scale.\n\nContract-level award r"
+  },
+  {
+    "overflow": false,
+    "screen": "awards",
+    "state": "partial",
+    "expectedScreen": "awards",
+    "expectedState": "partial",
+    "rendered": true,
+    "text": "Market\n/\nHistory at its proper scale.\nHistory at its proper scale.\n\nContract-level award r"
+  },
+  {
+    "overflow": false,
+    "screen": "awards",
+    "state": "error",
+    "expectedScreen": "awards",
+    "expectedState": "error",
+    "rendered": true,
+    "text": "Market\n/\nHistory at its proper scale.\nHistory at its proper scale.\n\nContract-level award r"
+  },
+  {
+    "overflow": false,
+    "screen": "signal",
+    "state": "normal",
+    "expectedScreen": "signal",
+    "expectedState": "normal",
+    "rendered": true,
+    "text": "Market\n/\nService design panel\nAGENCY PROCUREMENT PLAN\nService design panel\n\nSouthern Servi"
+  },
+  {
+    "overflow": false,
+    "screen": "signal",
+    "state": "loading",
+    "expectedScreen": "signal",
+    "expectedState": "loading",
+    "rendered": true,
+    "text": "Market\n/\nService design panel\nAGENCY PROCUREMENT PLAN\nService design panel\n\nSouthern Servi"
+  },
+  {
+    "overflow": false,
+    "screen": "signal",
+    "state": "stale",
+    "expectedScreen": "signal",
+    "expectedState": "stale",
+    "rendered": true,
+    "text": "Market\n/\nService design panel\nAGENCY PROCUREMENT PLAN\nService design panel\n\nSouthern Servi"
+  },
+  {
+    "overflow": false,
+    "screen": "signal",
+    "state": "conflict",
+    "expectedScreen": "signal",
+    "expectedState": "conflict",
+    "rendered": true,
+    "text": "Market\n/\nService design panel\nAGENCY PROCUREMENT PLAN\nService design panel\n\nSouthern Servi"
+  },
+  {
+    "overflow": false,
+    "screen": "signal",
+    "state": "unavailable",
+    "expectedScreen": "signal",
+    "expectedState": "unavailable",
+    "rendered": true,
+    "text": "Market\n/\nService design panel\nAGENCY PROCUREMENT PLAN\nService design panel\n\nSouthern Servi"
+  },
+  {
+    "overflow": false,
+    "screen": "renewals",
+    "state": "normal",
+    "expectedScreen": "renewals",
+    "expectedState": "normal",
+    "rendered": true,
+    "text": "Market\n/\nPrepare for what might come next.\nPrepare for what might come next.\n\nRenewal wind"
+  },
+  {
+    "overflow": false,
+    "screen": "renewals",
+    "state": "loading",
+    "expectedScreen": "renewals",
+    "expectedState": "loading",
+    "rendered": true,
+    "text": "Market\n/\nPrepare for what might come next.\nPrepare for what might come next.\n\nRenewal wind"
+  },
+  {
+    "overflow": false,
+    "screen": "renewals",
+    "state": "empty",
+    "expectedScreen": "renewals",
+    "expectedState": "empty",
+    "rendered": true,
+    "text": "Market\n/\nPrepare for what might come next.\nPrepare for what might come next.\n\nRenewal wind"
+  },
+  {
+    "overflow": false,
+    "screen": "renewals",
+    "state": "partial",
+    "expectedScreen": "renewals",
+    "expectedState": "partial",
+    "rendered": true,
+    "text": "Market\n/\nPrepare for what might come next.\nPrepare for what might come next.\n\nRenewal wind"
+  },
+  {
+    "overflow": false,
+    "screen": "renewals",
+    "state": "error",
+    "expectedScreen": "renewals",
+    "expectedState": "error",
+    "rendered": true,
+    "text": "Market\n/\nPrepare for what might come next.\nPrepare for what might come next.\n\nRenewal wind"
+  },
+  {
+    "overflow": false,
+    "screen": "firm",
+    "state": "normal",
+    "expectedScreen": "firm",
+    "expectedState": "normal",
+    "rendered": true,
+    "text": "Workspace\n/\nA clearer picture of your firm.\nA clearer picture of your firm.\n\nYour interest"
+  },
+  {
+    "overflow": false,
+    "screen": "firm",
+    "state": "loading",
+    "expectedScreen": "firm",
+    "expectedState": "loading",
+    "rendered": true,
+    "text": "Workspace\n/\nA clearer picture of your firm.\nA clearer picture of your firm.\n\nYour interest"
+  },
+  {
+    "overflow": false,
+    "screen": "firm",
+    "state": "empty",
+    "expectedScreen": "firm",
+    "expectedState": "empty",
+    "rendered": true,
+    "text": "Workspace\n/\nA clearer picture of your firm.\nA clearer picture of your firm.\n\nYour interest"
+  },
+  {
+    "overflow": false,
+    "screen": "firm",
+    "state": "saving",
+    "expectedScreen": "firm",
+    "expectedState": "saving",
+    "rendered": true,
+    "text": "Workspace\n/\nA clearer picture of your firm.\nA clearer picture of your firm.\n\nYour interest"
+  },
+  {
+    "overflow": false,
+    "screen": "firm",
+    "state": "success",
+    "expectedScreen": "firm",
+    "expectedState": "success",
+    "rendered": true,
+    "text": "Workspace\n/\nA clearer picture of your firm.\nA clearer picture of your firm.\n\nYour interest"
+  },
+  {
+    "overflow": false,
+    "screen": "firm",
+    "state": "error",
+    "expectedScreen": "firm",
+    "expectedState": "error",
+    "rendered": true,
+    "text": "Workspace\n/\nA clearer picture of your firm.\nA clearer picture of your firm.\n\nYour interest"
+  },
+  {
+    "overflow": false,
+    "screen": "preferences",
+    "state": "normal",
+    "expectedScreen": "preferences",
+    "expectedState": "normal",
+    "rendered": true,
+    "text": "Workspace\n/\nUseful updates, on your terms.\nUseful updates, on your terms.\n\nChoose what rea"
+  },
+  {
+    "overflow": false,
+    "screen": "preferences",
+    "state": "loading",
+    "expectedScreen": "preferences",
+    "expectedState": "loading",
+    "rendered": true,
+    "text": "Workspace\n/\nUseful updates, on your terms.\nUseful updates, on your terms.\n\nChoose what rea"
+  },
+  {
+    "overflow": false,
+    "screen": "preferences",
+    "state": "saving",
+    "expectedScreen": "preferences",
+    "expectedState": "saving",
+    "rendered": true,
+    "text": "Workspace\n/\nUseful updates, on your terms.\nUseful updates, on your terms.\n\nChoose what rea"
+  },
+  {
+    "overflow": false,
+    "screen": "preferences",
+    "state": "success",
+    "expectedScreen": "preferences",
+    "expectedState": "success",
+    "rendered": true,
+    "text": "Workspace\n/\nUseful updates, on your terms.\nUseful updates, on your terms.\n\nChoose what rea"
+  },
+  {
+    "overflow": false,
+    "screen": "preferences",
+    "state": "error",
+    "expectedScreen": "preferences",
+    "expectedState": "error",
+    "rendered": true,
+    "text": "Workspace\n/\nUseful updates, on your terms.\nUseful updates, on your terms.\n\nChoose what rea"
+  },
+  {
+    "overflow": false,
+    "screen": "access",
+    "state": "normal",
+    "expectedScreen": "access",
+    "expectedState": "normal",
+    "rendered": true,
+    "text": "PROCUREMENT INTELLIGENCE\nBetter evidence.\nClearer decisions.\n\nFind relevant opportunities."
+  },
+  {
+    "overflow": false,
+    "screen": "access",
+    "state": "submitting",
+    "expectedScreen": "access",
+    "expectedState": "submitting",
+    "rendered": true,
+    "text": "PROCUREMENT INTELLIGENCE\nBetter evidence.\nClearer decisions.\n\nFind relevant opportunities."
+  },
+  {
+    "overflow": false,
+    "screen": "access",
+    "state": "success",
+    "expectedScreen": "access",
+    "expectedState": "success",
+    "rendered": true,
+    "text": "PROCUREMENT INTELLIGENCE\nBetter evidence.\nClearer decisions.\n\nFind relevant opportunities."
+  },
+  {
+    "overflow": false,
+    "screen": "access",
+    "state": "error",
+    "expectedScreen": "access",
+    "expectedState": "error",
+    "rendered": true,
+    "text": "PROCUREMENT INTELLIGENCE\nBetter evidence.\nClearer decisions.\n\nFind relevant opportunities."
+  },
+  {
+    "overflow": false,
+    "screen": "access",
+    "state": "expired",
+    "expectedScreen": "access",
+    "expectedState": "expired",
+    "rendered": true,
+    "text": "PROCUREMENT INTELLIGENCE\nBetter evidence.\nClearer decisions.\n\nFind relevant opportunities."
+  },
+  {
+    "overflow": false,
+    "screen": "onboarding",
+    "state": "normal",
+    "expectedScreen": "onboarding",
+    "expectedState": "normal",
+    "rendered": true,
+    "text": "Workspace\n/\nStart with your firm.\nStart with your firm.\n\nTell us where you work and what y"
+  },
+  {
+    "overflow": false,
+    "screen": "onboarding",
+    "state": "saving",
+    "expectedScreen": "onboarding",
+    "expectedState": "saving",
+    "rendered": true,
+    "text": "Workspace\n/\nStart with your firm.\nStart with your firm.\n\nTell us where you work and what y"
+  },
+  {
+    "overflow": false,
+    "screen": "onboarding",
+    "state": "success",
+    "expectedScreen": "onboarding",
+    "expectedState": "success",
+    "rendered": true,
+    "text": "Workspace\n/\nStart with your firm.\nStart with your firm.\n\nTell us where you work and what y"
+  },
+  {
+    "overflow": false,
+    "screen": "onboarding",
+    "state": "error",
+    "expectedScreen": "onboarding",
+    "expectedState": "error",
+    "rendered": true,
+    "text": "Workspace\n/\nStart with your firm.\nStart with your firm.\n\nTell us where you work and what y"
+  },
+  {
+    "overflow": false,
+    "screen": "ops",
+    "state": "normal",
+    "expectedScreen": "ops",
+    "expectedState": "normal",
+    "rendered": true,
+    "text": "Operations\n/\nKeep the work trustworthy.\nSERVICE OPERATIONS\nKeep the work trustworthy.\n\nIns"
+  },
+  {
+    "overflow": false,
+    "screen": "ops",
+    "state": "loading",
+    "expectedScreen": "ops",
+    "expectedState": "loading",
+    "rendered": true,
+    "text": "Operations\n/\nKeep the work trustworthy.\nSERVICE OPERATIONS\nKeep the work trustworthy.\n\nIns"
+  },
+  {
+    "overflow": false,
+    "screen": "ops",
+    "state": "empty",
+    "expectedScreen": "ops",
+    "expectedState": "empty",
+    "rendered": true,
+    "text": "Operations\n/\nKeep the work trustworthy.\nSERVICE OPERATIONS\nKeep the work trustworthy.\n\nIns"
+  },
+  {
+    "overflow": false,
+    "screen": "ops",
+    "state": "partial",
+    "expectedScreen": "ops",
+    "expectedState": "partial",
+    "rendered": true,
+    "text": "Operations\n/\nKeep the work trustworthy.\nSERVICE OPERATIONS\nKeep the work trustworthy.\n\nIns"
+  },
+  {
+    "overflow": false,
+    "screen": "ops",
+    "state": "error",
+    "expectedScreen": "ops",
+    "expectedState": "error",
+    "rendered": true,
+    "text": "Operations\n/\nKeep the work trustworthy.\nSERVICE OPERATIONS\nKeep the work trustworthy.\n\nIns"
+  },
+  {
+    "overflow": false,
+    "screen": "run",
+    "state": "normal",
+    "expectedScreen": "run",
+    "expectedState": "normal",
+    "rendered": true,
+    "text": "Operations\n/\nGETS daily intake\nRUN DETAIL · R-2026-0909-01\nGETS daily intake\n\nStage outcom"
+  },
+  {
+    "overflow": false,
+    "screen": "run",
+    "state": "loading",
+    "expectedScreen": "run",
+    "expectedState": "loading",
+    "rendered": true,
+    "text": "Operations\n/\nGETS daily intake\nRUN DETAIL · R-2026-0909-01\nGETS daily intake\n\nStage outcom"
+  },
+  {
+    "overflow": false,
+    "screen": "run",
+    "state": "queued",
+    "expectedScreen": "run",
+    "expectedState": "queued",
+    "rendered": true,
+    "text": "Operations\n/\nGETS daily intake\nRUN DETAIL · R-2026-0909-01\nGETS daily intake\n\nStage outcom"
+  },
+  {
+    "overflow": false,
+    "screen": "run",
+    "state": "processing",
+    "expectedScreen": "run",
+    "expectedState": "processing",
+    "rendered": true,
+    "text": "Operations\n/\nGETS daily intake\nRUN DETAIL · R-2026-0909-01\nGETS daily intake\n\nStage outcom"
+  },
+  {
+    "overflow": false,
+    "screen": "run",
+    "state": "retrying",
+    "expectedScreen": "run",
+    "expectedState": "retrying",
+    "rendered": true,
+    "text": "Operations\n/\nGETS daily intake\nRUN DETAIL · R-2026-0909-01\nGETS daily intake\n\nStage outcom"
+  },
+  {
+    "overflow": false,
+    "screen": "run",
+    "state": "failed",
+    "expectedScreen": "run",
+    "expectedState": "failed",
+    "rendered": true,
+    "text": "Operations\n/\nGETS daily intake\nRUN DETAIL · R-2026-0909-01\nGETS daily intake\n\nStage outcom"
+  },
+  {
+    "overflow": false,
+    "screen": "run",
+    "state": "cancelled",
+    "expectedScreen": "run",
+    "expectedState": "cancelled",
+    "rendered": true,
+    "text": "Operations\n/\nGETS daily intake\nRUN DETAIL · R-2026-0909-01\nGETS daily intake\n\nStage outcom"
+  },
+  {
+    "overflow": false,
+    "screen": "run",
+    "state": "complete",
+    "expectedScreen": "run",
+    "expectedState": "complete",
+    "rendered": true,
+    "text": "Operations\n/\nGETS daily intake\nRUN DETAIL · R-2026-0909-01\nGETS daily intake\n\nStage outcom"
+  },
+  {
+    "overflow": false,
+    "screen": "source-health",
+    "state": "normal",
+    "expectedScreen": "source-health",
+    "expectedState": "normal",
+    "rendered": true,
+    "text": "Operations\n/\nKnow how current “current” is.\nKnow how current “current” is.\n\nFreshness and "
+  },
+  {
+    "overflow": false,
+    "screen": "source-health",
+    "state": "loading",
+    "expectedScreen": "source-health",
+    "expectedState": "loading",
+    "rendered": true,
+    "text": "Operations\n/\nKnow how current “current” is.\nKnow how current “current” is.\n\nFreshness and "
+  },
+  {
+    "overflow": false,
+    "screen": "source-health",
+    "state": "empty",
+    "expectedScreen": "source-health",
+    "expectedState": "empty",
+    "rendered": true,
+    "text": "Operations\n/\nKnow how current “current” is.\nKnow how current “current” is.\n\nFreshness and "
+  },
+  {
+    "overflow": false,
+    "screen": "source-health",
+    "state": "partial",
+    "expectedScreen": "source-health",
+    "expectedState": "partial",
+    "rendered": true,
+    "text": "Operations\n/\nKnow how current “current” is.\nKnow how current “current” is.\n\nFreshness and "
+  },
+  {
+    "overflow": false,
+    "screen": "source-health",
+    "state": "error",
+    "expectedScreen": "source-health",
+    "expectedState": "error",
+    "rendered": true,
+    "text": "Operations\n/\nKnow how current “current” is.\nKnow how current “current” is.\n\nFreshness and "
+  },
+  {
+    "overflow": false,
+    "screen": "source-detail",
+    "state": "normal",
+    "expectedScreen": "source-detail",
+    "expectedState": "normal",
+    "rendered": true,
+    "text": "Operations\n/\nGETS open notices\nGETS open notices\n\nCaptured versions, extraction outcomes a"
+  },
+  {
+    "overflow": false,
+    "screen": "source-detail",
+    "state": "loading",
+    "expectedScreen": "source-detail",
+    "expectedState": "loading",
+    "rendered": true,
+    "text": "Operations\n/\nGETS open notices\nGETS open notices\n\nCaptured versions, extraction outcomes a"
+  },
+  {
+    "overflow": false,
+    "screen": "source-detail",
+    "state": "processing",
+    "expectedScreen": "source-detail",
+    "expectedState": "processing",
+    "rendered": true,
+    "text": "Operations\n/\nGETS open notices\nGETS open notices\n\nCaptured versions, extraction outcomes a"
+  },
+  {
+    "overflow": false,
+    "screen": "source-detail",
+    "state": "partial",
+    "expectedScreen": "source-detail",
+    "expectedState": "partial",
+    "rendered": true,
+    "text": "Operations\n/\nGETS open notices\nGETS open notices\n\nCaptured versions, extraction outcomes a"
+  },
+  {
+    "overflow": false,
+    "screen": "source-detail",
+    "state": "error",
+    "expectedScreen": "source-detail",
+    "expectedState": "error",
+    "rendered": true,
+    "text": "Operations\n/\nGETS open notices\nGETS open notices\n\nCaptured versions, extraction outcomes a"
+  },
+  {
+    "overflow": false,
+    "screen": "schedules",
+    "state": "normal",
+    "expectedScreen": "schedules",
+    "expectedState": "normal",
+    "rendered": true,
+    "text": "Operations\n/\nEvery workflow has a home.\nEvery workflow has a home.\n\nSchedules use Pacific/"
+  },
+  {
+    "overflow": false,
+    "screen": "schedules",
+    "state": "loading",
+    "expectedScreen": "schedules",
+    "expectedState": "loading",
+    "rendered": true,
+    "text": "Operations\n/\nEvery workflow has a home.\nEvery workflow has a home.\n\nSchedules use Pacific/"
+  },
+  {
+    "overflow": false,
+    "screen": "schedules",
+    "state": "paused",
+    "expectedScreen": "schedules",
+    "expectedState": "paused",
+    "rendered": true,
+    "text": "Operations\n/\nEvery workflow has a home.\nEvery workflow has a home.\n\nSchedules use Pacific/"
+  },
+  {
+    "overflow": false,
+    "screen": "schedules",
+    "state": "error",
+    "expectedScreen": "schedules",
+    "expectedState": "error",
+    "rendered": true,
+    "text": "Operations\n/\nEvery workflow has a home.\nEvery workflow has a home.\n\nSchedules use Pacific/"
+  },
+  {
+    "overflow": false,
+    "screen": "usage",
+    "state": "normal",
+    "expectedScreen": "usage",
+    "expectedState": "normal",
+    "rendered": true,
+    "text": "Operations\n/\nUnderstand the work behind the answer.\nUnderstand the work behind the answer."
+  },
+  {
+    "overflow": false,
+    "screen": "usage",
+    "state": "loading",
+    "expectedScreen": "usage",
+    "expectedState": "loading",
+    "rendered": true,
+    "text": "Operations\n/\nUnderstand the work behind the answer.\nUnderstand the work behind the answer."
+  },
+  {
+    "overflow": false,
+    "screen": "usage",
+    "state": "empty",
+    "expectedScreen": "usage",
+    "expectedState": "empty",
+    "rendered": true,
+    "text": "Operations\n/\nUnderstand the work behind the answer.\nUnderstand the work behind the answer."
+  },
+  {
+    "overflow": false,
+    "screen": "usage",
+    "state": "partial",
+    "expectedScreen": "usage",
+    "expectedState": "partial",
+    "rendered": true,
+    "text": "Operations\n/\nUnderstand the work behind the answer.\nUnderstand the work behind the answer."
+  },
+  {
+    "overflow": false,
+    "screen": "usage",
+    "state": "error",
+    "expectedScreen": "usage",
+    "expectedState": "error",
+    "rendered": true,
+    "text": "Operations\n/\nUnderstand the work behind the answer.\nUnderstand the work behind the answer."
+  },
+  {
+    "overflow": false,
+    "screen": "delivery",
+    "state": "normal",
+    "expectedScreen": "delivery",
+    "expectedState": "normal",
+    "rendered": true,
+    "text": "Operations\n/\nPublished is not the same as delivered.\nPublished is not the same as delivere"
+  },
+  {
+    "overflow": false,
+    "screen": "delivery",
+    "state": "loading",
+    "expectedScreen": "delivery",
+    "expectedState": "loading",
+    "rendered": true,
+    "text": "Operations\n/\nPublished is not the same as delivered.\nPublished is not the same as delivere"
+  },
+  {
+    "overflow": false,
+    "screen": "delivery",
+    "state": "empty",
+    "expectedScreen": "delivery",
+    "expectedState": "empty",
+    "rendered": true,
+    "text": "Operations\n/\nPublished is not the same as delivered.\nPublished is not the same as delivere"
+  },
+  {
+    "overflow": false,
+    "screen": "delivery",
+    "state": "processing",
+    "expectedScreen": "delivery",
+    "expectedState": "processing",
+    "rendered": true,
+    "text": "Operations\n/\nPublished is not the same as delivered.\nPublished is not the same as delivere"
+  },
+  {
+    "overflow": false,
+    "screen": "delivery",
+    "state": "failed",
+    "expectedScreen": "delivery",
+    "expectedState": "failed",
+    "rendered": true,
+    "text": "Operations\n/\nPublished is not the same as delivered.\nPublished is not the same as delivere"
+  },
+  {
+    "overflow": false,
+    "screen": "delivery",
+    "state": "complete",
+    "expectedScreen": "delivery",
+    "expectedState": "complete",
+    "rendered": true,
+    "text": "Operations\n/\nPublished is not the same as delivered.\nPublished is not the same as delivere"
+  }
+]
