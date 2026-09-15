@@ -1,4 +1,4 @@
-import { incumbent, awardRows } from "./intelligence-data";
+import { awardRows, watchAssessment } from "./intelligence-data";
 import { supplierNames } from "./catalogue";
 import { useState } from "react";
 import { useDemo } from "./context";
@@ -30,10 +30,12 @@ const agencyNames = [
 ];
 
 export function Watchlist() {
-  const { demo, setDemo, scene, go } = useDemo();
+  const { demo, setDemo, scene, params, go } = useDemo();
   const [search, setSearch] = useState("");
   const [region, setRegion] = useState("All regions");
-  const [filter, setFilter] = useState("For your firm");
+  const [filter, setFilter] = useState(
+    params.get("filter") === "saved" ? "Saved" : "For your firm",
+  );
   const [detail, setDetail] = useState<number | null>(null);
   const rows = opportunities
     .map((v, i) => ({ ...v, index: i }))
@@ -121,105 +123,93 @@ export function Watchlist() {
           <span>Relevant sample notices · no combined score</span>
         </div>
         <div className="opportunity-list">
-          {rows.map((v) => (
-            <article key={v.title} className="opportunity-row">
-              <div>
-                <div className="eyebrow">{v.agency}</div>
-                <button
-                  className="opportunity-title"
-                  onClick={() =>
-                    v.index === 0 ? go("pursuit") : setDetail(v.index)
-                  }
-                >
-                  {v.title}
-                </button>
-                <p>
-                  {v.sector} <span>·</span> {v.region}
-                </p>
-                <div className="opportunity-badges">
-                  <Badge>{v.sector}</Badge>
-                  <Badge>
-                    {v.index === 4 ? "Indicative" : "Value undisclosed"}
-                  </Badge>
-                  <Badge
-                    tone={
-                      v.index === 0 || v.index === 2 ? "warning" : "neutral"
+          {rows.map((v) => {
+            const assessment = watchAssessment(
+              v.title,
+              demo.reportHistory.at(-1)?.kind === "Document assessment",
+            );
+            return (
+              <article key={v.title} className="opportunity-row">
+                <div>
+                  <div className="eyebrow">{v.agency}</div>
+                  <button
+                    className="opportunity-title"
+                    onClick={() =>
+                      v.index === 0 ? go("pursuit") : setDetail(v.index)
                     }
                   >
-                    {v.tag}
-                  </Badge>
+                    {v.title}
+                  </button>
+                  <p>
+                    {v.sector} <span>·</span> {v.region}
+                  </p>
+                  <div className="opportunity-badges">
+                    <Badge>{v.sector}</Badge>
+                    <Badge>
+                      {v.index === 4 ? "Indicative" : "Value undisclosed"}
+                    </Badge>
+                    <Badge
+                      tone={
+                        v.index === 0 || v.index === 2 ? "warning" : "neutral"
+                      }
+                    >
+                      {v.tag}
+                    </Badge>
+                  </div>
+                  <div className="watch-intelligence">
+                    <div>
+                      <h3>Intelligence summary</h3>
+                      <ul>
+                        {assessment.summary.map((point) => (
+                          <li key={point}>{point}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <h3>Recommended actions</h3>
+                      <ul>
+                        {assessment.actions.map((point) => (
+                          <li key={point}>{point}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    <small className="watch-basis">{assessment.basis}</small>
+                  </div>
                 </div>
-                <div className="watch-intelligence">
-                  {v.index === 0 ? (
-                    <>
-                      <p>
-                        <strong>Competitive field:</strong> Aster · agency
-                        relationship; Tern · delivery experience; Ridgeline ·
-                        advisory fit.
-                      </p>
-                      <p>
-                        <strong>Incumbent:</strong>{" "}
-                        {demo.reportHistory.at(-1)?.kind ===
-                        "Document assessment"
-                          ? incumbent.rfp
-                          : incumbent.public}
-                        .
-                      </p>
-                      <p>
-                        <strong>Watch point:</strong>{" "}
-                        {demo.reportHistory.at(-1)?.kind ===
-                        "Document assessment"
-                          ? "RFP excludes platform delivery; the earlier bundling flag is retracted."
-                          : "The notice leaves advisory and platform scope unclear."}
-                      </p>
-                    </>
-                  ) : v.index === 2 ? (
-                    <p>
-                      <strong>Enrichment queued.</strong> The notice is
-                      available; bidders and incumbent have not been assessed.
-                    </p>
-                  ) : v.index === 4 ? (
-                    <p>
-                      <strong>Planning signal.</strong> This is not yet an open
-                      tender; no bidder assessment is implied.
-                    </p>
-                  ) : (
-                    <p>
-                      <strong>Limited research.</strong> No reasoned bidder
-                      assessment is available in this sample.
-                    </p>
-                  )}
+                <div className="opportunity-deadline">
+                  <small>{v.type}</small>
+                  <strong>
+                    {v.index === 4 ? v.close : "Closes " + v.close}
+                  </strong>
+                  <button
+                    className="text-button"
+                    onClick={() =>
+                      v.index === 0 ? go("pursuit") : setDetail(v.index)
+                    }
+                  >
+                    {v.index === 0 ? "Review opportunity" : "View notice"}
+                    <I.ArrowRight size={17} />
+                  </button>
                 </div>
-              </div>
-              <div className="opportunity-deadline">
-                <small>{v.type}</small>
-                <strong>{v.index === 4 ? v.close : "Closes " + v.close}</strong>
                 <button
-                  className="text-button"
-                  onClick={() =>
-                    v.index === 0 ? go("pursuit") : setDetail(v.index)
+                  className={
+                    "icon-button " +
+                    (demo.saved.includes(v.title) ? "green" : "")
                   }
+                  aria-label={
+                    (demo.saved.includes(v.title) ? "Unsave " : "Save ") +
+                    v.title
+                  }
+                  onClick={() => save(v.title)}
                 >
-                  {v.index === 0 ? "Review opportunity" : "View notice"}
-                  <I.ArrowRight size={17} />
+                  <I.Bookmark
+                    size={21}
+                    weight={demo.saved.includes(v.title) ? "fill" : "regular"}
+                  />
                 </button>
-              </div>
-              <button
-                className={
-                  "icon-button " + (demo.saved.includes(v.title) ? "green" : "")
-                }
-                aria-label={
-                  (demo.saved.includes(v.title) ? "Unsave " : "Save ") + v.title
-                }
-                onClick={() => save(v.title)}
-              >
-                <I.Bookmark
-                  size={21}
-                  weight={demo.saved.includes(v.title) ? "fill" : "regular"}
-                />
-              </button>
-            </article>
-          ))}
+              </article>
+            );
+          })}
         </div>
         {!rows.length && (
           <Empty

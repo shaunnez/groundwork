@@ -1,3 +1,43 @@
+# Groundwork feedback revision QA
+
+15 September 2026 · final result: passed
+
+## Scope and visual evidence
+
+Source visual: `/Users/shaun/Downloads/Pasted Graphic.png` (1440×810), plus the existing Groundwork interface captured before editing in this session. The supplied PlanCheck portfolio PDF is a separate product and has not supplied procurement requirements. The requested differences are intentional: navy/blue accents, alternating white/pale-blue rows and short intelligence/action bullets, while retaining Groundwork’s typography and working layout.
+
+Implementation: `http://127.0.0.1:5198/`. Browser screenshots are embedded in the task’s Computer Use results, not exported as local image files. Evidence captures: “Verify the new client home dashboard”, “Inspect assessment bullets and alternating watchlist rows”, “Compare the supplied intelligence reference with the revised watchlist”, and “Inspect final report layout and leave the client home open”. The reference and revised watchlist were opened together in one tool result. They show different opportunities and viewport widths; this is a content-structure and requested palette comparison, not a pixel-identical recreation or side-by-side composite.
+
+Desktop checks used 1280×720 and 1280×900 CSS viewports; captured content excludes the scrollbar (1265px wide). Mobile checks used 390×844 and 320×740; browser screenshots were rendered at native capture scale. No source resampling was used. Focused watchlist and report captures make body copy, row boundaries and evaluation weights legible.
+
+## Findings and review
+
+No outstanding P0/P1/P2 issues in the changed screens after a fresh load.
+
+- Fonts/typography: Source Serif 4 headings and Inter body/UI retained. Dashboard, guide, watchlist and report copy wrap at the checked mobile sizes.
+- Spacing/layout: dashboard introduces a product explainer, workspace counts and a next-step panel; watchlist retains notice metadata with assessment/actions in two columns on desktop and one on mobile. Report outline links reach the added sections. Mobile navigation wraps onto its own row.
+- Colours/tokens: navy navigation and blue heading/action accents add separation. White/pale-blue rows alternate in the watchlist and detailed assessment. Green/amber/red retain semantic meaning.
+- Images/icons: existing Phosphor icons and fonts retained; no raster assets generated or changed. The supplied screenshot is a reference only.
+- Copy/content: client Home and reviewer guide have explicit audiences. BidEdge operations are reached through prototype controls and the guide, outside the client menu. Assessment content distinguishes provisional public-data findings, pending/limited research and RFP evidence. No inferred evaluation weights, bid probabilities or contract values were introduced.
+
+During live source editing, Vite hot reload captured a transient “Missing demo context” error. Its long diagnostic text caused apparent guide overflow. A fresh page load cleared the captured diagnostic; guide overflow did not reproduce. Final guide runtime-error count is zero. This is not a claim that the entire development console history was empty.
+
+## Behaviour and checks
+
+- Default entry and sign-in/setup completion route to client Home.
+- Saved opportunity count changes on save; selecting the Home count opens the saved-only watchlist. Restored the test bookmark to its initial unsaved state.
+- Watchlist opens the pursuit. Public report shows criteria unavailable; the RFP preview shows 40/30/20/10 weights. Expanded report navigation works.
+- Guide opens client, operator and recipient views. Operator main navigation contains Work queue, Source health and Delivery. Shared report has no client main navigation.
+- After fresh reload: seven primary screens fit 320px (Home, guide, watchlist, pursuit, report, operations, shared report). Nine were checked at 390px, additionally including access and onboarding; the initial guide diagnostic overflow was resolved by the fresh-load check above.
+- 21 domain tests pass, including publication-dependent watchlist content, public/RFP detail separation and uncertainty for pending/planned/unassessed notices.
+- TypeScript, production build and four Sites packaging/worker tests pass. Changed TypeScript/CSS files formatted with repository Prettier. `git diff --check` passes.
+
+## Limits and separate follow-up
+
+This revision does not establish exact feature parity with an unseen full legacy pursuit report. Content uses the existing fictional evidence. No production authentication, analytical engine, live integration or permission enforcement is implemented. No live deployment or remote CI run was performed. The earlier exhaustive 185-state run below is historical, not rerun for this revision.
+
+## Historical QA (9 September)
+
 # Groundwork prototype revision QA
 
 9 September 2026 · final result: passed

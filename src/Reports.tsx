@@ -945,22 +945,28 @@ export function ReportReader({
         <div className="report-layout">
           <aside className="report-outline">
             <span className="eyebrow">IN THIS REPORT</span>
-            {["Summary", "Opportunity", "Your firm", "Gaps & next steps"].map(
-              (name, index) => (
-                <a
-                  href={"#section-" + index}
-                  key={name}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    document
-                      .getElementById("section-" + index)
-                      ?.scrollIntoView({ behavior: "smooth" });
-                  }}
-                >
-                  {name}
-                </a>
-              ),
-            )}
+            {[
+              ["Summary", "0"],
+              ["Opportunity & competition", "1"],
+              ["Your firm", "2"],
+              ["Strategic framing", "strategy"],
+              ["Evaluation priorities", "evaluation"],
+              ["Delivery & commercial", "risks"],
+              ["Gaps & next steps", "3"],
+            ].map(([name, id]) => (
+              <a
+                href={"#section-" + id}
+                key={name}
+                onClick={(e) => {
+                  e.preventDefault();
+                  document
+                    .getElementById("section-" + id)
+                    ?.scrollIntoView({ behavior: "smooth" });
+                }}
+              >
+                {name}
+              </a>
+            ))}
             {!shared && (
               <>
                 <label>

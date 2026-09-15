@@ -12,6 +12,14 @@ export const supplierNames = [
 ];
 export const screens: Screen[] = [
   {
+    id: "home",
+    name: "Client home dashboard",
+    group: "Overview",
+    states: ["normal"],
+    purpose:
+      "Client starting point: understand Groundwork, review workspace activity and take the next step.",
+  },
+  {
     id: "guide",
     name: "Screen & state guide",
     group: "Overview",

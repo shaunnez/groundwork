@@ -42,12 +42,12 @@ export function DemoProvider({ children }: { children: ReactNode }) {
   const hash = useSyncExternalStore(
     subscribe,
     () => window.location.hash,
-    () => "#/watchlist",
+    () => "#/home",
   );
   const [demo, setDemo] = useState<DemoState>(loadDemo);
   const [toast, setToast] = useState("");
   const [path, query = ""] = hash.replace(/^#\/?/, "").split("?");
-  const page = path || "watchlist";
+  const page = path || "home";
   const params = new URLSearchParams(query);
   const requested = params.get("state") || "normal";
   const scene = screens.find((s) => s.id === page)?.states.includes(requested)

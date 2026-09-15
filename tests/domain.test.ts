@@ -204,3 +204,60 @@ test("requesting more evidence retains the review hold and its attributed ration
   );
   assert.equal(d.reportVersion, 1);
 });
+
+import { pursuitDetail, watchAssessment } from "../src/intelligence-data.ts";
+
+test("public-data detail does not acquire evaluation weights from the RFP", () => {
+  const publicDetail = pursuitDetail(false);
+  assert.deepEqual(publicDetail.criteria, []);
+  assert.match(publicDetail.risks[0].detail, /does not resolve/);
+  const rfpDetail = pursuitDetail(true);
+  assert.equal(
+    rfpDetail.criteria.reduce((total, row) => total + parseInt(row.weight), 0),
+    100,
+  );
+  assert.match(rfpDetail.risks[0].detail, /retracted/);
+  assert.deepEqual(pursuitDetail(false), publicDetail);
+});
+
+test("watchlist assessment changes only with a published RFP version", () => {
+  let d = acceptRequest(
+    { ...initialDemo(), coverageComplete: true },
+    "Document assessment",
+  );
+  const assessment = () =>
+    watchAssessment(
+      "Digital service transformation",
+      d.reportHistory.at(-1)?.kind === "Document assessment",
+    );
+  const original = assessment();
+  assert.match(original.basis, /Public-data/);
+  for (let i = 0; i < 3; i++) d = advanceRequest(d);
+  assert.deepEqual(assessment(), original);
+  d = resolveAnalyticalReview(
+    d,
+    "Confirm adjacent platform support is outside this advisory package.",
+  );
+  for (let i = 0; i < 3; i++) d = advanceRequest(d);
+  assert.match(assessment().basis, /RFP/);
+  assert.match(
+    assessment().summary.join(" "),
+    /platform implementation is excluded/,
+  );
+  assert.match(
+    assessment().summary.join(" "),
+    /eligibility and capacity still need review/,
+  );
+});
+
+test("pending, planned and unassessed notices retain their uncertainty", () => {
+  assert.match(
+    watchAssessment("Data governance advisory", true).summary.join(" "),
+    /no completed assessment/,
+  );
+  assert.match(
+    watchAssessment("Service design panel").summary.join(" "),
+    /not an open tender/,
+  );
+  assert.equal(watchAssessment("Unknown opportunity").basis, "Not assessed");
+});

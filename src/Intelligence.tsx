@@ -6,6 +6,7 @@ import {
   incumbent,
   listingId,
   recommendation,
+  pursuitDetail,
 } from "./intelligence-data";
 import {
   Badge,
@@ -197,6 +198,7 @@ export function AssessmentBody({
   shared?: boolean;
 }) {
   const { demo, go } = useDemo();
+  const detail = pursuitDetail(rfp);
   return (
     <>
       <section id="section-0" className="assessment-summary commercial-summary">
@@ -281,6 +283,56 @@ export function AssessmentBody({
             </Button>
           </div>
         )}
+      </section>
+      <section id="section-strategy" className="section-gap strategy-panel">
+        <span className="eyebrow">STRATEGIC FRAMING</span>
+        <h2>How to position a response</h2>
+        <p>{detail.strategy}</p>
+        <p className="small muted">
+          <strong>Basis:</strong> {detail.strategyBasis}
+        </p>
+      </section>
+      <section id="section-evaluation" className="section-gap">
+        <h2>Evaluation and response priorities</h2>
+        {detail.criteria.length ? (
+          <>
+            <p className="small muted">
+              Disclosed weights in the fictional RFP v2, page 9. Response
+              priorities below are analytical suggestions.
+            </p>
+            <div className="evaluation-list">
+              {detail.criteria.map((criterion) => (
+                <article key={criterion.name}>
+                  <div>
+                    <strong>{criterion.name}</strong>
+                    <span className="criterion-weight">{criterion.weight}</span>
+                  </div>
+                  <p>{criterion.response}</p>
+                </article>
+              ))}
+            </div>
+          </>
+        ) : (
+          <Notice title="Evaluation criteria not yet available" tone="info">
+            The captured notice does not disclose weights. Obtain the RFP before
+            prioritising the response; no sector-based weights have been
+            substituted.
+          </Notice>
+        )}
+      </section>
+      <section id="section-risks" className="section-gap">
+        <h2>Delivery and commercial considerations</h2>
+        <div className="assessment-risk-list">
+          {detail.risks.map((risk) => (
+            <article key={risk.title}>
+              <h3>{risk.title}</h3>
+              <p>{risk.detail}</p>
+              <small className="muted">
+                <strong>Evidence basis:</strong> {risk.basis}
+              </small>
+            </article>
+          ))}
+        </div>
       </section>
       <section id="section-3" className="section-gap">
         <h2>Intelligence gaps and next steps</h2>

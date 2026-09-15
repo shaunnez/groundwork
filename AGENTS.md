@@ -12,4 +12,10 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 
 The current prototype follows Bobby's supplied rebuild brief: watchlist → public-data pursuit → uploaded-RFP reassessment. Lead with competitive structure and reasoning; keep firm context separate. The RFP example changes/retracts findings and preserves the public-data version. Competitor analysis requires listing context plus a matched sample entity. All analytical content is fictional.
 
-Keep the selected Pursuit Room layout, fonts and green/ivory palette. Groundwork is the product name and BidEdge the firm; the PDF's navy/teal colours remain an explicit review question. Recommendation wording, user decision restrictions and analyst publication gates are proposals, not approved policies. Do not make a production requirement out of a sample UX rule.
+Keep the selected Pursuit Room layout and fonts. The 15 September feedback below supersedes the original green/ivory palette. Groundwork is the product name and BidEdge the firm; use the navy/blue visual treatment requested below. Recommendation wording, user decision restrictions and analyst publication gates are proposals, not approved policies. Do not make a production requirement out of a sample UX rule.
+
+## Brother’s feedback · 15 September 2026
+
+Use navy/blue accents and alternating white/pale-blue rows to break up the monochrome tan presentation. Preserve the established layout and typography. Home is the client dashboard; the prototype guide is for Bobby and product reviewers and must explain audiences, menus and the client journey. Keep operator navigation in the reviewer tools, separate from the client account menu; this is a demonstration of intended audience boundaries, not production authorisation.
+
+Watchlist entries should add a concise intelligence summary and recommended action bullets. Distinguish an assessed opportunity from notice-only suggested checks, pending analysis and planning signals. Pursuit and report detail should include strategic framing, evaluation priorities and delivery/commercial considerations, preserving public-data versus RFP evidence and report versions. Do not infer evaluation weights from sector norms. The attached PlanCheck portfolio PDF is a separate-product visual reference, not a source of BidEdge requirements.

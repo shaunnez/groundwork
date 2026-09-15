@@ -32,6 +32,7 @@ import {
 import { useErrors } from "./diagnostics";
 import { CompetitorProfile } from "./Intelligence";
 import { WeeklyBrief } from "./WeeklyBrief";
+import { Home, clientJourney } from "./Home";
 
 function Guide() {
   const { go } = useDemo();
@@ -51,11 +52,12 @@ function Guide() {
         <span className="eyebrow">INTERACTIVE PRODUCT WALKTHROUGH</span>
         <h1>Groundwork. Know before you bid.</h1>
         <p className="lead">
-          Every customer and operator screen. The states in between, too.
+          For Bobby and product reviewers: who uses each screen, why it exists,
+          and how the journey fits together.
         </p>
         <div className="guide-intro">
           <div>
-            <h2>What your reviewer should know</h2>
+            <h2>A reviewer guide, separate from the client home</h2>
             <p>
               Groundwork by BidEdge combines structured analysis, historical
               procurement data and monitoring of competitors and the commercial
@@ -63,12 +65,11 @@ function Guide() {
               supports each conclusion; uncertainty remains visible.
             </p>
             <p>
-              The design is selected; business rules remain proposals.
-              Everything here uses fictional data and simulated processing.
-              Review the watchlist, public-data pursuit and RFP reassessment
-              first. Release scope, recommendation rules and reviewer ownership
-              remain open. The selected layout and palette are retained; the
-              PDF’s navy/teal branding is still to reconcile.
+              Clients land on Home, their firm dashboard. This guide is for
+              reviewing the product with Bobby and the delivery team. Operator
+              screens show how BidEdge runs the service. Everything here uses
+              fictional data and simulated processing; release scope,
+              recommendation rules and reviewer ownership remain proposals.
             </p>
           </div>
           <div>
@@ -79,8 +80,8 @@ function Guide() {
                 .reduce((n, s) => n + s.states.length, 0)}{" "}
               directly accessible screen states
             </span>
-            <Button onClick={() => go("watchlist")}>
-              Start with the watchlist <I.ArrowRight size={17} />
+            <Button onClick={() => go("home")}>
+              Open the client home <I.ArrowRight size={17} />
             </Button>
             <Button kind="text" onClick={() => go("pursuit", "reassessed")}>
               Preview the RFP reassessment
@@ -88,6 +89,74 @@ function Guide() {
           </div>
         </div>
       </header>
+      <section className="audience-guide section-gap">
+        <h2>Who sees what?</h2>
+        <div className="audience-grid">
+          <article>
+            <Badge tone="info">Client · firm workspace</Badge>
+            <h3>Find, assess and decide</h3>
+            <p>
+              Home is the initial dashboard after sign-in or firm setup. The
+              client team uses Watchlist, Market and Reports. Firm profile and
+              delivery preferences live in the account menu.
+            </p>
+            <Button kind="text" onClick={() => go("home")}>
+              Preview client home <I.ArrowRight size={16} />
+            </Button>
+          </article>
+          <article>
+            <Badge>BidEdge · service operations</Badge>
+            <h3>Keep the service running</h3>
+            <p>
+              Bobby or an assigned BidEdge operator reviews queued work,
+              analytical corrections, source failures, schedules, usage and
+              delivery. These are service tools outside the client menu.
+            </p>
+            <Button kind="text" onClick={() => go("ops")}>
+              Preview operator workspace <I.ArrowRight size={16} />
+            </Button>
+          </article>
+          <article>
+            <Badge>Recipient · shared report</Badge>
+            <h3>Read a selected report</h3>
+            <p>
+              An invited recipient sees one shared report version. That view has
+              no client navigation or access to private source files. The demo
+              illustrates this boundary; it does not enforce production access
+              control.
+            </p>
+            <Button kind="text" onClick={() => go("shared")}>
+              Preview recipient view <I.ArrowRight size={16} />
+            </Button>
+          </article>
+        </div>
+      </section>
+      <section className="section-gap">
+        <h2>The client journey, in order</h2>
+        <p>
+          First visit: sign in → set up the firm’s services, regions and
+          evidence → Home. Returning clients start at Home, then choose their
+          next step.
+        </p>
+        <div className="journey-grid">
+          {clientJourney.map((step, index) => (
+            <article key={step.title}>
+              <span className="journey-number">0{index + 1}</span>
+              <h3>{step.title}</h3>
+              <p>{step.body}</p>
+              <Button kind="text" onClick={() => go(step.screen)}>
+                Preview screen <I.ArrowRight size={16} />
+              </Button>
+            </article>
+          ))}
+        </div>
+        <p className="small muted section-gap">
+          Reports preserve each assessment version. The weekly brief brings
+          changes together. Market provides buyer, supplier and historical
+          context. The bottom prototype bar lets reviewers jump between screens
+          and states; it is not part of the intended client product.
+        </p>
+      </section>
       <div className="guide-toolbar">
         <Search
           value={search}
@@ -101,6 +170,25 @@ function Guide() {
       {groups.map((group) => (
         <section className="catalogue-group" key={group}>
           <h2>{group}</h2>
+          <p className="muted">
+            {group === "Operations"
+              ? "For BidEdge operators: service quality, analysis recovery and delivery."
+              : group === "Account"
+                ? "For clients: sign in, set up firm context and choose delivery preferences."
+                : group === "Overview"
+                  ? "For clients: a starting point and the next useful action."
+                  : "For client teams: " +
+                    ({
+                      Opportunities:
+                        "shortlist work and make an evidenced pursuit decision.",
+                      Evidence:
+                        "inspect sources, add tender documents and resolve missing evidence.",
+                      Reports:
+                        "request analysis, read versioned results and manage a recipient view.",
+                      Market:
+                        "research agencies, potential competitors and future demand.",
+                    }[group] || "explore supporting context.")}
+          </p>
           <div className="catalogue-grid">
             {filtered
               .filter((s) => s.group === group)
@@ -146,6 +234,8 @@ function Guide() {
 function Screen() {
   const { page } = useDemo();
   switch (page) {
+    case "home":
+      return <Home />;
     case "guide":
       return <Guide />;
     case "watchlist":
@@ -304,19 +394,22 @@ function Shell() {
         ["Delivery", "delivery"],
       ]
     : [
+        ["Home", "home"],
         ["Watchlist", "watchlist"],
         ["Market", "market"],
         ["Reports", "reports"],
       ];
   const group = meta?.group;
   const active =
-    group === "Market"
-      ? "market"
-      : group === "Reports"
-        ? "reports"
-        : operator
-          ? page
-          : "watchlist";
+    page === "home" || page === "guide"
+      ? page
+      : group === "Market"
+        ? "market"
+        : group === "Reports"
+          ? "reports"
+          : operator
+            ? page
+            : "watchlist";
   useEffect(() => {
     document.title = "Groundwork · " + (meta?.name || "Prototype");
   }, [meta]);
@@ -336,11 +429,11 @@ function Shell() {
       <header className="topbar">
         <button
           className="wordmark"
-          onClick={() => go(publicView ? page : "watchlist")}
+          onClick={() => go(publicView ? page : operator ? "ops" : "home")}
         >
           Groundwork
         </button>
-        {operator && <Badge>Operations</Badge>}
+        {operator && <Badge>BidEdge operations</Badge>}
         {publicView ? (
           <span className="public-view-label">
             {page === "shared"
@@ -380,14 +473,6 @@ function Shell() {
                   <I.Email />
                   Delivery preferences
                 </button>
-                <button onClick={() => go(operator ? "watchlist" : "ops")}>
-                  <I.Settings />
-                  {operator ? "Customer workspace" : "Operator workspace"}
-                </button>
-                <button onClick={() => go("guide")}>
-                  <I.List />
-                  All screens & states
-                </button>
                 <button onClick={() => go("access")}>
                   <I.SignOut />
                   Preview sign-in
@@ -397,6 +482,15 @@ function Shell() {
           </>
         )}
       </header>
+      {operator && (
+        <div className="audience-banner">
+          <strong>BidEdge operator preview</strong>
+          <span>
+            Service tools for the team running Groundwork. Client screens are
+            available through the prototype guide.
+          </span>
+        </div>
+      )}
       <main
         id="main-content"
         data-screen={page}

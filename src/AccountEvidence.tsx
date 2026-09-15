@@ -443,8 +443,8 @@ export function Firm({ onboarding = false }: { onboarding?: boolean }) {
                 </Button>
               )}
               {saved && onboarding ? (
-                <Button type="button" onClick={() => go("watchlist")}>
-                  Open watchlist
+                <Button type="button" onClick={() => go("home")}>
+                  Open your dashboard
                 </Button>
               ) : (
                 <Button type="submit" disabled={busy || scene === "saving"}>
@@ -619,7 +619,7 @@ export function Access() {
             <Notice title="Sign-in confirmation preview" tone="success">
               No email was sent. This preview does not authenticate an account.
             </Notice>
-            <Button onClick={() => go("watchlist")}>Open demo workspace</Button>
+            <Button onClick={() => go("home")}>Open demo workspace</Button>
             <Button kind="text" onClick={() => go("onboarding")}>
               Preview new-firm setup
             </Button>
