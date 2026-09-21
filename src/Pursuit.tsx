@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useDemo } from "./context";
 import { AssessmentBody } from "./Intelligence";
+import { PackageNavigation } from "./PursuitAnalysis";
 import { assessmentChanges, listingId } from "./intelligence-data";
 import { requirements, sources } from "./catalogue";
 import {
@@ -323,6 +324,10 @@ export function Pursuit() {
       <StateBoundary errorTitle="We couldn’t load this assessment">
         <div className="intelligence-layout">
           <article>
+            <details className="package-contents" open>
+              <summary>In this pursuit package</summary>
+              <PackageNavigation />
+            </details>
             <AssessmentBody rfp={rfp} />
           </article>
           <aside className="pursuit-rail">

@@ -261,3 +261,42 @@ test("pending, planned and unassessed notices retain their uncertainty", () => {
   );
   assert.equal(watchAssessment("Unknown opportunity").basis, "Not assessed");
 });
+
+import { pursuitPackage } from "../src/pursuit-package.ts";
+
+test("RFP analysis retracts the bundled-delivery hypothesis without altering the public snapshot", () => {
+  const publicPackage = pursuitPackage(false);
+  const publicSnapshot = structuredClone(publicPackage);
+  const revised = pursuitPackage(true);
+  assert.match(
+    publicPackage.hypotheses.find((h) => h.id === "H3")!.judgement,
+    /Unresolved/,
+  );
+  assert.match(
+    revised.hypotheses.find((h) => h.id === "H3")!.judgement,
+    /Retracted/,
+  );
+  assert.match(
+    revised.hypotheses.find((h) => h.id === "H3")!.against,
+    /excludes platform implementation/,
+  );
+  assert.doesNotMatch(JSON.stringify(publicPackage), /\d+%/);
+  assert.match(revised.summary, /70%/);
+  assert.deepEqual(pursuitPackage(false), publicSnapshot);
+});
+
+test("closing the bundled-scope risk preserves unresolved eligibility and commercial risks", () => {
+  const publicRisks = pursuitDetail(false).risks;
+  const revisedRisks = pursuitDetail(true).risks;
+  assert.equal(publicRisks.find((r) => r.id === "R1")!.status, "Open");
+  assert.equal(
+    revisedRisks.find((r) => r.id === "R1")!.status,
+    "Bundling risk retracted",
+  );
+  for (const id of ["R2", "R3"]) {
+    const risk = revisedRisks.find((r) => r.id === id)!;
+    assert.equal(risk.likelihood, "Unknown");
+    assert.equal(risk.impact, "High");
+    assert.notEqual(risk.status, "Bundling risk retracted");
+  }
+});

@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { useDemo } from "./context";
 import { acceptRequest } from "./model";
 import { AssessmentBody } from "./Intelligence";
+import { PackageNavigation } from "./PursuitAnalysis";
 import { listingId, recommendation, requestLabel } from "./intelligence-data";
 import { supplierNames } from "./catalogue";
 import {
@@ -945,28 +946,7 @@ export function ReportReader({
         <div className="report-layout">
           <aside className="report-outline">
             <span className="eyebrow">IN THIS REPORT</span>
-            {[
-              ["Summary", "0"],
-              ["Opportunity & competition", "1"],
-              ["Your firm", "2"],
-              ["Strategic framing", "strategy"],
-              ["Evaluation priorities", "evaluation"],
-              ["Delivery & commercial", "risks"],
-              ["Gaps & next steps", "3"],
-            ].map(([name, id]) => (
-              <a
-                href={"#section-" + id}
-                key={name}
-                onClick={(e) => {
-                  e.preventDefault();
-                  document
-                    .getElementById("section-" + id)
-                    ?.scrollIntoView({ behavior: "smooth" });
-                }}
-              >
-                {name}
-              </a>
-            ))}
+            <PackageNavigation />
             {!shared && (
               <>
                 <label>

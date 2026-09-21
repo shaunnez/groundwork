@@ -220,7 +220,16 @@ export function pursuitDetail(rfp: boolean) {
       : [],
     risks: [
       {
-        title: "Scope and delivery commitment",
+        title: "Bundled platform delivery",
+        id: "R1",
+        likelihood: rfp ? "Not applicable" : "Unknown",
+        impact: rfp ? "Not applicable" : "High",
+        status: rfp ? "Bundling risk retracted" : "Open",
+        owner: "Bid lead",
+        mitigation: rfp
+          ? "Retain the retraction and check later addenda for changes to the scope boundary. Assess remaining dependencies in the delivery estimate."
+          : "Obtain the RFP and establish scope exclusions before sizing the delivery team.",
+        checkpoint: rfp ? "On any scope addendum" : "Before bid commitment",
         detail: rfp
           ? "Platform implementation is excluded. The earlier bundling concern is retracted; confirm remaining deliverables and dependencies in the supplied documents."
           : "The notice does not resolve advisory versus platform delivery. A response could understate the delivery team or commercial commitment.",
@@ -230,6 +239,15 @@ export function pursuitDetail(rfp: boolean) {
       },
       {
         title: "Eligibility and resourcing",
+        id: "R2",
+        likelihood: "Unknown",
+        impact: "High",
+        status: "Evidence needed",
+        owner: "Delivery lead",
+        mitigation: rfp
+          ? "Validate current certification against page 12, confirm named people and review reference suitability."
+          : "Collect certification and reference evidence, check availability, then compare against the tender conditions when received.",
+        checkpoint: "Before bid commitment",
         detail: rfp
           ? "The sample RFP requires current security certification. Confirm the firm’s evidence and team capacity; a favourable recommendation does not complete these checks."
           : "Firm certification and team availability need checking. Tender-specific mandatory conditions are not established by this public-data version.",
@@ -239,6 +257,14 @@ export function pursuitDetail(rfp: boolean) {
       },
       {
         title: "Commercial uncertainty",
+        id: "R3",
+        likelihood: "Unknown",
+        impact: "High",
+        status: "Open",
+        owner: "Commercial lead",
+        mitigation:
+          "Build a delivery estimate, review commercial terms and agree a bid-effort limit before approval.",
+        checkpoint: "Before pricing approval",
         detail:
           "Contract value, cost to bid and achievable margin are not established. Confirm a delivery estimate and the commercial terms before approving bid effort.",
         basis:
@@ -246,6 +272,14 @@ export function pursuitDetail(rfp: boolean) {
       },
       {
         title: "Competitive uncertainty",
+        id: "R4",
+        likelihood: "Unknown",
+        impact: "Medium",
+        status: "Monitor",
+        owner: "Research lead",
+        mitigation:
+          "Corroborate candidate scope and relevant experience; monitor new evidence and revisit the competing hypotheses.",
+        checkpoint: "At the next evidence review",
         detail:
           "Candidate firms have relevant signals, but no confirmed bid intention or proposed team. Agency familiarity alone does not prove a decisive advantage.",
         basis: "Captured supplier sources and limited held award records",

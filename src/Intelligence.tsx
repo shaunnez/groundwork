@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useDemo } from "./context";
+import { CentreOfGravity, ScenarioAnalysis } from "./PursuitAnalysis";
+import { pursuitPackage } from "./pursuit-package";
 import {
   assessmentChanges,
   candidates,
@@ -199,13 +201,19 @@ export function AssessmentBody({
 }) {
   const { demo, go } = useDemo();
   const detail = pursuitDetail(rfp);
+  const analysis = pursuitPackage(rfp);
   return (
     <>
-      <section id="section-0" className="assessment-summary commercial-summary">
+      <section
+        id="section-0"
+        tabIndex={-1}
+        className="assessment-summary commercial-summary"
+      >
         <span className="eyebrow">
           {rfp ? "STAGE 2 · RFP REASSESSMENT" : "STAGE 1 · PUBLIC-DATA PURSUIT"}
         </span>
-        <h2 className="assessment-verdict">{recommendation(rfp)}</h2>
+        <h2>Executive summary</h2>
+        <p className="assessment-verdict">{recommendation(rfp)}</p>
         <p className="lead">
           {rfp
             ? "A focused advisory opportunity with room for a specialist challenger."
@@ -216,8 +224,21 @@ export function AssessmentBody({
             ? "Scope clarified · firm checks remain"
             : "Provisional · material gaps"}
         </Badge>
+        <div className="executive-detail">
+          <p>{analysis.summary}</p>
+          <p>
+            <strong>Competitive read.</strong> {analysis.competitiveRead}
+          </p>
+          <p className="executive-gate">{analysis.decisionGate}</p>
+          <small className="muted">
+            Fictional analytical example ·{" "}
+            {rfp
+              ? "RFP v2 + captured public sources"
+              : "Captured public sources + firm-supplied context"}
+          </small>
+        </div>
       </section>
-      <section id="section-1">
+      <section id="section-1" tabIndex={-1}>
         <h2>The opportunity and competitive structure</h2>
         <p>
           Harbour Regional Council is procuring digital service transformation
@@ -252,7 +273,7 @@ export function AssessmentBody({
         <CompetitiveField rfp={rfp} shared={shared} />
       </section>
       {rfp && <RfpComparison shared={shared} />}
-      <section id="section-2" className="client-layer">
+      <section id="section-2" tabIndex={-1} className="client-layer">
         <span className="eyebrow">YOUR FIRM · SEPARATE CLIENT CONTEXT</span>
         <h2>What this means for {demo.firm}</h2>
         <p>
@@ -284,7 +305,12 @@ export function AssessmentBody({
           </div>
         )}
       </section>
-      <section id="section-strategy" className="section-gap strategy-panel">
+      <CentreOfGravity rfp={rfp} />
+      <section
+        id="section-strategy"
+        tabIndex={-1}
+        className="section-gap strategy-panel"
+      >
         <span className="eyebrow">STRATEGIC FRAMING</span>
         <h2>How to position a response</h2>
         <p>{detail.strategy}</p>
@@ -292,7 +318,7 @@ export function AssessmentBody({
           <strong>Basis:</strong> {detail.strategyBasis}
         </p>
       </section>
-      <section id="section-evaluation" className="section-gap">
+      <section id="section-evaluation" tabIndex={-1} className="section-gap">
         <h2>Evaluation and response priorities</h2>
         {detail.criteria.length ? (
           <>
@@ -320,13 +346,48 @@ export function AssessmentBody({
           </Notice>
         )}
       </section>
-      <section id="section-risks" className="section-gap">
-        <h2>Delivery and commercial considerations</h2>
+      <ScenarioAnalysis rfp={rfp} />
+      <section id="section-risks" tabIndex={-1} className="section-gap">
+        <span className="eyebrow">DELIVERY & COMMERCIAL EXPOSURE</span>
+        <h2>Risk register</h2>
+        <p className="small muted">
+          Illustrative impact ratings and suggested owner roles. Likelihood
+          stays unknown where evidence is insufficient; mitigations are
+          proposed, not completed.
+        </p>
         <div className="assessment-risk-list">
           {detail.risks.map((risk) => (
             <article key={risk.title}>
+              <div className="section-heading">
+                <span className="eyebrow">
+                  {risk.id} · {risk.owner}
+                </span>
+                <Badge
+                  tone={
+                    risk.status === "Bundling risk retracted"
+                      ? "neutral"
+                      : "warning"
+                  }
+                >
+                  {risk.status}
+                </Badge>
+              </div>
               <h3>{risk.title}</h3>
+              <div className="risk-ratings">
+                <span>
+                  Likelihood <strong>{risk.likelihood}</strong>
+                </span>
+                <span>
+                  Impact <strong>{risk.impact}</strong>
+                </span>
+              </div>
               <p>{risk.detail}</p>
+              <p>
+                <strong>Mitigation:</strong> {risk.mitigation}
+              </p>
+              <p className="small">
+                <strong>Review point:</strong> {risk.checkpoint}
+              </p>
               <small className="muted">
                 <strong>Evidence basis:</strong> {risk.basis}
               </small>
@@ -334,7 +395,7 @@ export function AssessmentBody({
           ))}
         </div>
       </section>
-      <section id="section-3" className="section-gap">
+      <section id="section-3" tabIndex={-1} className="section-gap">
         <h2>Intelligence gaps and next steps</h2>
         <ul className="gap-list">
           <li>

@@ -77,3 +77,12 @@ Inspected focused desktop pursuit and RFP comparison views, plus the mobile watc
 ## Limits
 
 These checks validate fictional frontend behaviour, not analytical accuracy, production tenancy, job durability, company verification or source authenticity. Browser-local records are demonstration state. Recommendation wording, reviewer ownership, review response time and first-release scope need Bobby's confirmation. No accessibility certification is claimed.
+
+## 21 September 2026 · Pursuit package depth
+
+- Added the five requested analytical sections to the shared pursuit/report body using the existing navy/blue design. The source screenshots guided structure only.
+- Verified public-data and RFP report previews, the return to public-data content, and the recipient view. RFP-only weights and the bundled-scope retraction do not appear in the public-data snapshot. Shared views retain the existing private-action restrictions.
+- Inspected executive summary, scenario cards and risk register in the browser. Checked desktop width (1309 CSS pixels), mobile width (354 CSS pixels), and a 320 CSS-pixel report/recipient view with no document horizontal overflow.
+- Checked all ten package navigation destinations and unchanged hash routing. Rechecked centre-of-gravity navigation separately after a fast navigation sequence intersected smooth scrolling; the destination received focus correctly. Navigation respects the reduced-motion preference in code; that OS preference was not changed during QA.
+- No captured browser errors or warnings during the checks. TypeScript, 23 domain tests, production build, four Sites packaging tests and final whitespace checks passed.
+- Local prototype only; no hosted deployment, live analytical run, or authenticated sharing verification performed.

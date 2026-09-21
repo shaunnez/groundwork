@@ -34,3 +34,10 @@ See `design-qa.md` and `qa/` for verification evidence. No claim of backend secu
 The Pursuit Room layout and typography are retained. The 15 September feedback adds navy/blue accents, alternating white/pale-blue rows, a client Home dashboard, an audience guide, concise watchlist assessments/actions, and more detailed pursuit/report sections. Groundwork is the product name and BidEdge the firm. Public-data reports retain unknown evaluation criteria; RFP reports use the sample disclosed weights. Recommendation wording, the optional restriction on recording Pursue, and the analyst publication hold are expressly proposed policies. The new PDF does not establish their final behaviour.
 
 The full v0.2 specification and original handover ZIP have not been regenerated. Use the v0.3 draft alignment brief and questions in the parent `docs/` folder for the remaining requirements discussion.
+
+
+## Pursuit package depth · 21 September 2026
+
+The pursuit workspace and versioned report now share a fuller executive summary, centre of gravity analysis, three-scenario cone of plausibility, competing hypotheses with supporting and contradictory evidence, and a risk register with likelihood, impact, mitigation, suggested owner and review point. Section navigation supports keyboard focus, reduced motion and mobile layouts. The prior BidEdge screenshots guide content depth only; Groundwork's layout, typography and colours remain the UI reference.
+
+These remain fictional examples, not an analytical engine. Public-data versions leave scope, evaluation weights and bid intentions unresolved; the RFP example retracts the bundled-delivery hypothesis and risk while retaining eligibility and commercial checks. Scenario comparisons do not assign probabilities or infer undisclosed evaluation weights.
