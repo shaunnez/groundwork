@@ -1,0 +1,1197 @@
+/* The working application uses the original product layouts and design tokens. */
+.connected-main {
+  padding-bottom: 36px;
+}
+.connected-app .topbar .wordmark {
+  white-space: nowrap;
+}
+.connected-footer {
+  margin-top: 64px;
+}
+.connected-panel {
+  padding: 28px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+.connected-form {
+  display: grid;
+  gap: 20px;
+  max-width: 740px;
+}
+.connected-form label,
+.connected-select {
+  display: grid;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.connected-form input,
+.connected-form select,
+.connected-form textarea,
+.connected-select select {
+  padding: 11px 12px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #fff;
+  color: var(--ink);
+  min-width: 0;
+}
+.connected-form textarea {
+  resize: vertical;
+  min-height: 90px;
+}
+.connected-form .button {
+  justify-self: start;
+}
+.connected-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+.connected-check {
+  display: flex !important;
+  align-items: start;
+  font-weight: 400 !important;
+}
+.connected-check input {
+  width: 18px !important;
+  flex-shrink: 0;
+  margin: 3px 6px 0 0;
+}
+.connected-dropzone {
+  border: 1px dashed #91adc7;
+  background: #f0f5fa;
+  padding: 28px;
+  text-align: center;
+  justify-items: center;
+  border-radius: 4px;
+}
+.connected-dropzone span {
+  color: var(--muted);
+  font-weight: 400;
+}
+.connected-login {
+  max-width: 1040px;
+  margin: 90px auto;
+  padding: 0 32px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 90px;
+}
+.connected-login .pursuit-rail {
+  position: static;
+}
+.connected-assessment {
+  min-width: 0;
+}
+.connected-assessment > section {
+  margin: 32px 0;
+  padding-bottom: 28px;
+  border-bottom: 1px solid var(--line);
+}
+.connected-assessment .commercial-summary {
+  margin-top: 26px;
+}
+.connected-claim {
+  margin-bottom: 18px;
+}
+.connected-citations {
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 12px;
+}
+.connected-citations .citation {
+  font-size: 12px;
+}
+.connected-claim details {
+  margin-top: 12px;
+}
+.connected-assessment .scenario-grid .connected-claim p {
+  font-size: 14px;
+}
+.connected-assessment .scenario-grid li {
+  font-size: 13px;
+  margin: 6px 0;
+}
+.connected-deliverable > section {
+  border-bottom: 1px solid var(--line);
+  padding: 26px 0;
+}
+.connected-deliverable details > section {
+  margin: 26px 0;
+}
+.connected-source-row {
+  display: flex;
+  gap: 14px;
+  align-items: start;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--line);
+}
+.connected-source-row > div {
+  flex: 1;
+  min-width: 0;
+}
+.connected-source-row p {
+  margin-bottom: 0;
+}
+.connected-search-hit {
+  margin: 12px 0;
+  padding: 16px;
+  background: #f0f5fa;
+}
+.connected-source-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.connected-evidence {
+  padding: 0;
+  width: auto;
+}
+.connected-evidence .source-paper {
+  min-height: 0;
+  max-height: 55vh;
+  overflow: auto;
+}
+.connected-evidence .viewer-controls {
+  flex-wrap: wrap;
+}
+.connected-evidence select {
+  max-width: 100%;
+  padding: 8px;
+  border: 1px solid var(--line);
+}
+.connected-operations {
+  margin-top: 28px;
+}
+.connected-operations .local-card {
+  margin: 24px 0;
+  background: white;
+}
+.connected-app .report-outline select,
+.connected-app .pursuit-rail select {
+  width: 100%;
+  max-width: 100%;
+  border: 1px solid var(--line);
+  padding: 10px;
+  background: white;
+}
+.connected-app .report-outline .button {
+  margin: 20px 0 12px;
+  white-space: normal;
+}
+.connected-app .opportunity-row {
+  grid-template-columns: minmax(0, 1fr) 210px;
+}
+.connected-app .opportunity-row .row-end {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+.connected-app .candidate-row {
+  grid-template-columns: minmax(150px, 0.8fr) minmax(0, 1.2fr);
+}
+.connected-app .pursuit-rail .button {
+  white-space: normal;
+}
+.connected-app .table-scroll {
+  overflow: auto;
+}
+.connected-app .data-table small {
+  display: block;
+}
+.connected-app .intelligence-layout > article,
+.connected-app .intelligence-layout > section {
+  min-width: 0;
+}
+.connected-app .modal {
+  max-width: min(900px, calc(100vw - 32px));
+}
+.connected-app .modal .connected-form {
+  max-width: 100%;
+}
+.connected-app summary {
+  cursor: pointer;
+}
+.connected-app .brief-item details {
+  margin: 20px 0;
+}
+.connected-app .connected-assessment section[id] {
+  scroll-margin-top: 24px;
+}
+@media (max-width: 850px) {
+  .connected-app .opportunity-row > div,
+  .connected-app .opportunity-row .row-end {
+    grid-column: 1 / -1;
+    grid-row: auto;
+    width: 100%;
+  }
+  .connected-app .opportunity-row .row-end {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+  }
+  .connected-app .opportunity-row .row-end .button {
+    margin-left: auto;
+  }
+  .connected-login {
+    margin: 36px auto;
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+  .connected-fields {
+    grid-template-columns: 1fr;
+  }
+  .connected-panel {
+    padding: 20px;
+  }
+  .connected-app .opportunity-row {
+    grid-template-columns: 1fr;
+  }
+  .connected-app .opportunity-row .row-end {
+    align-items: flex-start;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .connected-footer {
+    display: block;
+  }
+  .connected-footer > .inline {
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+  .connected-app .candidate-row {
+    grid-template-columns: 1fr;
+  }
+  .connected-app .topbar {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 68px;
+  }
+  .connected-app .topbar nav {
+    order: 3;
+    width: 100%;
+    overflow-x: auto;
+  }
+  .connected-app .topbar .account-menu {
+    margin-left: auto;
+  }
+  .connected-app .wordmark {
+    font-size: 25px;
+  }
+  .connected-source-row {
+    flex-wrap: wrap;
+  }
+  .connected-assessment .scenario-grid {
+    grid-template-columns: 1fr;
+  }
+  .connected-app .pursuit-rail {
+    position: static;
+  }
+  .connected-app .pursuit-rail hr,
+  .connected-app .pursuit-rail hr ~ * {
+    display: revert;
+  }
+  .connected-app .pursuit-rail hr ~ .button {
+    display: inline-flex;
+  }
+}
+
+/* Connected screens retain the prototype's type scale and blue surfaces. */
+.connected-app {
+  --green: var(--blue);
+  --ink: #1b2d3c;
+}
+.connected-app strong,
+.connected-app h3,
+.connected-app h4,
+.connected-app th {
+  font-weight: 600;
+}
+.connected-app .connected-main:focus {
+  outline: none;
+}
+.connected-app :is(button, a, input, select, textarea, summary):focus-visible {
+  outline: 3px solid #397dae;
+  outline-offset: 3px;
+}
+.connected-app .topbar :is(button, summary):focus-visible,
+.connected-app .gravity-panel :is(button, a, summary):focus-visible {
+  outline-color: #aad6f5;
+}
+.connected-app :is(button, a, summary, input, select, textarea) {
+  transition:
+    background-color 140ms,
+    border-color 140ms,
+    color 140ms;
+}
+.connected-app :is(button, a) svg {
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+.connected-app .button.secondary {
+  color: var(--navy);
+  border-color: #a9bccd;
+}
+.connected-app .button.secondary:hover:not(:disabled) {
+  background: var(--blue-light);
+  border-color: var(--blue);
+}
+.connected-app .button.text {
+  text-underline-offset: 4px;
+}
+.connected-app .button.text:hover:not(:disabled),
+.connected-app .breadcrumb button:hover,
+.connected-app .opportunity-title:hover {
+  color: var(--blue);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.connected-app .topbar nav button:hover,
+.connected-app .account-menu summary:hover {
+  background: #ffffff12;
+}
+.connected-app .account-menu summary {
+  min-height: 44px;
+  border-radius: 4px;
+}
+.connected-app .account-popover button:hover,
+.connected-app .icon-button:hover {
+  background: var(--blue-light);
+}
+.connected-app .segmented button,
+.connected-app .subnav button {
+  min-height: 44px;
+}
+.connected-app .segmented button:hover,
+.connected-app .subnav button:hover {
+  color: var(--blue);
+  background: var(--blue-light);
+}
+.connected-app .segmented button.active,
+.connected-app .subnav button.active {
+  color: var(--blue);
+  border-color: var(--blue);
+}
+.connected-app .filter-row {
+  flex-wrap: wrap;
+}
+.connected-app .filter-row > select {
+  max-width: 280px;
+}
+.connected-app .search-field:focus-within {
+  border-color: var(--blue);
+}
+.connected-app .search-field input:focus-visible {
+  outline: none;
+}
+.connected-app .search-field:has(input:focus-visible) {
+  outline: 3px solid #397dae;
+  outline-offset: 3px;
+}
+.connected-app .connected-form :is(input, select, textarea),
+.connected-app .connected-select select,
+.connected-app .report-outline select,
+.connected-app .pursuit-rail select,
+.connected-app .connected-evidence select {
+  font-size: 14px;
+  font-weight: 400;
+  min-height: 44px;
+  border-radius: 4px;
+}
+.connected-app input[type="checkbox"] {
+  accent-color: var(--blue);
+  min-height: 18px;
+}
+.connected-app input::file-selector-button {
+  color: var(--navy);
+  background: var(--blue-light);
+  border: 1px solid #a9bccd;
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin-right: 12px;
+  font: inherit;
+  cursor: pointer;
+}
+.connected-app :is(input, textarea, select):hover:not(:disabled) {
+  border-color: #8ba6bb;
+}
+.connected-app .connected-form > :last-child,
+.connected-app .connected-panel > :last-child {
+  margin-bottom: 0;
+}
+.connected-app .heading-row > div:first-child,
+.connected-app .section-heading > div,
+.connected-app .notice > div,
+.connected-app .report-body,
+.connected-app .report-outline {
+  min-width: 0;
+}
+.connected-app
+  :is(
+    .connected-panel,
+    .connected-assessment,
+    .opportunity-row,
+    .report-body,
+    .pursuit-rail
+  ) {
+  overflow-wrap: anywhere;
+}
+.connected-app .watch-intelligence p {
+  font-size: 14px;
+  margin: 0;
+}
+.connected-app .watch-intelligence {
+  align-items: start;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 20px 30px;
+}
+.connected-app .watch-intelligence > div {
+  min-width: 0;
+}
+.connected-app .watch-intelligence .watch-framing {
+  margin-top: 10px;
+  color: var(--ink);
+  font-weight: 500;
+}
+.connected-app .watch-intelligence :is(ul, ol) {
+  margin: 0;
+  padding-left: 20px;
+  color: #344f64;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.connected-app .watch-intelligence li + li {
+  margin-top: 7px;
+}
+.connected-app .watch-competitor-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-bottom: 7px;
+}
+.connected-app .watch-competitor-card {
+  display: inline-block;
+  padding: 6px 9px;
+  border: 1px solid #b9cfdf;
+  border-radius: 4px;
+  background: #edf5fb;
+  color: var(--navy);
+  font-size: 12px;
+  font-weight: 600;
+}
+.connected-app .watch-competitors small {
+  display: block;
+  color: var(--muted);
+  line-height: 1.45;
+}
+.connected-app .watch-basis a {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--blue);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.connected-app .watch-basis a:hover {
+  color: var(--navy);
+}
+.connected-app .watch-deadline-label {
+  color: var(--muted);
+  font-size: 12px;
+}
+.connected-app .watch-deadline {
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 1.35;
+  text-align: right;
+}
+.connected-app .watchlist-more {
+  display: flex;
+  justify-content: center;
+  padding: 26px 0;
+}
+@media (max-width: 850px) {
+  .connected-app .watch-deadline {
+    text-align: left;
+  }
+}
+@media (max-width: 680px) {
+  .connected-app .watch-intelligence {
+    grid-template-columns: 1fr;
+  }
+}
+.connected-app .connected-assessment h4,
+.connected-app .connected-deliverable h4 {
+  font-size: 13px;
+  margin: 20px 0 8px;
+}
+.connected-app .connected-assessment :is(ul, ol),
+.connected-app .connected-deliverable :is(ul, ol) {
+  padding-left: 22px;
+  margin: 12px 0 20px;
+}
+.connected-app .connected-assessment li,
+.connected-app .connected-deliverable li {
+  margin-bottom: 10px;
+}
+.connected-app .connected-claim p {
+  margin-bottom: 10px;
+}
+.connected-app .connected-claim[id] {
+  scroll-margin-top: 24px;
+}
+.connected-app .connected-claim[id]:focus {
+  outline: 2px solid #5b86b2;
+  outline-offset: 6px;
+}
+.connected-app .citation,
+.connected-app .finding-reference {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 4px 6px;
+  border-radius: 3px;
+  line-height: 1.5;
+  color: var(--blue);
+  text-underline-offset: 3px;
+}
+.connected-app .citation:hover,
+.connected-app .finding-reference:hover,
+.connected-app .package-navigation a:hover {
+  background: #dfeaf5;
+  color: var(--navy);
+}
+.connected-app .finding-reference {
+  margin: 4px 0 16px;
+  font-size: 14px;
+}
+.connected-app .gravity-panel :is(.citation, .finding-reference) {
+  color: #d5eaff;
+}
+.connected-app .gravity-panel :is(.citation, .finding-reference):hover {
+  background: #ffffff14;
+  color: #fff;
+}
+.connected-app details:not(.account-menu) {
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #fff;
+  margin: 16px 0;
+  padding: 0 18px;
+}
+.connected-app details:not(.account-menu) > summary {
+  padding: 13px 0;
+  min-height: 48px;
+  color: var(--navy);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+.connected-app details:not(.account-menu) > summary:hover {
+  color: var(--blue);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.connected-app details:not(.account-menu)[open] {
+  padding-bottom: 16px;
+}
+.connected-app details:not(.account-menu)[open] > summary {
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 16px;
+}
+.connected-app .gravity-panel details {
+  background: #ffffff08;
+  border-color: #607a92;
+}
+.connected-app .gravity-panel details > summary,
+.connected-app .gravity-panel details > summary:hover {
+  color: #e2effb;
+}
+.connected-app .package-contents .package-navigation {
+  margin-top: 0;
+}
+.connected-app .package-navigation a {
+  padding: 8px;
+  border-radius: 3px;
+}
+.connected-app .hypothesis-evidence .citation {
+  margin: 0 6px 8px 0;
+}
+.connected-app .hypothesis-test {
+  margin-top: 16px;
+}
+.connected-app .assessment-risk-list > article {
+  border: 0;
+  padding: 24px;
+  margin: 0;
+  background: #fff;
+  border-radius: 0;
+}
+.connected-app .assessment-risk-list > article + article {
+  border-top: 1px solid var(--line);
+}
+.connected-app .assessment-risk-list > article:nth-child(even) {
+  background: var(--blue-light);
+}
+.connected-app .connected-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 14px;
+}
+.connected-app .connected-table th {
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: 0.3px;
+}
+.connected-app .connected-table :is(th, td) {
+  padding: 20px 16px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+.connected-app .connected-table td:first-child {
+  width: 38%;
+}
+.connected-app .connected-table tbody tr:nth-child(odd) {
+  background: #fff;
+}
+.connected-app .connected-table tbody tr:nth-child(even) {
+  background: var(--blue-light);
+}
+.connected-app .connected-table tbody tr:hover,
+.connected-app .connected-table tbody tr:focus-within {
+  background: #e5eef7;
+}
+.connected-app .connected-table small {
+  margin-top: 5px;
+}
+.connected-app .table-action {
+  text-align: right;
+}
+.connected-app .source-name {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.connected-app .source-name svg {
+  flex-shrink: 0;
+}
+.connected-app .source-view-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 16px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 12px;
+}
+.connected-app .source-fields {
+  margin: 0;
+  font-size: 14px;
+}
+.connected-app .source-fields > div {
+  display: grid;
+  grid-template-columns: minmax(80px, 0.65fr) minmax(0, 2fr);
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+  overflow-wrap: anywhere;
+}
+.connected-app .source-fields dt {
+  color: var(--muted);
+  font-weight: 500;
+}
+.connected-app .source-fields dd {
+  margin: 0;
+  min-width: 0;
+}
+.connected-app .source-records {
+  margin: 0;
+  padding-left: 20px;
+}
+.connected-app .source-records > li + li {
+  margin-top: 16px;
+}
+.connected-app .source-fields .source-fields > div {
+  grid-template-columns: 1fr;
+  gap: 4px;
+}
+.connected-app .connected-evidence .viewer-controls label,
+.connected-app .report-outline label {
+  display: grid;
+  gap: 8px;
+  margin: 16px 0;
+  font-size: 13px;
+}
+.connected-app .connected-evidence .source-paper {
+  padding: 24px;
+  border: 1px solid var(--line);
+  background: #fff;
+  margin-top: 16px;
+}
+.connected-app .connected-operations .local-card {
+  border-radius: 4px;
+}
+.connected-app .connected-operations form {
+  max-width: 740px;
+}
+.connected-app .connected-operations label {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 20px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.connected-app .connected-operations :is(input, select, textarea) {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #fff;
+  color: var(--ink);
+}
+.connected-app .connected-operations .local-row:nth-child(even) {
+  background: var(--blue-light);
+}
+.connected-app .connected-operations .local-actions {
+  flex-wrap: wrap;
+}
+.connected-app .brief-item > .badge {
+  margin-bottom: 14px;
+}
+.connected-app .workspace-footer {
+  margin-top: 48px;
+}
+@media (max-width: 1050px) {
+  .connected-app .filter-row .segmented {
+    flex-basis: 100%;
+  }
+  .connected-app .report-layout {
+    grid-template-columns: minmax(0, 230px) minmax(0, 1fr);
+    gap: 28px;
+  }
+}
+@media (max-width: 850px) {
+  .connected-app .topbar {
+    padding: 12px 20px 0;
+    gap: 0;
+  }
+  .connected-app .topbar nav {
+    height: 48px;
+    margin: 4px 0 0;
+    flex-basis: 100%;
+    gap: 16px;
+    justify-content: space-between;
+  }
+  .connected-app .topbar nav button {
+    font-size: 14px;
+    white-space: nowrap;
+    min-height: 44px;
+  }
+  .connected-app .topbar .wordmark {
+    font-size: 28px;
+  }
+  .connected-app .topbar .avatar {
+    width: 36px;
+    height: 36px;
+    font-size: 12px;
+  }
+  .connected-app .report-layout {
+    display: flex;
+    flex-direction: column;
+  }
+  .connected-app .report-outline {
+    position: static;
+    display: block;
+    background: var(--blue-light);
+    border: 1px solid var(--line);
+    padding: 20px;
+    border-radius: 4px;
+  }
+  .connected-app .connected-table,
+  .connected-app .connected-table tbody {
+    display: block;
+  }
+  .connected-app .connected-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .connected-app .connected-table tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    padding: 20px;
+    border: 1px solid var(--line);
+    border-bottom: 0;
+  }
+  .connected-app .connected-table tr:last-child {
+    border-bottom: 1px solid var(--line);
+  }
+  .connected-app .connected-table td {
+    display: block;
+    width: auto;
+    border: 0;
+    padding: 0;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .connected-app .connected-table td:first-child {
+    width: auto;
+    grid-column: 1 / -1;
+  }
+  .connected-app .connected-table td:first-child strong {
+    font-size: 16px;
+  }
+  .connected-app .connected-table td[data-label]:not(:first-child)::before {
+    content: attr(data-label);
+    display: block;
+    color: var(--muted);
+    font-size: 12px;
+    margin-bottom: 6px;
+  }
+  .connected-app .table-action {
+    align-self: end;
+  }
+  .connected-app .connected-assessment .scenario-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 600px) {
+  .connected-app .connected-form :is(input, select, textarea),
+  .connected-app .filter-row :is(input, select),
+  .connected-app .connected-select select,
+  .connected-app .connected-operations :is(input, select, textarea),
+  .connected-app .report-outline select,
+  .connected-app .pursuit-rail select {
+    font-size: 16px;
+  }
+  .connected-app .filter-row > select {
+    width: 100%;
+    max-width: none;
+  }
+  .connected-app .filter-row .search-field {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+  }
+  .connected-app .segmented {
+    display: flex;
+    flex-wrap: wrap;
+  }
+  .connected-app .segmented button {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+  .connected-app .button,
+  .connected-app .citation,
+  .connected-app .finding-reference,
+  .connected-app .package-navigation a {
+    min-height: 44px;
+    white-space: normal;
+  }
+  .connected-app .connected-assessment > section {
+    margin: 24px 0;
+  }
+  .connected-app .assessment-risk-list > article {
+    padding: 20px;
+  }
+  .connected-app .connected-evidence .source-paper {
+    padding: 16px;
+    max-height: 55dvh;
+  }
+  .connected-app .source-fields > div {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .connected-app .source-view-switch {
+    flex-wrap: wrap;
+  }
+  .connected-app .modal {
+    padding: 20px;
+    max-height: calc(100dvh - 24px);
+    max-width: calc(100vw - 24px);
+  }
+  .connected-app .modal-heading {
+    align-items: start;
+  }
+  .connected-app .modal-heading h2 {
+    font-size: 23px;
+    overflow-wrap: anywhere;
+  }
+  .connected-app .local-grid {
+    grid-template-columns: 1fr;
+  }
+  .connected-app .connected-login {
+    padding: 0 20px;
+  }
+  .connected-app .connected-footer > .inline {
+    display: flex;
+    gap: 12px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .connected-app :is(button, a, summary, input, select, textarea) {
+    transition: none;
+  }
+}
+
+.connected-app .breadcrumb button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+}
+.connected-app .connected-form-layout > .pursuit-rail {
+  position: static;
+}
+.connected-app .connected-table details {
+  margin: 10px 0 0;
+  background: transparent;
+  padding: 0 12px;
+}
+.connected-app .connected-table details > summary {
+  font-size: 13px;
+  min-height: 40px;
+  padding: 10px 0;
+}
+.connected-app .connected-table details li {
+  margin-bottom: 8px;
+}
+@media (max-width: 850px) {
+  .connected-app .connected-form-layout {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+}
+.connected-app .mobile-report-contents {
+  display: none;
+}
+
+@media (max-width: 850px) {
+  .connected-app .report-outline .package-navigation {
+    display: none;
+  }
+  .connected-app .report-outline .mobile-report-contents {
+    display: grid;
+  }
+}
+
+/* Source lifecycle and original-page evidence use the existing product controls. */
+.connected-app .source-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.connected-app .source-menu {
+  margin-top: 8px;
+}
+.connected-app .source-menu summary {
+  cursor: pointer;
+  padding: 10px 0;
+}
+.connected-app .source-menu .source-actions {
+  flex-direction: column;
+  align-items: flex-start;
+}
+.connected-app .source-history {
+  border: 1px solid var(--line, #dbe3eb);
+  border-radius: 8px;
+  padding: 16px;
+}
+.connected-app .source-history summary {
+  cursor: pointer;
+  min-height: 32px;
+  font-weight: 600;
+}
+.connected-app .source-history ul,
+.connected-app .research-leads {
+  padding: 0;
+  list-style: none;
+}
+.connected-app .source-history li {
+  padding: 16px 0;
+  border-top: 1px solid #dde4ee;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+}
+.connected-app .research-leads li {
+  padding: 20px 0;
+  border-bottom: 1px solid #dde4ee;
+}
+.connected-app .research-leads li > a {
+  display: inline-flex;
+  margin: 0 16px 8px 0;
+  min-height: 44px;
+  align-items: center;
+}
+.connected-app .research-admission {
+  margin-top: 20px;
+  border-top: 1px solid #dde4ee;
+  padding-top: 20px;
+}
+.pdf-evidence {
+  min-width: 0;
+  margin: 16px 0;
+}
+.pdf-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  margin: 12px 0;
+}
+.pdf-toolbar label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.pdf-toolbar select {
+  width: auto;
+  min-height: 44px;
+  border: 1px solid #c6d2e0;
+  border-radius: 5px;
+  background: white;
+  padding: 6px;
+}
+.pdf-scroll {
+  max-height: 65vh;
+  overflow: auto;
+  background: #e8edf3;
+  border: 1px solid #c6d2e0;
+}
+.pdf-sheet {
+  position: relative;
+  line-height: 0;
+  min-width: 100%;
+}
+.pdf-sheet canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: white;
+}
+.pdf-highlight {
+  position: absolute;
+  pointer-events: none;
+  border: 2px solid #cc7300;
+  background: #ffd65642;
+  box-sizing: border-box;
+}
+@media (max-width: 650px) {
+  .connected-app .source-history li {
+    flex-direction: column;
+  }
+  .pdf-toolbar select {
+    font-size: 16px;
+  }
+  .pdf-toolbar {
+    gap: 8px;
+  }
+}
+.connected-app .research-leads p,
+.connected-app .research-admission p {
+  overflow-wrap: anywhere;
+}
+.connected-app .gets-panel {
+  margin: 1.5rem 0;
+  padding: clamp(1rem, 2vw, 1.5rem);
+  border: 1px solid #cad8e8;
+  border-radius: 16px;
+  background: #f7faff;
+}
+.connected-app .gets-panel-head,
+.connected-app .gets-controls {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.connected-app .gets-panel-head h2 {
+  margin: 0.3rem 0;
+  font-size: 1.3rem;
+}
+.connected-app .gets-panel-head p {
+  margin: 0.4rem 0 0;
+}
+.connected-app .gets-access-note,
+.connected-app .gets-error {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 1rem 0;
+  padding: 0.8rem 1rem;
+  border-radius: 10px;
+  background: #e9f1fc;
+  color: #233b5b;
+}
+.connected-app .gets-error {
+  background: #fff0ed;
+  color: #823525;
+}
+.connected-app .gets-controls {
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: flex-start;
+  margin-top: 1rem;
+}
+.connected-app .gets-controls label {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 12rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.connected-app .gets-controls label:has(input) {
+  flex: 1 1 20rem;
+}
+.connected-app .gets-controls :is(input, select) {
+  width: 100%;
+  min-height: 2.6rem;
+  border: 1px solid #b9c9dd;
+  border-radius: 9px;
+  padding: 0.5rem 0.7rem;
+  background: #fff;
+  color: #1d314d;
+  font: inherit;
+}
+.connected-app .gets-controls :is(input, select, button):focus-visible {
+  outline: 3px solid #287dd1;
+  outline-offset: 2px;
+}
+.connected-app .gets-progress {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 1rem;
+  border-top: 1px solid #d9e4f1;
+  padding-top: 1rem;
+}
+.connected-app .gets-progress details p {
+  margin: 0.4rem 0;
+}
+.connected-app .gets-failures ul {
+  margin: 0.35rem 0 0;
+  padding-left: 1.2rem;
+}
+@media (max-width: 700px) {
+  .connected-app .gets-panel-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .connected-app .gets-controls label,
+  .connected-app .gets-controls button {
+    width: 100%;
+  }
+}

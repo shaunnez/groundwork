@@ -9,7 +9,10 @@ export default defineConfig({
     include: ["react", "react-dom/client"],
   },
   server: {
-    host: "0.0.0.0",
+    host: "127.0.0.1",
+    port: 5178,
+    strictPort: true,
+    proxy: { "/api": "http://127.0.0.1:4318" },
     allowedHosts: ["terminal.local"],
     warmup: {
       clientFiles: ["./src/main.tsx"],

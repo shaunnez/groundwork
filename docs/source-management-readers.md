@@ -1,0 +1,55 @@
+# Source management and original-document evidence
+
+Implemented 23 September 2026 in the existing Node.js/TypeScript application. React/Vite remains the frontend. Sonnet is the only configured report/verification model; no Opus route was found or changed. No Claude or OpenAI vision API is used by these readers.
+
+## What the owner can do
+
+The Sources screen supports editing source metadata, replacing an original with a new file, removing a source from future assessments, restoring an archived source, inspecting earlier versions, and searching public sources through Firecrawl. Reviewer access remains read-only for these operations.
+
+Edits and replacements create new immutable source snapshots and new evidence-unit IDs. Separate lifecycle records identify the active version. Old report payloads, source names, extraction snapshots, original bytes and citations remain accessible. Active searches, pack limits, run admission and freshness checks use only active sources; an already queued run retains its frozen original manifest. Concurrent edits serialize on the opportunity and reject stale versions. Each source-management mutation records its actor and reason.
+
+“Remove from pack” means reversible archive, not permanent erasure. Permanent source erasure and backup retention remain a separate policy decision. Account purge continues to remove an entire explicitly selected local account; deferred version-link constraints preserve that existing operation.
+
+Firecrawl returns up to five public search leads. The owner selects a lead, confirms permission and supplies its purpose/publication date before the original URL is fetched and extracted. Search snippets are never admitted as documentary evidence. GETS/RealMe and private-network destinations remain blocked. Existing reserve/settle credit accounting and hosted-only allowance remain unchanged. No new scraper, vector database or agent framework was introduced.
+
+## Readers and honest limits
+
+| Input | Reader | Preserved locations and limitations |
+| --- | --- | --- |
+| Native PDF | PDF.js | One unit per page; text-region coordinates normalised to the rotation-applied page. |
+| Scanned PDF / large raster body beneath a native header | Poppler rasterisation + local Tesseract English OCR | Word rectangles and OCR-labelled page text. No provider charge or model inference. An empty/unreadable scan remains unread. OCR text matching is not proof of transcription accuracy. |
+| DOCX | Bounded ZIP/XML reader | Body paragraphs, table/row/cell locations, headers, footers, footnotes/endnotes and comments. Embedded visual/object content and tracked changes explicitly prevent complete coverage. Word page numbers are not invented. |
+| XLSX | Bounded ZIP/XML reader | Every worksheet, including hidden sheets, cell addresses, stored values, formula strings and cached values. Formulas are never executed. Missing cached values, unresolved shared/external formulas, formula errors and embedded drawings/objects prevent complete coverage. Numeric formatting/date styles are not rendered; stored values are explicitly labelled. |
+| HTML / UTF-8 text / JSON / CSV | Existing deterministic readers | Existing section extraction retained. CSV is section-based text; XLSX is the structured spreadsheet path. |
+
+Legacy DOC/XLS, image-only uploads, handwriting, drawing interpretation, password-protected documents and arbitrary embedded Office objects are not qualified readers. Unsupported content is named and blocks a dependent exhaustive review; it is not silently passed to an LLM.
+
+Limits remain 20 active documents, 200 PDF pages and 20 MB per file. New OCR is bounded to 20 scanned pages per document, sequential processing, 2,400-pixel raster dimensions, individual raster/OCR timeouts and a 120-second document budget checked between pages. PDF extraction is single-flight per API process. Office containers have entry, expanded-size and XML complexity limits; encrypted archives, duplicate parts, DTDs/entities and invalid XML fail closed. Total analytical context remains bounded separately; supporting a format does not increase the report context limit.
+
+## PDF evidence viewer
+
+PDF citations and literal evidence-search hits open the frozen original in an authenticated PDF.js viewer. Page navigation and fit-width / 150% / 200% zoom work on desktop and phone. Saved native text or OCR coordinates locate the cited phrase on that page; rectangles use percentages, following PlanCheck's approach to scale-stable overlays. Matching is restricted to the cited unit, with whitespace normalisation only. Ambiguous, absent or unpositioned quotes receive no guessed rectangle. Older source snapshots without geometry still show their original PDF and extracted text; upload a replacement version to extract geometry without rewriting historical evidence.
+
+The OCR indicator and saved-report limitation distinguish extracted-text verification from visual accuracy. Downloading the exact original remains available. PDF.js and its worker are served locally; the PDF is not sent to another service for display.
+
+PlanCheck was inspected read-only: `frontend/src/features/tender-assessment/model/evidenceOverlay.ts` and `components/EvidencePage.tsx`. Its Python extraction and domain logic were not copied.
+
+## Verification
+
+- 99 backend tests, including six source-lifecycle/API tests and ten reader/geometry cases, passed in disposable Postgres. They cover immutable historical evidence, frozen manifests, archive/restore, freshness, concurrent edits, replacement scope, reviewer/account boundaries, actual local OCR, mixed native-header/scanned-body pages, native page rotations, cropped scan alignment, malformed Office inputs and missing cached formulas.
+- 23 existing domain tests, four presentation tests and four Sites tests passed. TypeScript, production build, changed-file formatting and diff whitespace checks passed.
+- Linux Docker build passed. A network-disabled container successfully extracted the native PDF, scanned PDF, DOCX and XLSX synthetic fixtures with the actual installed readers.
+- Actual local browser: file uploads, source edit/archive/restore/replacement, retained history, evidence search, native and OCR rectangles, zoom, hidden-sheet inspection, Escape/focus return and phone form/PDF layouts passed. No console errors/warnings observed. Mobile checks at 390px found no document/dialog horizontal overflow.
+- Private evidence is under `.local-groundwork/browser/source-readers`, `.local-groundwork/source-reader-fixtures` and `.local-groundwork/receipts/source-readers-*`. These are engineering fixtures, not Bobby's original evidence or an analytical evaluation.
+
+The production dependency audit reports five inherited build-tool advisories (baseline-browser-mapping, browserslist, nanoid, postcss and Vite). The new ZIP/XML packages are not flagged. Updating that build toolchain is separate work; do not represent the audit as clean. The existing main-bundle warning also remains; PDF rendering code and worker are separate assets loaded for PDF viewing.
+
+## Deployment and rollback
+
+A private predeployment application snapshot contains all 25 existing report payloads and eight source originals, with SHA-256 digests, and confirms zero active jobs and Firecrawl 6 spent / 0 reserved of 50. This is not a full database backup or an automated backup system. Migration is additive and runs transactionally at hosted startup; no source/report snapshot update is required.
+
+Once lifecycle edits exist, do not roll back to an older application that treats every historical source as active. Prefer a forward fix; any data restore requires a coordinated database/object snapshot and an explicit decision about intervening work. The existing deployment, account credentials and provider authentication are retained. Hosted acceptance is recorded in the durable checkpoint.
+
+References: [Tesseract usage](https://tesseract-ocr.github.io/tessdoc/Command-Line-Usage.html), [bounded ZIP entry reading](https://github.com/thejoshwolfe/yauzl), [strict XML parsing](https://github.com/isaacs/sax-js).
+
+Hosted acceptance in the first deployment passed existing-report/source hash preservation, real Firecrawl search (five leads, two included credits), original public-page acquisition (55 sections), scanned-PDF upload/OCR/highlighting, source metadata versioning and archive. A final refinement bounds unexpectedly long provider descriptions to 280-character previews and uses the PDF CropBox for OCR rasterisation (reader v3); this passed an additional real-OCR test locally and in Linux. Final deployment `89d0aac9-8fe4-45a4-b130-d1819dddb5eb` succeeded. Hosted assets match the local build; all 25 pre-existing report payloads and eight original source downloads retain their hashes. The final browser check uploaded a cropped scan, confirmed reader v3 and visually verified five aligned quote rectangles. Cached research previews and admission-form focus passed, with no additional credits consumed. No browser console errors/warnings were observed. Firecrawl ends at 8/50 spent, zero reserved: two included credits used for this work, no Claude inference calls. The PDF viewer remains open in the hosted preview.

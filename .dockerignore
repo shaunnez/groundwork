@@ -1,0 +1,11 @@
+.git
+.env
+.env.*
+node_modules
+dist
+.local-groundwork
+*.tar.gz
+*.zip
+*.log
+docs
+.openai
