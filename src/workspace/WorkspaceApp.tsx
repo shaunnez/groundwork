@@ -87,6 +87,7 @@ export function WorkspaceApp() {
     [adding, setAdding] = useState(false);
   const [detail, setDetail] = useState<Detail | null>(null),
     [report, setReport] = useState<SavedReport | null>(null),
+    [reportMode, setReportMode] = useState<"reader" | "validate">("reader"),
     [source, setSource] = useState<EvidenceSource | null>(null),
     [evidenceOpen, setEvidenceOpen] = useState(false),
     [unitId, setUnitId] = useState<string | undefined>(),
@@ -652,6 +653,12 @@ export function WorkspaceApp() {
             busy={busy}
             onDerive={(k) => void derive(k)}
             fixed={page === "report"}
+            mode={reportMode}
+            onModeChange={setReportMode}
+            sectorName={
+              boot!.opportunities.find((item) => item.id === opportunityId)
+                ?.groundwork_sector_name
+            }
           />
         );
     }
@@ -661,6 +668,7 @@ export function WorkspaceApp() {
         page={page}
         go={go}
         opportunityId={contextPages.includes(page) ? opportunityId : undefined}
+        showSourceTool={page !== "report" || reportMode === "validate"}
         onSignOut={() =>
           void action(async () => {
             await request("/sign-out", {});

@@ -4,6 +4,7 @@ export function EnrichedSections({
   data,
   renderClaim,
   comparison,
+  showValidation = true,
 }: {
   data: Deliverable;
   comparison?: Array<{
@@ -13,11 +14,12 @@ export function EnrichedSections({
     rationale: string;
   }>;
   renderClaim: (id: string) => React.ReactNode;
+  showValidation?: boolean;
 }) {
   const metrics = data.kind === "watchlist" ? data.awardForecast.metrics : null;
   return (
     <>
-      <section>
+      <section id="deliverable-overview">
         <h3>
           {data.kind === "watchlist"
             ? "Daily watchlist"
@@ -118,35 +120,38 @@ export function EnrichedSections({
       )}
       {data.kind === "weekly" && (
         <>
-          <section>
+          <section id="deliverable-changes">
             <h3>What changed</h3>
             <p>{data.changesSincePrevious.note}</p>
-            {(comparison ?? data.changesSincePrevious.rows).map((r, i) => (
-              <p key={i}>
-                <Badge>{r.status.replaceAll("_", " ")}</Badge>
-                {r.previousText && (
-                  <>
-                    <br />
-                    Before: {r.previousText}
-                  </>
-                )}
-                {r.currentText && (
-                  <>
-                    <br />
-                    Now: {r.currentText}
-                  </>
-                )}
-                {r.status === "ABSENT_FROM_THIS_RUN" && (
-                  <>
-                    <br />
-                    Not repeated in this assessment; closure is not established.
-                  </>
-                )}
-              </p>
-            ))}
+            {(comparison ?? data.changesSincePrevious.rows)
+              .filter((row) => showValidation || row.status !== "UNCHANGED")
+              .map((r, i) => (
+                <p key={i}>
+                  <Badge>{r.status.replaceAll("_", " ")}</Badge>
+                  {r.previousText && (
+                    <>
+                      <br />
+                      Before: {r.previousText}
+                    </>
+                  )}
+                  {r.currentText && (
+                    <>
+                      <br />
+                      Now: {r.currentText}
+                    </>
+                  )}
+                  {r.status === "ABSENT_FROM_THIS_RUN" && (
+                    <>
+                      <br />
+                      Not repeated in this assessment; closure is not
+                      established.
+                    </>
+                  )}
+                </p>
+              ))}
             <p className="muted">{data.trendCaveat}</p>
           </section>
-          <section>
+          <section id="deliverable-priorities">
             <h3>Priorities and actions</h3>
             {data.priorities.map((c) => (
               <div key={c.claimId}>{renderClaim(c.claimId)}</div>
@@ -155,7 +160,7 @@ export function EnrichedSections({
               <div key={c.claimId}>{renderClaim(c.claimId)}</div>
             ))}
           </section>
-          <section>
+          <section id="deliverable-competition">
             <h3>Competitive picture</h3>
             <p>
               Incumbent:{" "}
@@ -170,7 +175,7 @@ export function EnrichedSections({
               <p key={t}>{t}</p>
             ))}
           </section>
-          <section>
+          <section id="deliverable-collection">
             <h3>Collection agenda</h3>
             <ul>
               {data.collectionAgenda.map((t) => (
@@ -180,18 +185,20 @@ export function EnrichedSections({
           </section>
         </>
       )}
-      <section>
+      <section id="deliverable-coverage">
         <h3>Enrichment coverage</h3>
         {data.missingEnrichment.map((t) => (
           <p key={t}>{t}</p>
         ))}
-        <p>
-          Evidence inventory:{" "}
-          {data.sourceInventory
-            .map((s) => `${s.name} (${s.purpose})`)
-            .join("; ")}
-          .
-        </p>
+        {showValidation && (
+          <p>
+            Evidence inventory:{" "}
+            {data.sourceInventory
+              .map((s) => `${s.name} (${s.purpose})`)
+              .join("; ")}
+            .
+          </p>
+        )}
       </section>
     </>
   );

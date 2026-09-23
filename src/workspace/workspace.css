@@ -2120,3 +2120,132 @@
     width: 100%;
   }
 }
+
+.connected-app .watch-intelligence .watch-framing {
+  margin-top: 12px;
+}
+.connected-app .watch-intelligence .watch-framing h3 {
+  margin: 0 0 6px;
+}
+.connected-app .watch-intelligence .watch-framing strong:first-child {
+  color: var(--blue);
+}
+.connected-app .pursuit-read-points ul {
+  margin: 0;
+  padding-left: 20px;
+}
+.connected-app .pursuit-read-points li + li {
+  margin-top: 8px;
+}
+.connected-app .pursuit-main-actions {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #c9d9e8;
+}
+.connected-app .pursuit-main-actions h3 {
+  margin: 0 0 12px;
+  color: var(--navy);
+}
+.connected-app .pursuit-main-actions ol {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px 28px;
+  padding-left: 20px;
+  margin: 0;
+}
+.connected-app .pursuit-unassessed-flags {
+  margin-top: 22px;
+  padding: 16px 20px;
+  background: #fff7ed;
+  border-left: 3px solid #b87940;
+}
+.connected-app .pursuit-unassessed-flags h3 {
+  margin-top: 0;
+}
+.connected-app .report-mode-toggle {
+  display: flex;
+  border: 1px solid #a9bccd;
+  border-radius: 4px;
+}
+.connected-app .report-mode-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 20px;
+}
+.connected-app .report-mode-option {
+  position: relative;
+  display: flex;
+}
+.connected-app .report-mode-option + .report-mode-option {
+  border-left: 1px solid #a9bccd;
+}
+.connected-app .report-mode-toggle button {
+  min-height: 40px;
+  min-width: 90px;
+  padding: 8px 12px;
+  color: var(--navy);
+  background: #fff;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.connected-app .report-mode-option:first-child button {
+  border-radius: 3px 0 0 3px;
+}
+.connected-app .report-mode-option:last-child button {
+  border-radius: 0 3px 3px 0;
+}
+.connected-app .report-mode-toggle button.active {
+  color: #fff;
+  background: var(--blue);
+}
+.connected-app .report-mode-toggle button:hover:not(.active) {
+  background: #dfeaf5;
+}
+.connected-app .report-mode-toggle button:focus-visible {
+  outline: 3px solid #ffb550;
+  outline-offset: -3px;
+}
+.connected-app .report-mode-tip {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 8px);
+  right: 0;
+  width: max-content;
+  max-width: min(270px, calc(100vw - 48px));
+  padding: 9px 12px;
+  border-radius: 4px;
+  background: var(--navy);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.4;
+  box-shadow: 0 4px 12px #102c4c30;
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+.connected-app .report-mode-option:hover .report-mode-tip,
+.connected-app .report-mode-option:focus-within .report-mode-tip {
+  opacity: 1;
+  visibility: visible;
+}
+.connected-app .brief-sidebar-controls {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+.connected-app .brief-sidebar-controls label:first-child {
+  margin-top: 0;
+}
+.connected-app .assessment-risk-list .risk-title {
+  margin: 0;
+  color: var(--navy);
+  font-family: var(--serif);
+  font-size: 24px;
+  line-height: 1.2;
+}
+@media (max-width: 680px) {
+  .connected-app .pursuit-main-actions ol {
+    grid-template-columns: 1fr;
+  }
+}

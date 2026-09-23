@@ -389,7 +389,7 @@ export function reportMaturity(report: SavedReport): string {
       (source) => source.purpose === "rfp" || source.purpose === "addendum",
     )
   )
-    return "Limited tender assessment";
+    return "Tender evidence partly assessed";
   return report.payload.sourceInventory.every(
     (source) => source.purpose === "notice",
   )

@@ -1,4 +1,5 @@
 import { Badge, Button, I, Notice } from "../ui";
+import { watchlistPreview } from "./watchlist-preview";
 import {
   activeRun,
   claimText,
@@ -56,6 +57,24 @@ export function PursuitOverview({
   const pack = detail.tenderPacks?.[0];
   const decision = report?.decisions.at(-1);
   const noticeBrief = opportunity.notice_brief;
+  const preview = watchlistPreview(
+    opportunity,
+    report
+      ? {
+          verdict: report.payload.assessment.verdict,
+          summary: report.payload.summarySentences,
+          entities: report.payload.intelligence.entities,
+        }
+      : undefined,
+  );
+  const flags =
+    noticeBrief && !report
+      ? noticeBrief.redFlags.map((item) => item.text)
+      : preview.flags;
+  const actions =
+    noticeBrief && !report
+      ? noticeBrief.actions.map((item) => item.text)
+      : preview.actions;
   const hasBlockedScope = Boolean(latestRun?.progress?.readinessIssues.length);
   const firstAction = run
     ? { label: "View analysis progress", page: "processing" as const }
@@ -95,6 +114,13 @@ export function PursuitOverview({
             <div className="pursuit-read-intro">
               <div>
                 <Badge tone="info">{reportMaturity(report)}</Badge>
+                {reportMaturity(report) ===
+                  "Tender evidence partly assessed" && (
+                  <p className="small muted">
+                    Tender documents were included, but full pack and
+                    requirements coverage has not been confirmed.
+                  </p>
+                )}
                 <p className="pursuit-read-verdict">
                   {report.payload.assessment.verdict.recommendation}
                 </p>
@@ -128,14 +154,21 @@ export function PursuitOverview({
                 </p>
               </div>
               <div>
-                <h3>Material gap</h3>
-                <p>
-                  {claimText(
-                    report,
-                    report.payload.assessment.summary.biggestGap,
-                  )}
-                </p>
+                <h3>Red flags &amp; unknowns</h3>
+                <ul>
+                  {flags.map((flag, index) => (
+                    <li key={`${index}:${flag}`}>{flag}</li>
+                  ))}
+                </ul>
               </div>
+            </div>
+            <div className="pursuit-main-actions">
+              <h3>Three main actions</h3>
+              <ol>
+                {actions.map((action, index) => (
+                  <li key={`${index}:${action}`}>{action}</li>
+                ))}
+              </ol>
             </div>
             {report.freshness.stale && (
               <p className="pursuit-inline-status">
@@ -179,6 +212,24 @@ export function PursuitOverview({
                 before requesting an assessment.
               </p>
             )}
+            {flags.length > 0 && (
+              <div className="pursuit-unassessed-flags">
+                <h3>Red flags &amp; unknowns</h3>
+                <ul>
+                  {flags.map((flag, index) => (
+                    <li key={`${index}:${flag}`}>{flag}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <div className="pursuit-main-actions">
+              <h3>Three main actions</h3>
+              <ol>
+                {actions.map((action, index) => (
+                  <li key={`${index}:${action}`}>{action}</li>
+                ))}
+              </ol>
+            </div>
           </div>
         )}
       </section>
