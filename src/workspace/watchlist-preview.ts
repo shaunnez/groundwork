@@ -64,6 +64,23 @@ function closingState(
       : "later";
 }
 
+function nzClosingDate(value: string): string {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Pacific/Auckland",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    })
+      .formatToParts(new Date(value))
+      .map(({ type, value }) => [type, value]),
+  );
+  return `${parts.day}/${parts.month}/${parts.year} ${parts.hour}:${parts.minute}`;
+}
+
 export function watchlistPreview(
   opportunity: Opportunity,
   report?: ReportSummary,
@@ -86,16 +103,7 @@ export function watchlistPreview(
   const deadline =
     opportunity.metadata.closingAt &&
     !Number.isNaN(Date.parse(opportunity.metadata.closingAt))
-      ? `${planning ? "Indicative" : mentionsRevisedDeadline ? "Notice record closes" : information ? "Notice closes" : "Closes"} ${new Date(
-          opportunity.metadata.closingAt,
-        ).toLocaleString("en-NZ", {
-          timeZone: "Pacific/Auckland",
-          day: "numeric",
-          month: "short",
-          year: "numeric",
-          hour: "numeric",
-          minute: "2-digit",
-        })} NZ time`
+      ? `Closed ${nzClosingDate(opportunity.metadata.closingAt)} NZ Time`
       : planning
         ? "Tender date not yet confirmed"
         : "Closing date not recorded";

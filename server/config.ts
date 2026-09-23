@@ -22,23 +22,12 @@ const Config = z.object({
   claudeExecutable: z.string().optional(),
   claudeHome: z.string().optional(),
   reviewerSecret: z.string().min(32).optional(),
-  getsApprovalFile: z.string().optional(),
   getsBriefsPerAttempt: z.number().int().min(1).max(500).default(25),
-  getsOperatorTest: z
-    .object({
-      accountId: z.string().uuid(),
-      expiresAt: z.string().datetime({ offset: true }),
-    })
-    .optional(),
 });
 export type Config = z.infer<typeof Config>;
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const path = env.GROUNDWORK_CONFIG;
   if (env.GROUNDWORK_HOSTED === "true") {
-    if (
-      !!env.GROUNDWORK_GETS_TEST_ACCOUNT_ID !== !!env.GROUNDWORK_GETS_TEST_UNTIL
-    )
-      throw new Error("GETS live test requires both account and expiry");
     const c = Config.parse({
       databaseUrl: env.DATABASE_URL,
       storageRoot: env.GROUNDWORK_STORAGE_ROOT || "/data/objects",
@@ -58,16 +47,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       firecrawlIncludedConfirmed:
         env.GROUNDWORK_FIRECRAWL_INCLUDED_CONFIRMED === "true",
       firecrawlCredentialFile: env.GROUNDWORK_FIRECRAWL_CREDENTIAL_FILE,
-      getsApprovalFile: env.GROUNDWORK_GETS_APPROVAL_FILE,
       getsBriefsPerAttempt: Number(
         env.GROUNDWORK_GETS_BRIEFS_PER_ATTEMPT || 25,
       ),
-      getsOperatorTest: env.GROUNDWORK_GETS_TEST_ACCOUNT_ID
-        ? {
-            accountId: env.GROUNDWORK_GETS_TEST_ACCOUNT_ID,
-            expiresAt: env.GROUNDWORK_GETS_TEST_UNTIL,
-          }
-        : undefined,
       port: Number(env.PORT || 4318),
     });
     if (!c.publicOrigin)

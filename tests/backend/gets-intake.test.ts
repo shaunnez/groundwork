@@ -1,11 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { randomBytes, randomUUID } from "node:crypto";
-import { mkdtemp, writeFile, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import { createApi } from "../../server/api.ts";
 import { loadConfig } from "../../server/config.ts";
+import { getsAccess } from "../../server/gets/access.ts";
 import { database } from "../../server/db.ts";
 import {
   GetsIntakeWorker,
@@ -121,20 +119,21 @@ async function drain(worker: GetsIntakeWorker, id: string) {
   throw new Error("Fixture worker did not finish");
 }
 
-test("GETS public collection is disabled without a recorded access arrangement; reviewer cannot initiate", async () => {
+test("owner can initiate a manual public GETS check; reviewer cannot", async () => {
   const status = await app.inject({
     url: "/api/gets/status",
     headers: headers(ownerToken),
   });
   assert.equal(status.statusCode, 200);
-  assert.equal(status.json().access.enabled, false);
-  const denied = await app.inject({
+  assert.equal(status.json().access.enabled, true);
+  assert.equal(status.json().access.mode, "manual_public");
+  const accepted = await app.inject({
     method: "POST",
     url: "/api/gets/runs",
     headers: headers(ownerToken),
     payload: { scope: "current" },
   });
-  assert.equal(denied.statusCode, 409);
+  assert.equal(accepted.statusCode, 200);
   const reviewerDenied = await app.inject({
     method: "POST",
     url: "/api/gets/runs",
@@ -142,43 +141,39 @@ test("GETS public collection is disabled without a recorded access arrangement; 
     payload: { scope: "current" },
   });
   assert.equal(reviewerDenied.statusCode, 403);
+  await cancelGetsRun(db, account, accepted.json().id);
   assert.equal((await getsStatus(db, config, other)).runs.length, 0);
 });
-test("owner-authorised live test is account scoped, time limited and does not claim provider approval", async () => {
-  const testConfig = {
-    ...config,
-    getsOperatorTest: {
-      accountId: account,
-      expiresAt: new Date(Date.now() + 60000).toISOString(),
-    },
-  };
-  const status = await getsStatus(db, testConfig, account);
-  assert.equal(status.access.enabled, true);
-  assert.equal(status.access.mode, "operator_test");
-  assert.match(status.access.reason, /permission is pending/);
-  assert.equal((await getsStatus(db, testConfig, other)).access.enabled, false);
-  const accepted = await startGetsRun(db, testConfig, account, owner, {
-    scope: "single",
-    url: detailUrl("90000006"),
-  });
-  assert.equal(accepted.reused, false);
-  await cancelGetsRun(db, account, accepted.id);
-  assert.equal(
-    (
-      await getsStatus(
-        db,
-        {
-          ...testConfig,
-          getsOperatorTest: {
-            accountId: account,
-            expiresAt: new Date(Date.now() - 1000).toISOString(),
-          },
-        },
-        account,
-      )
-    ).access.enabled,
-    false,
+test("hosted owner can initiate a manual public GETS check without an arrangement file", async () => {
+  assert.equal(getsAccess().mode, "manual_public");
+  const hostedApp = await createApi(
+    { ...config, publicOrigin: "https://groundwork.example" },
+    db,
   );
+  try {
+    const hostedHeaders = {
+      host: "groundwork.example",
+      origin: "https://groundwork.example",
+      cookie: `groundwork_session=${ownerToken}`,
+      "x-groundwork-request": "local",
+    };
+    const status = await hostedApp.inject({
+      url: "/api/gets/status",
+      headers: hostedHeaders,
+    });
+    assert.equal(status.statusCode, 200);
+    assert.equal(status.json().access.enabled, true);
+    const accepted = await hostedApp.inject({
+      method: "POST",
+      url: "/api/gets/runs",
+      headers: hostedHeaders,
+      payload: { scope: "current" },
+    });
+    assert.equal(accepted.statusCode, 200);
+    await cancelGetsRun(db, account, accepted.json().id);
+  } finally {
+    await hostedApp.close();
+  }
 });
 test("parser keeps RFx identity, NZ timezone and duplicate sightings without treating RFI as an RFP", () => {
   const html = listing(
@@ -568,46 +563,19 @@ test("an explicit retry resumes a partial fixture run with a fresh bounded attem
     },
   });
   assert.equal(await drain(worker, runId), "partial");
-  const dir = await mkdtemp(join(tmpdir(), "gets-retry-test-"));
-  const path = join(dir, "approval.json");
-  try {
-    await writeFile(
-      path,
-      JSON.stringify({
-        agreementReference: "TEST ONLY 2026-09-23",
-        authorisedAccountIds: [account],
-        allowedScopes: ["current"],
-        expiresAt: new Date(Date.now() + 60000).toISOString(),
-        route: "public-gets-html",
-      }),
-      { mode: 0o600 },
-    );
-    canRead = true;
-    await retryGetsRun(
-      db,
-      { ...config, getsApprovalFile: path },
-      account,
-      runId,
-    );
-    assert.equal(await drain(worker, runId), "complete");
-    const run = (
-      await db.query(
-        "SELECT pages_attempted,pages_read,details_read,details_failed FROM gets_intake_runs WHERE id=$1",
-        [runId],
-      )
-    ).rows[0];
-    assert.deepEqual(
-      [
-        run.pages_attempted,
-        run.pages_read,
-        run.details_read,
-        run.details_failed,
-      ],
-      [1, 1, 1, 0],
-    );
-  } finally {
-    await rm(dir, { recursive: true, force: true });
-  }
+  canRead = true;
+  await retryGetsRun(db, account, runId);
+  assert.equal(await drain(worker, runId), "complete");
+  const run = (
+    await db.query(
+      "SELECT pages_attempted,pages_read,details_read,details_failed FROM gets_intake_runs WHERE id=$1",
+      [runId],
+    )
+  ).rows[0];
+  assert.deepEqual(
+    [run.pages_attempted, run.pages_read, run.details_read, run.details_failed],
+    [1, 1, 1, 0],
+  );
 });
 test("notice briefs stop at five per manual attempt and resume without regenerating completed work", async () => {
   const url = "https://www.gets.govt.nz/ExternalIndex.htm";
@@ -644,14 +612,7 @@ test("notice briefs stop at five per manual attempt and resume without regenerat
   const counts = (await getsStatus(db, config, account)).briefCounts;
   assert.equal(counts.complete, 5);
   assert.equal(counts.pending, 1);
-  const approved = {
-    ...config,
-    getsOperatorTest: {
-      accountId: account,
-      expiresAt: new Date(Date.now() + 60000).toISOString(),
-    },
-  };
-  await retryGetsRun(db, approved, account, runId);
+  await retryGetsRun(db, account, runId);
   assert.equal(await drain(worker, runId), "complete");
   assert.equal(
     (
@@ -672,40 +633,22 @@ test("notice briefs stop at five per manual attempt and resume without regenerat
     1,
   );
 });
-test("two owner clicks attach to one approved queued run without making a network call", async () => {
-  const dir = await mkdtemp(join(tmpdir(), "gets-approval-test-"));
-  const path = join(dir, "approval.json");
-  try {
-    await writeFile(
-      path,
-      JSON.stringify({
-        agreementReference: "TEST ONLY 2026-09-23",
-        authorisedAccountIds: [account],
-        allowedScopes: ["current"],
-        expiresAt: new Date(Date.now() + 60000).toISOString(),
-        route: "public-gets-html",
-      }),
-      { mode: 0o600 },
-    );
-    const approved = { ...config, getsApprovalFile: path };
-    const pair = await Promise.all([
-      startGetsRun(db, approved, account, owner, { scope: "current" }),
-      startGetsRun(db, approved, account, owner, { scope: "current" }),
-    ]);
-    assert.equal(pair[0].id, pair[1].id);
-    assert.equal(pair.filter((entry) => entry.reused).length, 1);
-    assert.equal(
-      (
-        await db.query("SELECT state FROM gets_intake_runs WHERE id=$1", [
-          pair[0].id,
-        ])
-      ).rows[0].state,
-      "queued",
-    );
-    await cancelGetsRun(db, account, pair[0].id);
-  } finally {
-    await rm(dir, { recursive: true, force: true });
-  }
+test("two owner clicks attach to one queued run without making a network call", async () => {
+  const pair = await Promise.all([
+    startGetsRun(db, account, owner, { scope: "current" }),
+    startGetsRun(db, account, owner, { scope: "current" }),
+  ]);
+  assert.equal(pair[0].id, pair[1].id);
+  assert.equal(pair.filter((entry) => entry.reused).length, 1);
+  assert.equal(
+    (
+      await db.query("SELECT state FROM gets_intake_runs WHERE id=$1", [
+        pair[0].id,
+      ])
+    ).rows[0].state,
+    "queued",
+  );
+  await cancelGetsRun(db, account, pair[0].id);
 });
 test("account removal cascades GETS receipts and notice revisions without touching other accounts", async () => {
   await db.query("DELETE FROM accounts WHERE id=$1", [account]);

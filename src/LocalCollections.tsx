@@ -79,22 +79,26 @@ export function LocalCollections({
             Compile current collection
           </Button>
         </form>
-        {list?.collections.map((c: Row) => (
-          <button
-            className="local-opportunity"
-            key={c.id}
-            onClick={() => void action(() => open(c.id))}
-          >
-            <strong>
-              {c.kind === "weekly" ? "Weekly watch brief" : "Daily watchlist"} ·{" "}
-              {c.period_start}
-            </strong>
-            <span>
-              {c.client_id ? "Client scope" : "Account scope"} ·{" "}
-              {new Date(c.created_at).toLocaleString()}
-            </span>
-          </button>
-        ))}
+        <div className="collection-list">
+          <h3>Saved collections</h3>
+          {list?.collections.map((c: Row) => (
+            <button
+              className="local-opportunity"
+              aria-current={current?.id === c.id ? "true" : undefined}
+              key={c.id}
+              onClick={() => void action(() => open(c.id))}
+            >
+              <strong>
+                {c.kind === "weekly" ? "Weekly watch brief" : "Daily watchlist"}{" "}
+                · {c.period_start}
+              </strong>
+              <span>
+                {c.client_id ? "Client scope" : "Account scope"} ·{" "}
+                {new Date(c.created_at).toLocaleString("en-NZ")}
+              </span>
+            </button>
+          ))}
+        </div>
       </section>
       {current && (
         <article className="local-report">

@@ -241,7 +241,7 @@ export function WatchlistView({
           Read your weekly brief <I.ArrowRight size={15} />
         </button>
       </div>
-      <div className="filter-row">
+      <div className="filter-row watchlist-filters">
         <div className="segmented">
           {[
             ["all", "Tracked"],
@@ -364,7 +364,7 @@ export function WatchlistView({
                           )}
                       </p>
                     </div>
-                    <div>
+                    <div className="watch-flags">
                       <h3>Red flags &amp; unknowns</h3>
                       {brief?.redFlags.length || preview.flags.length ? (
                         <ul>
@@ -388,24 +388,6 @@ export function WatchlistView({
                           uncertainties.
                         </p>
                       )}
-                    </div>
-                    <div className="watch-actions">
-                      <h3>Three recommended actions</h3>
-                      <ol>
-                        {(brief
-                          ? brief.actions.map((item) => item.text)
-                          : preview.actions
-                        ).map((action, index) => (
-                          <li key={`${index}:${action}`}>
-                            {action}{" "}
-                            {brief &&
-                              citation(
-                                brief.actions[index].unitId,
-                                brief.actions[index].quote,
-                              )}
-                          </li>
-                        ))}
-                      </ol>
                     </div>
                     {preview.competitors.length > 0 && (
                       <div className="watch-competitors">
@@ -457,6 +439,24 @@ export function WatchlistView({
                   <Button kind="text" onClick={() => go("pursuit", o.id)}>
                     Open pursuit <I.ArrowRight size={16} />
                   </Button>
+                </div>
+                <div className="watch-actions">
+                  <h3>Three recommended actions</h3>
+                  <ol>
+                    {(brief
+                      ? brief.actions.map((item) => item.text)
+                      : preview.actions
+                    ).map((action, index) => (
+                      <li key={`${index}:${action}`}>
+                        {action}{" "}
+                        {brief &&
+                          citation(
+                            brief.actions[index].unitId,
+                            brief.actions[index].quote,
+                          )}
+                      </li>
+                    ))}
+                  </ol>
                 </div>
               </article>
             );

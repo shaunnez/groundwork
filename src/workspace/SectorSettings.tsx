@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button, Notice } from "../ui";
+import { Button, Notice, Search } from "../ui";
 import { Heading } from "./Chrome";
 import { request, type Navigate } from "./data";
 
@@ -232,17 +232,17 @@ export function SectorSettings({
           Assignment history retains taxonomy, classifier, notice revision and
           reason.
         </p>
-        <label>
-          Find an opportunity
-          <input
+        <div className="sector-search">
+          <span>Find an opportunity</span>
+          <Search
             value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
+            onChange={(value) => {
+              setSearch(value);
               setPage(1);
             }}
-            placeholder="Title or RFx ID"
+            placeholder="Search title or RFx ID"
           />
-        </label>
+        </div>
         <div className="sector-assignment-list">
           {rows.slice((page - 1) * 25, page * 25).map((row) => (
             <article className="sector-row" key={row.opportunity_id}>

@@ -249,13 +249,13 @@ export async function createApi(config: Config, db: Database) {
     getsStatus(db, config, req.accountId),
   );
   app.post("/api/gets/runs", async (req) =>
-    startGetsRun(db, config, req.accountId, req.userId, req.body),
+    startGetsRun(db, req.accountId, req.userId, req.body),
   );
   app.post("/api/gets/runs/:id/cancel", async (req) =>
     cancelGetsRun(db, req.accountId, asId(req.params)),
   );
   app.post("/api/gets/runs/:id/retry", async (req) =>
-    retryGetsRun(db, config, req.accountId, asId(req.params)),
+    retryGetsRun(db, req.accountId, asId(req.params)),
   );
   app.get("/api/gets/mappings", async (req) => {
     const { filter, page } = z

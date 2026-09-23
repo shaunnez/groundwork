@@ -308,9 +308,7 @@ export function SourceView({
               <th scope="col">Purpose</th>
               <th scope="col">Coverage</th>
               <th scope="col">Evidence origin</th>
-              <th scope="col">
-                <span className="sr-only">Action</span>
-              </th>
+              <th scope="col">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -344,7 +342,7 @@ export function SourceView({
                     ? "Synthetic evaluation"
                     : "Public evidence"}
                 </td>
-                <td className="table-action">
+                <td className="table-action" data-label="Actions">
                   <Button
                     kind="text"
                     aria-label={`Inspect ${s.name}`}
@@ -353,27 +351,22 @@ export function SourceView({
                     Inspect <I.ArrowRight size={16} />
                   </Button>
                   {owner && (
-                    <details className="source-menu">
-                      <summary>Manage</summary>
-                      <div className="source-actions">
-                        {(["edit", "replace", "archive"] as const).map(
-                          (mode) => (
-                            <Button
-                              key={mode}
-                              kind="text"
-                              disabled={busy}
-                              onClick={() => setEditing({ source: s, mode })}
-                            >
-                              {mode === "edit"
-                                ? "Edit details"
-                                : mode === "replace"
-                                  ? "Replace document"
-                                  : "Remove from pack"}
-                            </Button>
-                          ),
-                        )}
-                      </div>
-                    </details>
+                    <select
+                      className="source-manage"
+                      aria-label={`Manage ${s.name}`}
+                      value=""
+                      disabled={busy}
+                      onChange={(event) => {
+                        const mode = event.target.value as
+                          "edit" | "replace" | "archive";
+                        if (mode) setEditing({ source: s, mode });
+                      }}
+                    >
+                      <option value="">Manage…</option>
+                      <option value="edit">Edit details</option>
+                      <option value="replace">Replace document</option>
+                      <option value="archive">Remove from pack</option>
+                    </select>
                   )}
                 </td>
               </tr>
@@ -681,7 +674,7 @@ export function UploadView({
             onSaved={onSaved}
           />
         )}
-      <div className="two-col connected-form-layout">
+      <div className="two-col connected-form-layout upload-form-layout">
         <section className="connected-panel">
           {done && (
             <Notice title="Source saved" tone="success">

@@ -78,14 +78,11 @@ const nzToday = () =>
 
 export async function startGetsRun(
   db: Database,
-  config: Config,
   accountId: string,
   actorId: string,
   raw: unknown,
 ) {
   const input = GetsRunInput.parse(raw);
-  const access = getsAccess(config, accountId, input.scope);
-  if (!access.enabled) throw fail(access.reason);
   const target = input.url ? canonicalGetsDetail(input.url) : null;
   return transaction(db, async (c) => {
     await c.query("SELECT pg_advisory_xact_lock(hashtext($1))", [
@@ -157,7 +154,7 @@ export async function getsStatus(
       )
     : { rows: [] };
   return {
-    access: getsAccess(config, accountId),
+    access: getsAccess(),
     briefsPerAttempt: config.getsBriefsPerAttempt,
     runs: runs.rows,
     notices: notices.rows,
@@ -179,7 +176,6 @@ export async function cancelGetsRun(
 }
 export async function retryGetsRun(
   db: Database,
-  config: Config,
   accountId: string,
   id: string,
 ) {
@@ -191,8 +187,6 @@ export async function retryGetsRun(
     const run = result.rows[0] as Run | undefined;
     if (!run || run.state !== "partial")
       throw fail("Only a partial GETS check can be retried");
-    const access = getsAccess(config, accountId, run.scope);
-    if (!access.enabled) throw fail(access.reason);
     await c.query(
       "UPDATE gets_intake_items SET state='pending',attempts=0,error=null WHERE run_id=$1 AND state='failed'",
       [id],
@@ -502,11 +496,6 @@ export class GetsIntakeWorker {
         .catch(() => {});
     }, 10000);
     try {
-      if (
-        run.mode === "live" &&
-        !getsAccess(this.config, run.account_id, run.scope).enabled
-      )
-        throw fail("GETS access arrangement is unavailable or expired");
       if (
         Date.now() - new Date(run.started_at).getTime() > 15 * 60 * 1000 ||
         run.attempts >= 650

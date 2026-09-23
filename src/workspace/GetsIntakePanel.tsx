@@ -27,7 +27,7 @@ type Status = {
   access: {
     enabled: boolean;
     reason: string;
-    mode?: "operator_test" | "approved_route";
+    mode?: "manual_public";
     scopes?: Scope[];
     expiresAt?: string;
   };
@@ -140,18 +140,6 @@ export function GetsIntakePanel({
         <p className="small muted">Loading GETS status…</p>
       ) : (
         <>
-          {!status.access.enabled && (
-            <p className="gets-access-note" role="status">
-              <I.Info size={18} /> {status.access.reason}. The public notice
-              check is unavailable.
-            </p>
-          )}
-          {status.access.mode === "operator_test" && (
-            <p className="gets-access-note" role="status">
-              <I.Info size={18} /> Owner-authorised live test. GETS permission
-              is pending; checks are manual and bounded.
-            </p>
-          )}
           <div className="gets-controls">
             <label>
               Check

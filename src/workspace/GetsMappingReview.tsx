@@ -41,6 +41,18 @@ const fields = [
   "region",
   "overview",
 ];
+const fieldLabels: Record<string, string> = {
+  rfxId: "RFx ID",
+  title: "Title",
+  buyer: "Buyer",
+  noticeType: "Notice type",
+  status: "Status",
+  openedAt: "Opening date",
+  closesAt: "Closing date",
+  category: "Category",
+  region: "Region",
+  overview: "Overview",
+};
 const filters = [
   ["all", "All"],
   ["missing", "Missing"],
@@ -201,33 +213,55 @@ export function GetsMappingReview({
                       {fields.map((key) => {
                         const trace = row.trace?.[key];
                         return (
-                          <div className="mapping-field" key={key}>
-                            <strong>{key}</strong>
-                            <span>{trace?.state || "unresolved"}</span>
-                            <p>
-                              GETS {trace?.sourceLabel || "label missing"} ·{" "}
-                              {trace?.sourceLocation || "location missing"}
+                          <article
+                            className={`mapping-field${key === "overview" ? " mapping-field-wide" : ""}`}
+                            key={key}
+                          >
+                            <header>
+                              <h3>{fieldLabels[key]}</h3>
+                              <span className="mapping-state">
+                                {trace?.state || "Unresolved"}
+                              </span>
+                            </header>
+                            <dl>
+                              <div>
+                                <dt>GETS source</dt>
+                                <dd>
+                                  {trace?.sourceLabel || "Label missing"} ·{" "}
+                                  {trace?.sourceLocation || "Location missing"}
+                                </dd>
+                              </div>
+                              <div>
+                                <dt>Original wording</dt>
+                                <dd>{trace?.rawText || "Missing"}</dd>
+                              </div>
+                              <div>
+                                <dt>Parsed value</dt>
+                                <dd>{trace?.parsedValue || "Unresolved"}</dd>
+                              </div>
+                              <div className="mapping-displayed">
+                                <dt>Shown in Groundwork</dt>
+                                <dd>{trace?.displayedValue || "Unresolved"}</dd>
+                              </div>
+                            </dl>
+                            <p className="mapping-rule small muted">
+                              Rule: {trace?.rule || "Unrecorded"} ·{" "}
+                              {trace?.ruleVersion || "version unrecorded"}
                             </p>
-                            <p>
-                              <b>Raw:</b> {trace?.rawText || "Missing"}
-                            </p>
-                            <p>
-                              <b>Parsed:</b>{" "}
-                              {trace?.parsedValue || "Unresolved"}
-                            </p>
-                            <p>
-                              <b>Displayed:</b>{" "}
-                              {trace?.displayedValue || "Unresolved"}
-                            </p>
-                            <small>
-                              {trace?.rule} · {trace?.ruleVersion}
-                            </small>
+                            {trace?.humanOverride && (
+                              <p className="mapping-warning small">
+                                Person correction: {trace.humanOverride.reason}
+                              </p>
+                            )}
                             {trace?.warnings.map((warning) => (
-                              <p key={warning} className="small">
+                              <p
+                                key={warning}
+                                className="mapping-warning small"
+                              >
                                 {warning}
                               </p>
                             ))}
-                          </div>
+                          </article>
                         );
                       })}
                     </div>

@@ -40,10 +40,12 @@ export function WorkspaceHeader({
   page,
   go,
   onSignOut,
+  opportunityId,
 }: {
   page: Page;
   go: Navigate;
   onSignOut: () => void;
+  opportunityId?: string;
 }) {
   const menu = useRef<HTMLDetailsElement>(null);
   const operator = ["ops", "delivery", "mapping", "sectors"].includes(page);
@@ -130,16 +132,27 @@ export function WorkspaceHeader({
           </div>
         </details>
       </header>
+      {!operator && opportunityId && (
+        <nav className="opportunity-tools" aria-label="Opportunity tools">
+          <span>Opportunity workspace</span>
+          <button
+            aria-current={page === "sources" ? "page" : undefined}
+            onClick={() => go("sources", opportunityId)}
+          >
+            <I.File size={16} /> Sources
+          </button>
+        </nav>
+      )}
       {operator && (
         <div className="audience-banner">
+          <Button kind="text" onClick={() => go("home")}>
+            <I.ArrowLeft size={16} /> Return to workspace
+          </Button>
           <strong>BidEdge reviewer tools</strong>
           <span>
             Internal review and local delivery. Customer publication is not
             enabled.
           </span>
-          <Button kind="text" onClick={() => go("home")}>
-            Return to workspace
-          </Button>
         </div>
       )}
     </>

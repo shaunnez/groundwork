@@ -613,7 +613,7 @@ export function WorkspaceApp() {
                 onReport={(id) => go("report", undefined, id)}
                 onError={(s) => setError(s)}
               />
-              <details>
+              <details className="collection-review">
                 <summary>Collection review and internal delivery</summary>
                 <LocalCollections
                   request={request}
@@ -660,6 +660,7 @@ export function WorkspaceApp() {
       <WorkspaceHeader
         page={page}
         go={go}
+        opportunityId={contextPages.includes(page) ? opportunityId : undefined}
         onSignOut={() =>
           void action(async () => {
             await request("/sign-out", {});

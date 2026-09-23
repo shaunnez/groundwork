@@ -143,7 +143,7 @@ export function Claim({
       tabIndex={anchor ? -1 : undefined}
     >
       <p>{c.text}</p>
-      <div className="inline connected-citations">
+      <div className="connected-citations">
         <Badge>
           {
             {
@@ -159,9 +159,9 @@ export function Claim({
         ))}
       </div>
       {citations.length > 2 && (
-        <details className="small">
+        <details className="small source-references">
           <summary>{citations.length - 2} more source references</summary>
-          <div className="inline connected-citations">
+          <div className="connected-citations">
             {citations.slice(2).map((e) => (
               <Citation
                 key={e}
@@ -594,7 +594,7 @@ export function AssessmentBody({
             </article>
           ))}
         </div>
-        <p>
+        <p className="hypothesis-next">
           <strong>Next evidence to collect:</strong>{" "}
           {a.hypotheses.nextCollection}
         </p>
@@ -748,7 +748,7 @@ export function PursuitView({
             </p>
           )}
           <form
-            className="inline"
+            className="firm-link-form"
             onSubmit={(e) => {
               e.preventDefault();
               if (!selectedFirm) return;

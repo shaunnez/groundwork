@@ -90,7 +90,7 @@ export function BriefView({
           retains its original evidence.
         </Notice>
       )}
-      <div className="report-layout">
+      <div className="report-layout connected-report-layout">
         <aside className="report-outline">
           <span className="eyebrow">THIS WEEK</span>
           <p>
