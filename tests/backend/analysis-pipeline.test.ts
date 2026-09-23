@@ -137,17 +137,35 @@ test("high-level batches skip revised paragraphs and validate readable quotes", 
       }),
     /Quote/,
   );
+  assert.deepEqual(
+    validateBatchAnalysis([segment], {
+      extra: "discarded",
+      outcomes: [
+        {
+          segmentId: segment.id,
+          extra: "discarded",
+          items: [
+            {
+              ...valid.outcomes[0].items[0],
+              kind: "fact",
+              extra: "discarded",
+            },
+          ],
+        },
+      ],
+    }),
+    {
+      outcomes: [
+        {
+          segmentId: segment.id,
+          items: [{ ...valid.outcomes[0].items[0], kind: "fact", mandatory: false }],
+        },
+      ],
+    },
+  );
   assert.throws(
-    () =>
-      validateBatchAnalysis([segment], {
-        outcomes: [
-          {
-            segmentId: segment.id,
-            items: [{ ...valid.outcomes[0].items[0], kind: "fact" }],
-          },
-        ],
-      }),
-    /Only requirements/,
+    () => validateBatchAnalysis([segment], { outcomes: [{ segmentId: "", items: [] }] }),
+    /Unknown analysis segment/,
   );
 });
 

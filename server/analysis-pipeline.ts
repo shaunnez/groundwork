@@ -159,28 +159,40 @@ const ExtractedItem = z
     mandatory: z.boolean(),
     contradiction: z.string().nullable(),
   })
-  .strict();
+  .passthrough();
 export const BatchAnalysisSchema = z
   .object({
     outcomes: z
       .array(
         z
           .object({
-            segmentId: z.string().length(64),
+            segmentId: z.string(),
             items: z.array(ExtractedItem).max(40),
           })
-          .strict(),
+          .passthrough(),
       )
       .max(MAX_BATCH_SEGMENTS),
   })
-  .strict();
+  .passthrough();
 export type BatchAnalysis = z.infer<typeof BatchAnalysisSchema>;
 
 export function validateBatchAnalysis(
   batch: AnalysisSegment[],
   value: unknown,
 ): BatchAnalysis {
-  const output = BatchAnalysisSchema.parse(value);
+  const transport = BatchAnalysisSchema.parse(value);
+  const output: BatchAnalysis = {
+    outcomes: transport.outcomes.map((outcome) => ({
+      segmentId: outcome.segmentId,
+      items: outcome.items.map((item) => ({
+        text: item.text,
+        quote: item.quote,
+        kind: item.kind,
+        mandatory: item.kind === "requirement" && item.mandatory,
+        contradiction: item.contradiction,
+      })),
+    })),
+  };
   const byId = new Map(batch.map((s) => [s.id, s]));
   if (
     output.outcomes.length !== batch.length ||
@@ -193,8 +205,6 @@ export function validateBatchAnalysis(
     for (const item of outcome.items) {
       if (quoteState(item.quote, segment.text) === "NOT_FOUND")
         throw new Error(`Quote does not match saved segment ${segment.id}`);
-      if (item.kind === "fact" && item.mandatory)
-        throw new Error("Only requirements may be mandatory");
     }
   }
   return output;
