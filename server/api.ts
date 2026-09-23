@@ -42,6 +42,7 @@ import {
 } from "./tender-packs.ts";
 import { fetchSource } from "./fetch-source.ts";
 import {
+  completeCoverage,
   searchUnits,
   type Coverage,
   type SourceUnit,
@@ -68,6 +69,8 @@ import {
   sectorSettings,
 } from "./sectors.ts";
 import { runReadinessIssues } from "./run-readiness.ts";
+import { preflightAnalysisAsync } from "./analysis-pipeline.ts";
+import { streamSourceUnits } from "./analysis-engine.ts";
 declare module "fastify" {
   interface FastifyRequest {
     accountId: string;
@@ -381,6 +384,80 @@ export async function createApi(config: Config, db: Database) {
       throw Object.assign(new Error("Not found"), { statusCode: 404 });
     return r.rows[0];
   };
+  app.get("/api/runs/:id/analysis-items", async (req) => {
+    const runId = asId(req.params);
+    const query = z
+      .object({
+        kind: z.enum(["fact", "requirement"]).default("requirement"),
+        after: z
+          .string()
+          .regex(/^[a-f0-9]{64}$/)
+          .optional(),
+      })
+      .parse(req.query);
+    const result = await db.query(
+      `SELECT i.item_id AS "itemId",i.unit_id AS "unitId",i.source_id AS "sourceId",i.location,
+              i.text_content AS text,i.quote,i.mandatory,i.revision_state AS "revisionState",i.contradiction
+       FROM analysis_items i JOIN runs r ON r.id=i.run_id AND r.account_id=i.account_id
+       WHERE i.run_id=$1 AND i.account_id=$2 AND i.kind=$3 AND i.item_id>coalesce($4,'')
+       ORDER BY i.item_id LIMIT 101`,
+      [runId, req.accountId, query.kind, query.after ?? null],
+    );
+    const page = result.rows.slice(0, 100);
+    return {
+      items: page,
+      next: result.rows.length > 100 ? page.at(-1)!.itemId : null,
+    };
+  });
+  app.get("/api/opportunities/:id/analysis-preflight", async (req) => {
+    const opportunityId = asId(req.params);
+    await owned(req.accountId, opportunityId);
+    const [sources, usage] = await Promise.all([
+      db.query(
+        "SELECT id,name,reader,required,coverage,hash FROM active_sources WHERE account_id=$1 AND opportunity_id=$2 ORDER BY id",
+        [req.accountId, opportunityId],
+      ),
+      db.query(
+        "SELECT avg((usage->>'apiEquivalentUsd')::numeric) AS average FROM provider_calls WHERE provider='claude-subscription' AND status='succeeded' AND usage->>'apiEquivalentUsd' ~ '^[0-9]+(\\.[0-9]+)?$'",
+      ),
+    ]);
+    const plan = await preflightAnalysisAsync(
+      streamSourceUnits(
+        db,
+        req.accountId,
+        sources.rows.map((source) => source.id),
+      ),
+    );
+    const characters = plan.characters;
+    const gaps = sources.rows
+      .filter((source) => source.required && !completeCoverage(source.coverage))
+      .map((source) => ({
+        sourceId: source.id,
+        name: source.name,
+        reader: source.reader,
+        coverage: source.coverage,
+      }));
+    const average =
+      usage.rows[0]?.average === null ? null : Number(usage.rows[0].average);
+    return {
+      ...plan,
+      sourceCount: sources.rows.length,
+      unitCount: plan.unitCount,
+      characters,
+      readerGaps: gaps,
+      callAllowance: config.analysisMaxModelCalls,
+      estimatedApiEquivalentUsd:
+        average === null
+          ? null
+          : Number((average * plan.estimatedCalls).toFixed(2)),
+      estimateBasis:
+        "Historical successful Claude subscription receipts; API equivalent only, not actual subscription billing",
+      canRunFull:
+        gaps.length === 0 &&
+        plan.estimatedCalls <= config.analysisMaxModelCalls &&
+        config.claudeSubscriptionApproved,
+    };
+  });
   app.get("/api/opportunities/:id", async (req) => {
     const opportunityId = asId(req.params),
       opportunity = await owned(req.accountId, opportunityId);
@@ -414,33 +491,42 @@ export async function createApi(config: Config, db: Database) {
     const latestRun = runs.rows[0];
     if (latestRun) {
       const sourceIds = latestRun.manifest?.sourceIds as string[] | undefined;
-      const [stageRows, callRows, dispatchRow, frozenSources, characters] =
-        await Promise.all([
-          db.query(
-            "SELECT name,state,started_at,finished_at,error FROM stages WHERE run_id=$1 AND account_id=$2 ORDER BY started_at",
-            [latestRun.id, req.accountId],
-          ),
-          db.query(
-            "SELECT status,usage FROM provider_calls WHERE run_id=$1 AND account_id=$2 ORDER BY created_at",
-            [latestRun.id, req.accountId],
-          ),
-          db.query(
-            "SELECT attempts,lease_until FROM dispatch WHERE run_id=$1",
-            [latestRun.id],
-          ),
-          sourceIds?.length
-            ? db.query(
-                "SELECT name,reader,required,coverage,published_at FROM sources WHERE account_id=$1 AND id=ANY($2::uuid[])",
-                [req.accountId, sourceIds],
-              )
-            : Promise.resolve({ rows: [] }),
-          sourceIds?.length
-            ? db.query(
-                "SELECT coalesce(sum(length(text_content)),0)::int AS count FROM units WHERE account_id=$1 AND source_id=ANY($2::uuid[])",
-                [req.accountId, sourceIds],
-              )
-            : Promise.resolve({ rows: [{ count: 0 }] }),
-        ]);
+      const [
+        stageRows,
+        callRows,
+        dispatchRow,
+        frozenSources,
+        characters,
+        analysisRows,
+      ] = await Promise.all([
+        db.query(
+          "SELECT name,state,started_at,finished_at,error FROM stages WHERE run_id=$1 AND account_id=$2 ORDER BY started_at",
+          [latestRun.id, req.accountId],
+        ),
+        db.query(
+          "SELECT status,usage FROM provider_calls WHERE run_id=$1 AND account_id=$2 ORDER BY created_at",
+          [latestRun.id, req.accountId],
+        ),
+        db.query("SELECT attempts,lease_until FROM dispatch WHERE run_id=$1", [
+          latestRun.id,
+        ]),
+        sourceIds?.length
+          ? db.query(
+              "SELECT name,reader,required,coverage,published_at FROM sources WHERE account_id=$1 AND id=ANY($2::uuid[])",
+              [req.accountId, sourceIds],
+            )
+          : Promise.resolve({ rows: [] }),
+        sourceIds?.length
+          ? db.query(
+              "SELECT coalesce(sum(length(text_content)),0)::int AS count FROM units WHERE account_id=$1 AND source_id=ANY($2::uuid[])",
+              [req.accountId, sourceIds],
+            )
+          : Promise.resolve({ rows: [{ count: 0 }] }),
+        db.query(
+          "SELECT state,count(*)::int AS count FROM analysis_segments WHERE run_id=$1 AND account_id=$2 GROUP BY state",
+          [latestRun.id, req.accountId],
+        ),
+      ]);
       const usages = callRows.rows.map((row) =>
         Number(row.usage?.apiEquivalentUsd),
       );
@@ -449,6 +535,10 @@ export async function createApi(config: Config, db: Database) {
         workerAttempts: dispatchRow.rows[0]?.attempts ?? 0,
         leaseUntil: dispatchRow.rows[0]?.lease_until ?? null,
         modelCalls: callRows.rowCount,
+        preflight: latestRun.manifest.analysisPreflight ?? null,
+        analysisCoverage: Object.fromEntries(
+          analysisRows.rows.map((r) => [r.state, r.count]),
+        ),
         apiEquivalentUsd: usages.reduce(
           (total, value) => total + (Number.isFinite(value) ? value : 0),
           0,
@@ -458,6 +548,7 @@ export async function createApi(config: Config, db: Database) {
               frozenSources.rows,
               latestRun.manifest.cutoff,
               Number(characters.rows[0].count),
+              { allowPartial: latestRun.manifest.tenderPack?.narrowOverride },
             )
           : [],
         modelEnabled: config.claudeSubscriptionApproved,
@@ -859,11 +950,56 @@ export async function createApi(config: Config, db: Database) {
         selectedSources.rows,
         input.cutoff ?? opp.rows[0].cutoff,
         Number(characters.rows[0].count),
+        { allowPartial: input.allowIncompleteTenderPack },
       );
       if (readinessIssues.length)
         throw Object.assign(new Error(readinessIssues.join(" | ")), {
           statusCode: 409,
         });
+      const batchEstimate = await preflightAnalysisAsync(
+        streamSourceUnits(
+          db,
+          req.accountId,
+          sources.rows.map((s) => s.id),
+        ),
+      );
+      const segmented =
+        batchEstimate.characters > 100_000 || batchEstimate.unitCount > 500;
+      const candidateCount = segmented
+        ? null
+        : await c.query(
+            "SELECT count(*)::int AS count FROM units WHERE account_id=$1 AND source_id=ANY($2::uuid[]) AND length(btrim(text_content))>0",
+            [req.accountId, sources.rows.map((s) => s.id)],
+          );
+      const estimatedCalls = segmented
+        ? batchEstimate.estimatedCalls
+        : Math.ceil(candidateCount!.rows[0].count / 8) + 8;
+      const historicalUsage = await c.query(
+        "SELECT avg((usage->>'apiEquivalentUsd')::numeric) AS average FROM provider_calls WHERE provider='claude-subscription' AND status='succeeded' AND usage->>'apiEquivalentUsd' ~ '^[0-9]+(\\.[0-9]+)?$'",
+      );
+      const perCallEstimate =
+        historicalUsage.rows[0]?.average === null
+          ? null
+          : Number(historicalUsage.rows[0].average);
+      const preflight = {
+        ...batchEstimate,
+        estimatedCalls,
+        segmented,
+        callAllowance: config.analysisMaxModelCalls,
+        estimatedApiEquivalentUsd:
+          perCallEstimate === null
+            ? null
+            : Number((perCallEstimate * estimatedCalls).toFixed(2)),
+        estimateBasis:
+          "Historical successful Claude subscription receipts; API equivalent only, not actual subscription billing",
+      };
+      if (estimatedCalls > config.analysisMaxModelCalls)
+        throw Object.assign(
+          new Error(
+            `Analysis preflight estimates ${estimatedCalls} model calls above the configured ${config.analysisMaxModelCalls}-call allowance; narrow scope or change the explicit local allowance`,
+          ),
+          { statusCode: 409 },
+        );
       if (
         !sources.rows.some((s) => s.purpose === "notice" && s.state === "read")
       )
@@ -913,9 +1049,13 @@ export async function createApi(config: Config, db: Database) {
         },
         clientId: opp.rows[0].client_id,
         parentReportId: input.parentReportId,
-        method: "groundwork-v1",
+        method: segmented ? "groundwork-segmented-v1" : "groundwork-v1",
+        analysisPreflight: preflight,
       };
-      const inputHash = hash(JSON.stringify(manifest));
+      // Usage history and operator allowance are frozen for observability, not run identity.
+      const inputHash = hash(
+        JSON.stringify({ ...manifest, analysisPreflight: undefined }),
+      );
       const active = await c.query(
         "SELECT id FROM runs WHERE account_id=$1 AND opportunity_id=$2 AND input_hash=$3 AND state IN ('queued','running')",
         [req.accountId, opportunityId, inputHash],
@@ -939,7 +1079,7 @@ export async function createApi(config: Config, db: Database) {
         "INSERT INTO dispatch(run_id,lease_owner,lease_until,attempts) VALUES($1,$2,CASE WHEN $2::uuid IS NULL THEN NULL ELSE now()+interval '45 seconds' END,CASE WHEN $2::uuid IS NULL THEN 0 ELSE 1 END)",
         [runId, input.localWorkerOwner ?? null],
       );
-      return { id: runId, reused: false };
+      return { id: runId, reused: false, preflight };
     });
   });
   app.post("/api/runs/:id/cancel", async (req) => {
@@ -1008,6 +1148,7 @@ export async function createApi(config: Config, db: Database) {
         sources.rows,
         r.rows[0].manifest.cutoff,
         Number(characters.rows[0].count),
+        { allowPartial: r.rows[0].manifest.tenderPack?.narrowOverride },
       );
       if (readinessIssues.length)
         throw Object.assign(new Error(readinessIssues.join(" | ")), {
