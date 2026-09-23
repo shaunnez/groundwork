@@ -21,6 +21,7 @@ import { database } from "../../server/db.ts";
 import { createApi } from "../../server/api.ts";
 import { hash } from "../../server/storage.ts";
 import { hasUnmarkedLegacyRevisions } from "../../server/run-readiness.ts";
+import { ClaudeTerminalError } from "../../server/claude-receipt.ts";
 import type { SourceUnit } from "../../server/domain/evidence.ts";
 
 const unit = (
@@ -283,6 +284,37 @@ test("unknown model segment ID is discarded and only the missing segment is reru
     batch.segments.map((segment) => segment.id),
   );
   assert.deepEqual(result.rejectedBySegment, {});
+});
+
+test("a terminal turn-limit result splits only its batch and preserves exact segment IDs", async () => {
+  const sources = Array.from({ length: 4 }, (_, index) =>
+    unit(`Clause ${index + 1}: supplier must provide the stated document.`),
+  );
+  const batch = [...analysisBatches(sources)][0];
+  const callId = randomUUID();
+  const names: string[] = [];
+  const result = await validatedAnalysisBatch(
+    "analyse-00011",
+    { method: "test" },
+    batch,
+    async (name, input, prompt) => {
+      names.push(name);
+      if (name === "analyse-00011")
+        throw new ClaudeTerminalError(callId, "error_max_turns");
+      const ids = (input as { splitSegmentIds: string[] }).splitSegmentIds;
+      assert.equal(ids.length, 2);
+      assert.ok(ids.every((id) => batch.segments.some((s) => s.id === id)));
+      assert.ok(prompt.length < batch.prompt.length);
+      return { outcomes: ids.map((segmentId) => ({ segmentId, items: [] })) };
+    },
+  );
+  assert.deepEqual(names, [
+    "analyse-00011",
+    "analyse-00011-split-1",
+    "analyse-00011-split-2",
+  ]);
+  assert.deepEqual(result.outcomes.map((outcome) => outcome.segmentId), batch.segments.map((s) => s.id));
+  assert.deepEqual(result.recoveredCallIds, [callId]);
 });
 
 test("tenfold synthetic multi-document pack is fully planned with bounded prompts", () => {

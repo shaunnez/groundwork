@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import type { Database } from "./db.ts";
 import { transaction } from "./db.ts";
 import { quoteState, type SourceUnit } from "./domain/evidence.ts";
+import { ClaudeTerminalError } from "./claude-receipt.ts";
 import {
   ANALYSIS_METHOD,
   analysisBatchesAsync,
@@ -22,6 +23,7 @@ type Run = {
 type RejectedQuotes = { total: number; mandatory: number };
 type ValidatedBatch = BatchAnalysis & {
   rejectedBySegment: Record<string, RejectedQuotes>;
+  recoveredCallIds: string[];
 };
 
 export async function validatedAnalysisBatch(
@@ -36,6 +38,7 @@ export async function validatedAnalysisBatch(
     input: unknown,
     prompt: string,
   ) => Promise<BatchAnalysis>,
+  splitDepth = 0,
 ): Promise<ValidatedBatch> {
   const byId = new Map(batch.segments.map((segment) => [segment.id, segment]));
   const reconciles = (segments: typeof batch.segments, value: BatchAnalysis) =>
@@ -45,12 +48,47 @@ export async function validatedAnalysisBatch(
     value.outcomes.every((outcome) =>
       segments.some((segment) => segment.id === outcome.segmentId),
     );
-  let candidate = await model(name, input, batch.prompt);
+  let candidate: BatchAnalysis;
+  try {
+    candidate = await model(name, input, batch.prompt);
+  } catch (error) {
+    if (
+      !(error instanceof ClaudeTerminalError) ||
+      error.subtype !== "error_max_turns" ||
+      batch.segments.length < 2 ||
+      splitDepth >= 2
+    )
+      throw error;
+    const middle = Math.ceil(batch.segments.length / 2);
+    const halves = [
+      batch.segments.slice(0, middle),
+      batch.segments.slice(middle),
+    ];
+    const results: ValidatedBatch[] = [];
+    for (const [index, segments] of halves.entries())
+      results.push(
+        await validatedAnalysisBatch(
+          `${name}-split-${index + 1}`,
+          { parentInput: input, splitSegmentIds: segments.map((s) => s.id) },
+          { segments, prompt: analysisPrompt(segments) },
+          model,
+          splitDepth + 1,
+        ),
+      );
+    return {
+      ...validateBatchAnalysis(batch.segments, {
+        outcomes: results.flatMap((result) => result.outcomes),
+      }),
+      rejectedBySegment: Object.assign({}, ...results.map((result) => result.rejectedBySegment)),
+      recoveredCallIds: [error.callId, ...results.flatMap((result) => result.recoveredCallIds)],
+    };
+  }
   for (let attempt = 0; attempt <= 2; attempt++) {
     try {
       return {
         ...validateBatchAnalysis(batch.segments, candidate),
         rejectedBySegment: {},
+        recoveredCallIds: [],
       };
     } catch (error) {
       if (
@@ -86,6 +124,7 @@ export async function validatedAnalysisBatch(
         return {
           ...validateBatchAnalysis(batch.segments, grounded),
           rejectedBySegment,
+          recoveredCallIds: [],
         };
       }
       const counts = new Map<string, number>();
@@ -313,6 +352,16 @@ export async function analyseReadableUnits(
               ],
             );
           }
+        }
+        if (output.recoveredCallIds.length) {
+          const recovered = await c.query(
+            `UPDATE provider_calls SET usage=coalesce(usage,'{}'::jsonb)||'{"recoveredBySplit":true}'::jsonb
+             WHERE run_id=$1 AND id=ANY($2::uuid[]) AND status='failed'
+               AND usage->>'providerTerminal'='error_max_turns'`,
+            [run.id, output.recoveredCallIds],
+          );
+          if (recovered.rowCount !== output.recoveredCallIds.length)
+            throw new Error("Split recovery receipt reconciliation failed");
         }
       });
     } catch (error) {

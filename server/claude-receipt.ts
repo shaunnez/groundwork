@@ -1,4 +1,13 @@
 import { z } from "zod";
+export class ClaudeTerminalError extends Error {
+  constructor(
+    readonly callId: string,
+    readonly subtype: string,
+  ) {
+    super(`Claude returned a failed result (${subtype}); inspect receipt before another attempt`);
+    this.name = "ClaudeTerminalError";
+  }
+}
 const Envelope = z
   .object({
     type: z.literal("result"),

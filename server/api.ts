@@ -1163,7 +1163,7 @@ export async function createApi(config: Config, db: Database) {
           "External call outcome unresolved; inspect and reconcile before resuming",
         );
       const failedCalls = await c.query(
-        "SELECT id FROM provider_calls WHERE run_id=$1 AND status='failed'",
+        "SELECT id FROM provider_calls WHERE run_id=$1 AND status='failed' AND coalesce(usage->>'recoveredBySplit','false')<>'true'",
         [runId],
       );
       if (failedCalls.rowCount)

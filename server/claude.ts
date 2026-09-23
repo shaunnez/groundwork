@@ -1,4 +1,4 @@
-import { terminalReceipt, receiptPayload } from "./claude-receipt.ts";
+import { ClaudeTerminalError, terminalReceipt, receiptPayload } from "./claude-receipt.ts";
 import { finished } from "node:stream/promises";
 import { spawn, execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -264,11 +264,10 @@ export async function callClaude<T>(
           apiEquivalentUsd: envelope.total_cost_usd ?? null,
           actualBilledUsd: null,
           models: envelope.modelUsage ?? {},
+          providerTerminal: envelope.subtype,
         },
       });
-      throw new Error(
-        "Claude returned a failed result; inspect receipt before another attempt",
-      );
+      throw new ClaudeTerminalError(callId, envelope.subtype);
     }
     let payload: T;
     try {
