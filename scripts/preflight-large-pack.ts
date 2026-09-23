@@ -10,6 +10,7 @@ import { ObjectStore } from "../server/storage.ts";
 import { completeCoverage } from "../server/domain/evidence.ts";
 import { preflightAnalysisAsync } from "../server/analysis-pipeline.ts";
 import { streamSourceUnits } from "../server/analysis-engine.ts";
+import { hasUnmarkedLegacyRevisions } from "../server/run-readiness.ts";
 
 const root = resolve(
   fileURLToPath(new URL("../.local-groundwork", import.meta.url)),
@@ -97,7 +98,7 @@ try {
   }
   const sourceRows = (
     await db.query(
-      "SELECT id,name,purpose,reader,state,coverage,hash FROM active_sources WHERE account_id=$1 AND opportunity_id=$2 ORDER BY id",
+      "SELECT id,name,purpose,reader,state,coverage,hash,required,published_at FROM active_sources WHERE account_id=$1 AND opportunity_id=$2 ORDER BY id",
       [pack.account_id, pack.opportunity_id],
     )
   ).rows;
@@ -112,6 +113,19 @@ try {
       db,
       pack.account_id,
       sourceRows.map((source) => source.id),
+    ),
+  );
+  const highLevelExcluded = sourceRows.filter(hasUnmarkedLegacyRevisions);
+  const highLevelPlan = await preflightAnalysisAsync(
+    streamSourceUnits(
+      db,
+      pack.account_id,
+      sourceRows
+        .filter(
+          (source) =>
+            !highLevelExcluded.some((excluded) => excluded.id === source.id),
+        )
+        .map((source) => source.id),
     ),
   );
   if (
@@ -152,6 +166,21 @@ try {
       coverage: source.coverage,
     })),
     ...plan,
+    highLevel: {
+      excludedLegacySourceIds: highLevelExcluded.map((source) => source.id),
+      ...highLevelPlan,
+      estimatedApiEquivalentUsd:
+        average === null
+          ? null
+          : Number((average * highLevelPlan.estimatedCalls).toFixed(2)),
+      eligible:
+        fileOutcomes.length === files.length &&
+        fileOutcomes.every((file) =>
+          ["read", "partial"].includes(file.state),
+        ) &&
+        highLevelPlan.estimatedCalls <= config.analysisMaxModelCalls &&
+        config.claudeSubscriptionApproved,
+    },
     callAllowance: config.analysisMaxModelCalls,
     estimatedApiEquivalentUsd:
       average === null
@@ -181,6 +210,10 @@ try {
       peakPromptBytes: plan.peakPromptBytes,
       readerGapCount: partial.length,
       fullRunEligible: receipt.fullRunEligible,
+      highLevelExcludedSources: highLevelExcluded.length,
+      highLevelBatches: highLevelPlan.batches,
+      highLevelEstimatedCalls: highLevelPlan.estimatedCalls,
+      highLevelEligible: receipt.highLevel.eligible,
       estimatedApiEquivalentUsd: receipt.estimatedApiEquivalentUsd,
       elapsedMs: receipt.elapsedMs,
       rssIncreaseBytes: receipt.rssIncreaseBytes,

@@ -1,7 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID, randomBytes } from "node:crypto";
+import { z } from "zod";
 import {
+  BatchAnalysisSchema,
   MAX_PROMPT_BYTES,
   analysisBatches,
   preflightAnalysis,
@@ -17,6 +19,7 @@ import { loadConfig } from "../../server/config.ts";
 import { database } from "../../server/db.ts";
 import { createApi } from "../../server/api.ts";
 import { hash } from "../../server/storage.ts";
+import { hasUnmarkedLegacyRevisions } from "../../server/run-readiness.ts";
 import type { SourceUnit } from "../../server/domain/evidence.ts";
 
 const unit = (
@@ -29,6 +32,27 @@ const unit = (
   ordinal: 1,
   location,
   text,
+});
+
+test("legacy DOCX revision text is rejected until the source is excluded", () => {
+  const source = {
+    name: "Contract.docx",
+    reader: "docx-structure-v1",
+    required: true,
+    published_at: null,
+    coverage: {
+      total: 2,
+      read: 1,
+      unread: 1,
+      unit: "section" as const,
+      failures: ["word/document.xml: ins content needs tracked-change review"],
+    },
+  };
+  assert.equal(hasUnmarkedLegacyRevisions(source), true);
+  assert.equal(
+    hasUnmarkedLegacyRevisions({ ...source, reader: "docx-structure-v2" }),
+    false,
+  );
 });
 
 test("segments retain every original character and keep locatable spreadsheet cells", () => {
@@ -53,10 +77,23 @@ test("segments retain every original character and keep locatable spreadsheet ce
   );
 });
 
-test("batch outcomes reconcile exactly, verify quotes and keep proposed wording unresolved", () => {
+test("high-level batches skip revised paragraphs and validate readable quotes", () => {
   const source = unit(
-    "Base text. ⟦proposed deletion (A, 2026-09-23): old term⟧ ⟦proposed insertion (B): new term⟧",
+    "Supplier must return a signed form.",
     "Body · Paragraph 1",
+  );
+  const revised = unit(
+    "Base text. ⟦proposed deletion (A, 2026-09-23): old term⟧ ⟦proposed insertion (B): new term⟧",
+    "Body · Paragraph 2",
+  );
+  const batches = [...analysisBatches([source, revised])];
+  assert.equal(batches.length, 1);
+  assert.equal(batches[0].segments.length, 1);
+  assert.ok(!batches[0].prompt.includes("new term"));
+  assert.ok(
+    !JSON.stringify(z.toJSONSchema(BatchAnalysisSchema)).includes(
+      "revisionState",
+    ),
   );
   const segment = [...segmentUnit(source)][0];
   const valid = {
@@ -65,12 +102,11 @@ test("batch outcomes reconcile exactly, verify quotes and keep proposed wording 
         segmentId: segment.id,
         items: [
           {
-            text: "Draft new term",
-            quote: "new term",
+            text: "Return a signed form",
+            quote: "Supplier must return a signed form.",
             kind: "requirement",
-            mandatory: false,
-            revisionState: "proposed-insertion",
-            contradiction: "old term",
+            mandatory: true,
+            contradiction: null,
           },
         ],
       },
@@ -106,63 +142,11 @@ test("batch outcomes reconcile exactly, verify quotes and keep proposed wording 
         outcomes: [
           {
             segmentId: segment.id,
-            items: [
-              {
-                ...valid.outcomes[0].items[0],
-                quote: "⟦proposed insertion (B): new term⟧",
-                revisionState: "operative",
-              },
-            ],
+            items: [{ ...valid.outcomes[0].items[0], kind: "fact" }],
           },
         ],
       }),
-    /operative/,
-  );
-  const long = unit(
-    "Preamble ".repeat(1300) +
-      "⟦proposed insertion (B): " +
-      "draft ".repeat(2500) +
-      "tail clause⟧",
-    "Body · Paragraph 2",
-  );
-  const later = [...segmentUnit(long)].find((part) =>
-    part.text.includes("tail clause"),
-  )!;
-  assert.ok(later.start > 0);
-  assert.throws(
-    () =>
-      validateBatchAnalysis([later], {
-        outcomes: [
-          {
-            segmentId: later.id,
-            items: [
-              {
-                text: "Draft term",
-                quote: "tail clause",
-                kind: "requirement",
-                mandatory: false,
-                revisionState: "operative",
-                contradiction: null,
-              },
-            ],
-          },
-        ],
-      }),
-    /operative/,
-  );
-  assert.throws(
-    () =>
-      validateBatchAnalysis([segment], {
-        outcomes: [
-          {
-            segmentId: segment.id,
-            items: [
-              { ...valid.outcomes[0].items[0], revisionState: "operative" },
-            ],
-          },
-        ],
-      }),
-    /operative/,
+    /Only requirements/,
   );
 });
 
@@ -202,6 +186,15 @@ test("durable outcomes survive restart, suppress duplicates and expose partial p
     "Body · Paragraph 1",
     sourceId,
   );
+  const revised = {
+    ...unit(
+      "Unchanged context. ⟦proposed insertion (editor): unaccepted clause⟧",
+      "Body · Paragraph 2",
+      sourceId,
+    ),
+    ordinal: 2,
+  };
+  assert.equal(preflightAnalysis([source, revised]).excludedUnits, 1);
   try {
     await db.query("INSERT INTO accounts(id,name) VALUES($1,'Analysis test')", [
       accountId,
@@ -216,12 +209,16 @@ test("durable outcomes survive restart, suppress duplicates and expose partial p
         sourceId,
         accountId,
         opportunityId,
-        { total: 1, read: 1, unread: 0, unit: "section", failures: [] },
+        { total: 2, read: 2, unread: 0, unit: "section", failures: [] },
       ],
     );
     await db.query(
       "INSERT INTO units(id,account_id,source_id,ordinal,location,text_content) VALUES($1,$2,$3,1,$4,$5)",
       [source.id, accountId, sourceId, source.location, source.text],
+    );
+    await db.query(
+      "INSERT INTO units(id,account_id,source_id,ordinal,location,text_content) VALUES($1,$2,$3,2,$4,$5)",
+      [revised.id, accountId, sourceId, revised.location, revised.text],
     );
     await db.query(
       "INSERT INTO runs(id,account_id,opportunity_id,input_hash,manifest,state) VALUES($1,$2,$3,$4,$5,'running')",
@@ -252,7 +249,6 @@ test("durable outcomes survive restart, suppress duplicates and expose partial p
                 quote: "Supplier must return the signed form.",
                 kind: "requirement" as const,
                 mandatory: true,
-                revisionState: "operative" as const,
                 contradiction: null,
               },
               {
@@ -260,7 +256,6 @@ test("durable outcomes survive restart, suppress duplicates and expose partial p
                 quote: "Supplier must return the signed form.",
                 kind: "requirement" as const,
                 mandatory: true,
-                revisionState: "operative" as const,
                 contradiction: null,
               },
             ],
@@ -271,16 +266,23 @@ test("durable outcomes survive restart, suppress duplicates and expose partial p
     const first = await analyseReadableUnits(
       db,
       run,
-      [source],
+      [source, revised],
       model,
       async () => {},
     );
     assert.equal(first.segmentsProcessed, 1);
+    assert.equal(first.unitsExcluded, 1);
+    const excluded = await db.query(
+      "SELECT reason FROM analysis_segments WHERE run_id=$1 AND state='excluded'",
+      [runId],
+    );
+    assert.equal(excluded.rowCount, 1);
+    assert.match(excluded.rows[0].reason, /outside high-level analysis/);
     assert.equal(calls, 1);
     await analyseReadableUnits(
       db,
       run,
-      [source],
+      [source, revised],
       async () => {
         throw new Error("completed stage was replayed");
       },
@@ -339,7 +341,8 @@ test("durable outcomes survive restart, suppress duplicates and expose partial p
       });
       assert.equal(preflight.statusCode, 200, preflight.body);
       assert.equal(preflight.json().sourceCount, 1);
-      assert.equal(preflight.json().unitCount, 1);
+      assert.equal(preflight.json().unitCount, 2);
+      assert.equal(preflight.json().excludedUnits, 1);
     } finally {
       await app.close();
     }

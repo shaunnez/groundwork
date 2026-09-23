@@ -8,6 +8,13 @@ export type ReadinessSource = {
   published_at: string | Date | null;
 };
 
+export function hasUnmarkedLegacyRevisions(source: ReadinessSource): boolean {
+  return (
+    source.reader === "docx-structure-v1" &&
+    source.coverage.failures.some((failure) => /: (?:ins|del) /.test(failure))
+  );
+}
+
 export function runReadinessIssues(
   sources: ReadinessSource[],
   cutoff: string,
@@ -16,6 +23,10 @@ export function runReadinessIssues(
 ): string[] {
   const issues: string[] = [];
   for (const source of sources) {
+    if (hasUnmarkedLegacyRevisions(source))
+      issues.push(
+        `${source.name}: legacy DOCX extraction mixed proposed wording into ordinary text; exclude this source from a high-level assessment`,
+      );
     if (
       source.required &&
       !completeCoverage(source.coverage) &&

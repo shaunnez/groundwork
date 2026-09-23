@@ -349,7 +349,7 @@ export function AssessmentBody({
                 ? ` · ${source.coverage.read}/${source.coverage.total ?? "?"} ${source.coverage.unit}s read`
                 : ""}
               {source.coverage?.failures?.length
-                ? ` · ${source.coverage.failures.join("; ")}`
+                ? " · partial text coverage; unread content outside analysis"
                 : ""}
             </p>
           ))}
@@ -358,7 +358,9 @@ export function AssessmentBody({
               GETS pack {p.tenderPack.rfxId} ·{" "}
               {p.tenderPack.complete
                 ? "all declared originals reconciled"
-                : "incomplete pack; see named file states"}
+                : p.tenderPack.counts.received === p.tenderPack.counts.expected
+                  ? "all declared originals admitted; reader coverage partial"
+                  : "incomplete pack; see named file states"}
             </p>
           )}
           {reportMaturity(report) === "Notice-only pursuit" && (

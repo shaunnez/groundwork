@@ -48,7 +48,7 @@ import {
   assessmentPrompt,
   supportPrompt,
 } from "./report.ts";
-const version = "worker-v4";
+const version = "worker-v5";
 export class Worker {
   readonly owner = randomUUID();
   readonly store: ObjectStore;
@@ -457,12 +457,16 @@ export class Worker {
           const digest = await analysisDigest(this.db, run.id);
           if (
             ledger.segmentsProcessed !==
-            run.manifest.analysisPreflight?.segments
+              run.manifest.analysisPreflight?.segments ||
+            ledger.unitsExcluded !==
+              run.manifest.analysisPreflight?.excludedUnits
           )
             throw new Error(
-              "Processed segment ledger does not reconcile with frozen preflight",
+              "Processed and excluded analysis ledger does not reconcile with frozen preflight",
             );
-          const complete = src.rows.every((s) => completeCoverage(s.coverage));
+          const complete =
+            ledger.unitsExcluded === 0 &&
+            src.rows.every((s) => completeCoverage(s.coverage));
           requirements = {
             status: hasTender
               ? complete
@@ -482,12 +486,12 @@ export class Worker {
                   text: r.text_content,
                   quote: r.quote,
                   mandatory: r.mandatory,
-                  rationale: `${r.location}; revision: ${r.revision_state}${r.contradiction ? `; contradiction: ${r.contradiction}` : ""}`,
+                  rationale: `${r.location}${r.contradiction ? `; contradiction: ${r.contradiction}` : ""}`,
                 },
               ],
             })),
             ledgerRunId: run.id,
-            limitation: `Every readable segment has a recorded outcome. The report shows at most 100 distinct requirement examples; the durable analysis ledger retains every verified extraction. ${!hasTender ? "No RFP or addendum was selected, so tender requirements were not requested." : complete ? "Reader coverage is complete." : "Reader coverage is partial; the RFP reassessment is not complete."} Full unit accounting does not prove perfect model recall.`,
+            limitation: `Every included readable segment has a recorded outcome; ${ledger.unitsExcluded} paragraphs with content outside scope were excluded from high-level analysis. The report shows at most 100 distinct requirement examples; the durable analysis ledger retains every verified extraction. ${!hasTender ? "No RFP or addendum was selected, so tender requirements were not requested." : complete ? "Reader coverage is complete." : "Reader coverage is partial; the RFP reassessment is not complete."} Full unit accounting does not prove perfect model recall.`,
           };
           const selected = digest.items;
           const selectedIds = [
@@ -583,7 +587,13 @@ export class Worker {
         coverage: s.coverage,
       }));
       const context: Record<string, unknown> = {
-        excludedSources: run.manifest.excludedSources ?? [],
+        excludedSources: (run.manifest.excludedSources ?? []).map(
+          (source: { id: string; name: string; exclusionReason?: string }) => ({
+            id: source.id,
+            name: source.name,
+            exclusionReason: source.exclusionReason,
+          }),
+        ),
         scopeNote: run.manifest.scopeNote ?? null,
         clientContextExcluded,
         previousFeedback,
@@ -596,7 +606,15 @@ export class Worker {
         cutoff,
         client,
         intelligence,
-        sourceInventory,
+        sourceInventory: sourceInventory.map((source) => ({
+          ...source,
+          coverage: {
+            total: source.coverage.total,
+            read: source.coverage.read,
+            unread: source.coverage.unread,
+            unit: source.coverage.unit,
+          },
+        })),
         units: analysisSelection?.units ?? units,
         ...(analysisSelection
           ? {
@@ -915,7 +933,7 @@ export class Worker {
                   : []),
                 ...(run.manifest.tenderPack && !run.manifest.tenderPack.complete
                   ? [
-                      `Tender pack ${run.manifest.tenderPack.rfxId} is incomplete. Narrow scope: ${run.manifest.scopeNote}. Missing or unread files remain outside exhaustive RFP coverage.`,
+                      `Tender pack ${run.manifest.tenderPack.rfxId} has partial reader coverage. Scope: ${run.manifest.scopeNote}. Unread material remains outside exhaustive RFP coverage.`,
                     ]
                   : []),
               ],

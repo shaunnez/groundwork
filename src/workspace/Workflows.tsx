@@ -1052,6 +1052,13 @@ export function RequestView({
     [excluded, setExcluded] = useState<string[]>([]),
     [narrowPack, setNarrowPack] = useState(false);
   const pack = detail.tenderPacks?.[0];
+  const currentPackFiles =
+    pack?.files.filter((file) => file.status === "current") ?? [];
+  const allPackOriginalsReadableInPart =
+    currentPackFiles.length > 0 &&
+    currentPackFiles.every(
+      (file) => file.sourceId && ["read", "partial"].includes(file.state),
+    );
   return (
     <>
       <Heading
@@ -1108,11 +1115,19 @@ export function RequestView({
             )}
             <h3>{detail.sources.length} saved sources</h3>
             {pack && !pack.complete && (
-              <Notice title="Tender pack is incomplete" tone="warning">
+              <Notice
+                title={
+                  allPackOriginalsReadableInPart
+                    ? "Text-based assessment"
+                    : "Tender pack is incomplete"
+                }
+                tone="warning"
+              >
                 {pack.counts.received} of {pack.counts.expected} originals
-                admitted; {pack.counts.readable} readable. Complete the named
-                files before an exhaustive RFP reassessment. A narrower run must
-                state its limits.
+                admitted; {pack.counts.readable} fully readable.{" "}
+                {allPackOriginalsReadableInPart
+                  ? "You can assess the readable text now. Unread objects remain outside the report. Any legacy DOCX with unsafe extracted text is excluded automatically. This is not an exhaustive RFP or contract review."
+                  : "Admit the missing originals before an exhaustive RFP reassessment. A narrower run must state its limits."}
                 <Button
                   kind="text"
                   type="button"
@@ -1159,7 +1174,7 @@ export function RequestView({
                   Exclude {s.name}
                 </label>
               ))}
-              {pack && !pack.complete && (
+              {pack && !pack.complete && !allPackOriginalsReadableInPart && (
                 <label className="connected-check">
                   <input
                     type="checkbox"
@@ -1188,7 +1203,10 @@ export function RequestView({
                 busy ||
                 !!run ||
                 !detail.sources.length ||
-                (!!pack && !pack.complete && !narrowPack)
+                (!!pack &&
+                  !pack.complete &&
+                  !allPackOriginalsReadableInPart &&
+                  !narrowPack)
               }
               type="submit"
             >
@@ -1215,8 +1233,8 @@ export function RequestView({
             context, scenarios, risks and gaps.
           </p>
           <p>
-            RFPs and addenda are reviewed across every admitted section. Analyst
-            review remains separate from generation.
+            The report uses readable saved text and shows excluded sources and
+            reader gaps. Analyst review remains separate from generation.
           </p>
           <Button
             kind="text"
@@ -1500,7 +1518,6 @@ export function RequirementsView({
       quote: string;
       mandatory: boolean;
       location: string;
-      revisionState: string;
       contradiction: string | null;
     }[];
     next: string | null;
@@ -1518,7 +1535,7 @@ export function RequirementsView({
   const rows = current
     ? current.items.map((item) => ({
         ...item,
-        rationale: `${item.location}; revision: ${item.revisionState}${item.contradiction ? `; contradiction: ${item.contradiction}` : ""}`,
+        rationale: `${item.location}${item.contradiction ? `; contradiction: ${item.contradiction}` : ""}`,
       }))
     : preview;
   const loadLedger = async () => {

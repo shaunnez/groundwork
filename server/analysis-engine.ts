@@ -6,6 +6,8 @@ import {
   ANALYSIS_METHOD,
   BatchAnalysisSchema,
   analysisBatchesAsync,
+  excludedUnitId,
+  highLevelExclusionReason,
   validateBatchAnalysis,
   type BatchAnalysis,
 } from "./analysis-pipeline.ts";
@@ -55,7 +57,31 @@ export async function analyseReadableUnits(
 ) {
   let batchNumber = 0;
   let peakPromptBytes = 0;
-  for await (const batch of analysisBatchesAsync(units)) {
+  async function* eligible() {
+    for await (const unit of units) {
+      const reason = highLevelExclusionReason(unit);
+      if (reason) {
+        await db.query(
+          `INSERT INTO analysis_segments(run_id,account_id,segment_id,source_id,unit_id,location,start_offset,end_offset,text_hash,method,state,reason)
+           VALUES($1,$2,$3,$4,$5,$6,0,$7,$8,$9,'excluded',$10)
+           ON CONFLICT(run_id,segment_id) DO NOTHING`,
+          [
+            run.id,
+            run.account_id,
+            excludedUnitId(unit),
+            unit.sourceId,
+            unit.id,
+            unit.location,
+            unit.text.length,
+            hash(unit.text),
+            ANALYSIS_METHOD,
+            reason,
+          ],
+        );
+      } else yield unit;
+    }
+  }
+  for await (const batch of analysisBatchesAsync(eligible())) {
     await active();
     const name = `analyse-${String(batchNumber++).padStart(5, "0")}`;
     peakPromptBytes = Math.max(peakPromptBytes, batch.promptBytes);
@@ -134,7 +160,7 @@ export async function analyseReadableUnits(
                 item.text,
                 item.quote,
                 item.mandatory,
-                item.revisionState,
+                "operative",
                 item.contradiction,
               ],
             );
@@ -161,6 +187,7 @@ export async function analyseReadableUnits(
     batches: batchNumber,
     peakPromptBytes,
     segmentsProcessed: counts.processed ?? 0,
+    unitsExcluded: counts.excluded ?? 0,
   };
 }
 
@@ -170,7 +197,7 @@ export async function analysisDigest(db: Database, runId: string) {
        SELECT i.*,row_number() OVER(PARTITION BY i.source_id ORDER BY i.mandatory DESC,i.kind DESC,i.item_id) AS source_rank
        FROM analysis_items i WHERE i.run_id=$1
      )
-     SELECT i.item_id,i.source_id,i.unit_id,i.location,i.kind,i.text_content,i.quote,i.mandatory,i.revision_state,i.contradiction,
+     SELECT i.item_id,i.source_id,i.unit_id,i.location,i.kind,i.text_content,i.quote,i.mandatory,i.contradiction,
             s.purpose,s.name FROM ranked i JOIN sources s ON s.id=i.source_id
      WHERE i.source_rank<=12 ORDER BY i.source_rank,i.source_id LIMIT 180`,
     [runId],
@@ -184,7 +211,7 @@ export async function analysisDigest(db: Database, runId: string) {
   );
   const preview = await db.query(
     `SELECT DISTINCT ON (text_content,quote,revision_state,mandatory,contradiction)
-       unit_id,text_content,quote,mandatory,revision_state,contradiction,source_id,location
+       unit_id,text_content,quote,mandatory,contradiction,source_id,location
      FROM analysis_items WHERE run_id=$1 AND kind='requirement'
      ORDER BY text_content,quote,revision_state,mandatory,contradiction,source_id LIMIT 100`,
     [runId],
@@ -199,7 +226,6 @@ export async function analysisDigest(db: Database, runId: string) {
       text_content: string;
       quote: string;
       mandatory: boolean;
-      revision_state: string;
       contradiction: string | null;
       purpose: string;
       name: string;
@@ -214,7 +240,6 @@ export async function analysisDigest(db: Database, runId: string) {
       text_content: string;
       quote: string;
       mandatory: boolean;
-      revision_state: string;
       contradiction: string | null;
       source_id: string;
       location: string;

@@ -68,7 +68,10 @@ import {
   editSector,
   sectorSettings,
 } from "./sectors.ts";
-import { runReadinessIssues } from "./run-readiness.ts";
+import {
+  hasUnmarkedLegacyRevisions,
+  runReadinessIssues,
+} from "./run-readiness.ts";
 import { preflightAnalysisAsync } from "./analysis-pipeline.ts";
 import { streamSourceUnits } from "./analysis-engine.ts";
 declare module "fastify" {
@@ -397,7 +400,7 @@ export async function createApi(config: Config, db: Database) {
       .parse(req.query);
     const result = await db.query(
       `SELECT i.item_id AS "itemId",i.unit_id AS "unitId",i.source_id AS "sourceId",i.location,
-              i.text_content AS text,i.quote,i.mandatory,i.revision_state AS "revisionState",i.contradiction
+              i.text_content AS text,i.quote,i.mandatory,i.contradiction
        FROM analysis_items i JOIN runs r ON r.id=i.run_id AND r.account_id=i.account_id
        WHERE i.run_id=$1 AND i.account_id=$2 AND i.kind=$3 AND i.item_id>coalesce($4,'')
        ORDER BY i.item_id LIMIT 101`,
@@ -891,11 +894,18 @@ export async function createApi(config: Config, db: Database) {
       const tenderPack = latestPackRow.rowCount
         ? await packDetail(db, req.accountId, latestPackRow.rows[0].id)
         : null;
-      if (
-        tenderPack &&
-        !tenderPack.complete &&
-        !input.allowIncompleteTenderPack
-      )
+      const currentPackFiles =
+        tenderPack?.files.filter((file) => file.status === "current") ?? [];
+      const allOriginalsReadableInPart =
+        currentPackFiles.length > 0 &&
+        currentPackFiles.every(
+          (file) => file.sourceId && ["read", "partial"].includes(file.state),
+        );
+      const textOnlyPartial = Boolean(
+        tenderPack && !tenderPack.complete && allOriginalsReadableInPart,
+      );
+      const allowPartial = input.allowIncompleteTenderPack || textOnlyPartial;
+      if (tenderPack && !tenderPack.complete && !allowPartial)
         throw new Error(
           `Tender pack ${tenderPack.rfxId} is incomplete (${tenderPack.counts.received}/${tenderPack.counts.expected} originals, ${tenderPack.counts.readable} readable); upload or resolve every named file before an exhaustive reassessment`,
         );
@@ -920,7 +930,7 @@ export async function createApi(config: Config, db: Database) {
           );
       }
       const allSources = await c.query(
-        "SELECT id,name,hash,required,state,published_at,purpose FROM active_sources WHERE opportunity_id=$1 AND account_id=$2 ORDER BY id",
+        "SELECT id,name,hash,required,state,published_at,purpose,reader,coverage FROM active_sources WHERE opportunity_id=$1 AND account_id=$2 ORDER BY id",
         [opportunityId, req.accountId],
       );
       if (input.excludedSourceIds.length && input.scopeNote.trim().length < 10)
@@ -933,10 +943,19 @@ export async function createApi(config: Config, db: Database) {
         )
       )
         throw new Error("Excluded source not found in this opportunity");
+      const legacyExcludedIds = allSources.rows
+        .filter(hasUnmarkedLegacyRevisions)
+        .map((source) => source.id as string);
+      const excludedSourceIds = [
+        ...new Set([...input.excludedSourceIds, ...legacyExcludedIds]),
+      ];
+      const scopeNote =
+        input.scopeNote.trim() ||
+        (textOnlyPartial || legacyExcludedIds.length
+          ? "High-level text-based assessment of readable saved content; unread visual material and unsafe legacy DOCX extraction are outside scope."
+          : "");
       const sources = {
-        rows: allSources.rows.filter(
-          (s) => !input.excludedSourceIds.includes(s.id),
-        ),
+        rows: allSources.rows.filter((s) => !excludedSourceIds.includes(s.id)),
       };
       const selectedSources = await c.query(
         "SELECT name,reader,required,coverage,published_at FROM sources WHERE account_id=$1 AND id=ANY($2::uuid[])",
@@ -950,7 +969,7 @@ export async function createApi(config: Config, db: Database) {
         selectedSources.rows,
         input.cutoff ?? opp.rows[0].cutoff,
         Number(characters.rows[0].count),
-        { allowPartial: input.allowIncompleteTenderPack },
+        { allowPartial },
       );
       if (readinessIssues.length)
         throw Object.assign(new Error(readinessIssues.join(" | ")), {
@@ -964,7 +983,9 @@ export async function createApi(config: Config, db: Database) {
         ),
       );
       const segmented =
-        batchEstimate.characters > 100_000 || batchEstimate.unitCount > 500;
+        allowPartial ||
+        batchEstimate.characters > 100_000 ||
+        batchEstimate.unitCount > 500;
       const candidateCount = segmented
         ? null
         : await c.query(
@@ -1021,10 +1042,15 @@ export async function createApi(config: Config, db: Database) {
       const manifest = {
         allSourceIds: allSources.rows.map((s) => s.id),
         allSourceHashes: allSources.rows.map((s) => s.hash),
-        excludedSources: allSources.rows.filter((s) =>
-          input.excludedSourceIds.includes(s.id),
-        ),
-        scopeNote: input.scopeNote,
+        excludedSources: allSources.rows
+          .filter((s) => excludedSourceIds.includes(s.id))
+          .map((s) => ({
+            ...s,
+            exclusionReason: legacyExcludedIds.includes(s.id)
+              ? "Legacy DOCX extraction cannot separate proposed wording"
+              : "Owner-selected scope",
+          })),
+        scopeNote,
         tenderPack: tenderPack
           ? {
               id: tenderPack.id,
@@ -1033,7 +1059,8 @@ export async function createApi(config: Config, db: Database) {
               observedAt: tenderPack.observedAt,
               complete: tenderPack.complete,
               files: tenderPack.files,
-              narrowOverride: input.allowIncompleteTenderPack,
+              narrowOverride: allowPartial,
+              textOnlyPartial,
             }
           : null,
         reviewFeedback,

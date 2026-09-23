@@ -183,6 +183,46 @@ test("selected tender pack verifies originals and keeps missing files named", as
     (await get(`/api/tender-packs/${packId}`)).json().complete,
     true,
   );
+  const imageDoc = wordDocument("<w:p><w:drawing/></w:p>");
+  const textOnlyPack = await post(
+    `/api/opportunities/${opportunity}/tender-packs`,
+    {
+      rfxId: "34995788",
+      observedAt: "2026-09-23T01:00:00+12:00",
+      files: [
+        {
+          fileId: "9",
+          name: "TextWithImage.docx",
+          kind: "attachment",
+          status: "current",
+          bytes: imageDoc.length,
+          sha256: hash(imageDoc),
+        },
+      ],
+    },
+  );
+  assert.equal(textOnlyPack.statusCode, 200, textOnlyPack.body);
+  const imported = await put(
+    `/api/tender-packs/${textOnlyPack.json().id}/files/9`,
+    imageDoc,
+  );
+  assert.equal(imported.statusCode, 200, imported.body);
+  const partialPack = (
+    await get(`/api/tender-packs/${textOnlyPack.json().id}`)
+  ).json();
+  assert.equal(partialPack.complete, false);
+  assert.equal(partialPack.counts.received, 1);
+  const textOnly = await post(`/api/opportunities/${opportunity}/runs`, {});
+  assert.equal(textOnly.statusCode, 200, textOnly.body);
+  const manifest = (
+    await db.query("SELECT manifest FROM runs WHERE id=$1", [
+      textOnly.json().id,
+    ])
+  ).rows[0].manifest;
+  assert.equal(manifest.tenderPack.textOnlyPartial, true);
+  assert.equal(manifest.method, "groundwork-segmented-v1");
+  assert.equal(manifest.excludedSources.length, 0);
+  assert.match(manifest.scopeNote, /High-level text-based/);
 });
 
 test.after(async () => {
