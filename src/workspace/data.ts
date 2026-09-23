@@ -378,6 +378,24 @@ export const provenance = (o: Opportunity) =>
   o.metadata.provenance === "synthetic"
     ? "Synthetic evaluation"
     : "Public evidence";
+export function reportMaturity(report: SavedReport): string {
+  if (
+    report.payload.tenderPack?.complete &&
+    report.payload.requirements.status === "complete"
+  )
+    return "RFP reassessment";
+  if (
+    report.payload.sourceInventory.some(
+      (source) => source.purpose === "rfp" || source.purpose === "addendum",
+    )
+  )
+    return "Limited tender assessment";
+  return report.payload.sourceInventory.every(
+    (source) => source.purpose === "notice",
+  )
+    ? "Notice-only pursuit"
+    : "Enriched public pursuit";
+}
 export const activeRun = (d: Detail) =>
   d.runs.find((r) => ["queued", "running"].includes(r.state));
 export const latestPursuit = (d: Detail) =>

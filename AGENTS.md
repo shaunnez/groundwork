@@ -63,3 +63,9 @@ Keep menu hover targets padded and Home journey links aligned across cards. Watc
 ## Reviewer and analysis polish · 23 September 2026
 
 Keep the reviewer-tools return link at the left of its banner with a left arrow. Give GETS mapping fields room to show source, original wording, parsed value and displayed value in distinct rows. Use the Watchlist search treatment on Sectors. For now, show Watchlist dates as `Closed DD/MM/YYYY HH:mm NZ Time`. Give report and brief pages the same divided sidebar layout. Present centre of gravity findings on readable light surfaces, and keep collection rows in Refresh & delivery high contrast with clear spacing and selection.
+
+## Pursuit Room and Saved Report · 23 September 2026
+
+Use the selected Decision Desk concept to give the pages distinct roles. Put Latest read first in Pursuit Room, followed by current next steps and source coverage. Keep the full versioned assessment and its citations on Saved Report. Derive queued, running, stopped, saved, review and tender-pack states from actual records; a previous saved report remains clearly historical while a new run is underway. The mock's dates, published badge, sharing control and sample actions are illustrative, not product requirements. This presentation work must not alter the report-generation pipeline or saved analytical records.
+
+In Saved Report, keep citation and assumption text dark enough to read on pale cards. Decorative banner characters in a source quote may be softened in the small citation preview, but opening the citation must retain the exact saved wording. Give intelligence gaps the same card and row hierarchy as adjacent sections. Keep the report outline visible on desktop and indicate the section in view as the reader scrolls or follows its links.
