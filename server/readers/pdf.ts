@@ -83,7 +83,7 @@ export async function extractPdf(
     total = doc.numPages;
     if (total > 200) throw new Error("PDF exceeds the 200-page pack limit");
     for (let p = 1; p <= total; p++) {
-      if (Date.now() - started > 120000) {
+      if (Date.now() - started > 300000) {
         failures.push(
           `Pages ${p}–${total}: extraction time limit reached; split the PDF`,
         );
@@ -164,9 +164,9 @@ export async function extractPdf(
         }
         let geometry: UnitGeometry = { page: p, method: "native", regions };
         if (!text.trim() || largeImage) {
-          if (++ocrPages > 20)
+          if (++ocrPages > 50)
             throw new Error(
-              "OCR limit is 20 scanned pages per document; split the PDF",
+              "OCR limit is 50 scanned pages per document; split the PDF",
             );
           if (!temporary) {
             temporary = await mkdtemp(join(tmpdir(), "groundwork-ocr-"));

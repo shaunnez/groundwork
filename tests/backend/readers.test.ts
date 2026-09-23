@@ -40,6 +40,22 @@ test("DOCX embedded and tracked content cannot silently count as complete", asyn
     assertCoverage(r.coverage);
   }
 });
+test("DOCX retains both tracked wording alternatives without selecting an operative version", async () => {
+  const r = await extract(
+    "word",
+    DOCX,
+    wordDocument(
+      '<w:p><w:r><w:t>The limit is </w:t></w:r><w:del w:author="Buyer" w:date="2026-09-20"><w:r><w:delText>20 days</w:delText></w:r></w:del><w:ins w:author="Buyer" w:date="2026-09-21"><w:r><w:t>30 days</w:t></w:r></w:ins></w:p>',
+    ),
+  );
+  const extracted = r.units.map((unit) => unit.text).join("\n");
+  assert.match(extracted, /proposed deletion \(Buyer, 2026-09-20\): 20 days/);
+  assert.match(extracted, /proposed insertion \(Buyer, 2026-09-21\): 30 days/);
+  assert.equal(r.reader, "docx-structure-v2");
+  assert.equal(r.state, "partial");
+  assert.equal(r.coverage.unread, 0);
+  assert.match(r.coverage.failures.join(" "), /revision acceptance unresolved/);
+});
 test("XLSX reads hidden sheets, cells, zero/false and formula cached values", async () => {
   const r = await extract("excel", XLSX, workbook());
   assert.equal(r.state, "read");

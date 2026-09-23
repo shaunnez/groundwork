@@ -47,3 +47,11 @@ The next GETS flow starts only when the owner presses **Check GETS now**. Do not
 For a selected subscribed GETS notice, admit the complete attachment pack as durable, immutable original sources before claiming an RFP reassessment. RFx 34995788 has 13 visible attachments, including a 58.5 MB drawings PDF and an XLSX pricing schedule; the present 20 MB upload limit cannot handle the former. Keep temporary download/extraction files separate from retained originals and reconcile every expected attachment to its reader/coverage outcome. Direct RealMe/GETS collection on Railway is a separate access and permission design, not a consequence of Shaun's local browser login. Do not auto-subscribe or download packs for all Watchlist entries.
 
 Keep local private configuration, evidence objects, receipts and browser captures under this checkout's Git-ignored `.local-groundwork/` directory. Never add or paste its contents into Git. The old procint path is a temporary compatibility link for already running services; new local commands should use the checkout path.
+
+## Selected pack reader scope · 23 September 2026
+
+For the current Groundwork pilot, analyse procurement wording and structured pricing; engineering interpretation of bridge drawings is outside scope. Keep original drawings and embedded Office images available, and identify visual material excluded from analytical coverage. Decorative logos need no model interpretation. Preserve both sides of DOCX tracked changes with their attribution; do not treat proposed wording as accepted contract text without evidence of its revision state.
+
+## Analysis progress · 23 September 2026
+
+Separate a queued request from a worker that has actually started. Show recorded stages, elapsed time, model calls and API-equivalent usage as an estimate, while distinguishing that figure from actual subscription billing. Show exact evidence or model blockers and avoid a promised completion time when the run cannot be estimated. A stopped request must not appear to be processing or offer a resume action that would immediately fail for the same unchanged cause.

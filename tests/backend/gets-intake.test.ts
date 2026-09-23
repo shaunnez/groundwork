@@ -21,6 +21,11 @@ import {
 } from "../../server/gets/parser.ts";
 import type { GetsTransport } from "../../server/gets/transport.ts";
 import { hash } from "../../server/storage.ts";
+import { createSector, correctSector } from "../../server/sectors.ts";
+import {
+  buildMappingTrace,
+  correctMapping,
+} from "../../server/gets/mapping.ts";
 
 const config = loadConfig(),
   db = database(config);
@@ -66,6 +71,19 @@ const detail = (
 <tr><th>Regions</th><td>Auckland, Wellington</td></tr>
 <tr><th>Overview</th><td>This is a synthetic notice. It does not invite a procurement response.</td></tr>
 </table><footer>${footer}</footer></body></html>`;
+test("GETS legend overview maps to its actual source paragraph", () => {
+  const html = `<html><body><div class="detail-divider"><span class="legend">Overview</span></div><p>Bridge repairs within the road carriageway.</p></body></html>`;
+  const fields = {
+    ...parseGetsDetail(
+      detail("90000001", "1 October 2026 at 5:00 PM NZDT"),
+      detailUrl("90000001"),
+    ),
+    overview: "Bridge repairs within the road carriageway.",
+  };
+  const mapping = buildMappingTrace(html, fields);
+  assert.equal(mapping.trace.overview.state, "copied from source");
+  assert.equal(mapping.trace.overview.rawText, fields.overview);
+});
 function fixtureTransport(
   pages: Record<string, string>,
   details: Record<string, string | Error>,
@@ -227,10 +245,11 @@ test("fixture replay reconciles pages and details, creates one opportunity per R
     "complete",
     JSON.stringify(
       (
-        await db.query("SELECT error FROM gets_intake_runs WHERE id=$1", [
-          first,
-        ])
-      ).rows[0],
+        await db.query(
+          "SELECT rfx_id,error FROM gets_intake_items WHERE run_id=$1",
+          [first],
+        )
+      ).rows,
     ),
   );
   const run = (
@@ -243,6 +262,29 @@ test("fixture replay reconciles pages and details, creates one opportunity per R
   assert.equal(run.duplicate_sightings, 1);
   assert.equal(run.new_count, 2);
   assert.equal(run.details_read, 2);
+  assert.equal(run.brief_attempts, 2);
+  const savedBriefs = await db.query(
+    "SELECT b.payload,b.source_id,i.state FROM gets_brief_items i JOIN gets_notice_briefs b ON b.id=i.brief_id WHERE i.run_id=$1 ORDER BY i.rfx_id",
+    [first],
+  );
+  assert.equal(savedBriefs.rowCount, 2);
+  assert.ok(
+    savedBriefs.rows.every(
+      (b) =>
+        b.state === "complete" &&
+        b.payload.actions.length === 3 &&
+        b.payload.summary.unitId,
+    ),
+  );
+  const initialMapping = await db.query(
+    "SELECT m.trace,m.flags FROM gets_mapping_versions m JOIN gets_notices n ON n.id=m.notice_id WHERE n.account_id=$1 AND n.rfx_id='90000001'",
+    [account],
+  );
+  assert.equal(initialMapping.rows[0].trace.buyer.sourceLabel, "Purchaser");
+  assert.equal(
+    initialMapping.rows[0].trace.buyer.displayedValue,
+    "Fixture buyer",
+  );
   const sources = await db.query(
     "SELECT s.provenance,s.state,n.rfx_id FROM gets_notices n JOIN gets_notice_revisions r ON r.id=n.current_revision_id JOIN sources s ON s.id=r.source_id WHERE n.account_id=$1 ORDER BY n.rfx_id",
     [account],
@@ -260,6 +302,25 @@ test("fixture replay reconciles pages and details, creates one opportunity per R
       [account],
     )
   ).rows[0];
+  const sector = await createSector(db, account, {
+    name: "Testing services",
+    keywords: ["fictional testing"],
+  });
+  await correctSector(db, account, imported.opportunity_id, owner, {
+    sectorId: sector.id,
+    reason: "Fixture owner confirmed this sector",
+  });
+  const mappingRevision = (
+    await db.query(
+      "SELECT current_revision_id FROM gets_notices WHERE account_id=$1 AND rfx_id='90000001'",
+      [account],
+    )
+  ).rows[0].current_revision_id;
+  await correctMapping(db, account, mappingRevision, owner, {
+    field: "category",
+    value: "Owner-corrected category",
+    reason: "Source category needs human correction",
+  });
   const originalView = await app.inject({
     url: `/api/sources/${imported.source_id}`,
     headers: headers(ownerToken),
@@ -302,6 +363,15 @@ test("fixture replay reconciles pages and details, creates one opportunity per R
     await db.query("SELECT * FROM gets_intake_runs WHERE id=$1", [repeat])
   ).rows[0];
   assert.equal(repeated.unchanged_count, 2);
+  assert.equal(
+    (
+      await db.query(
+        "SELECT count(*)::int AS n FROM gets_brief_items WHERE run_id=$1",
+        [repeat],
+      )
+    ).rows[0].n,
+    0,
+  );
   assert.equal(
     (
       await db.query(
@@ -349,6 +419,42 @@ test("fixture replay reconciles pages and details, creates one opportunity per R
     )
   ).rows[0];
   assert.notEqual(notice.current_revision_id, original);
+  assert.equal(
+    (
+      await db.query(
+        "SELECT sector_id,method FROM opportunity_sectors WHERE opportunity_id=$1",
+        [imported.opportunity_id],
+      )
+    ).rows[0].method,
+    "person",
+  );
+  assert.equal(
+    (
+      await db.query(
+        "SELECT sector_id FROM opportunity_sectors WHERE opportunity_id=$1",
+        [imported.opportunity_id],
+      )
+    ).rows[0].sector_id,
+    sector.id,
+  );
+  const carriedMapping = await db.query(
+    "SELECT trace,projection FROM gets_mapping_versions WHERE revision_id=$1 ORDER BY version DESC LIMIT 1",
+    [notice.current_revision_id],
+  );
+  assert.equal(
+    carriedMapping.rows[0].projection.category,
+    "Owner-corrected category",
+  );
+  assert.equal(carriedMapping.rows[0].trace.category.state, "conflicting");
+  assert.equal(
+    (
+      await db.query(
+        "SELECT count(*)::int AS n FROM gets_notice_briefs WHERE account_id=$1",
+        [account],
+      )
+    ).rows[0].n,
+    3,
+  );
   assert.equal(
     (
       await db.query(
@@ -502,6 +608,69 @@ test("an explicit retry resumes a partial fixture run with a fresh bounded attem
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
+});
+test("notice briefs stop at five per manual attempt and resume without regenerating completed work", async () => {
+  const url = "https://www.gets.govt.nz/ExternalIndex.htm";
+  const ids = Array.from({ length: 6 }, (_, index) => String(90001001 + index));
+  const runId = await queueFixture(url);
+  const worker = new GetsIntakeWorker(
+    { ...config, getsBriefsPerAttempt: 5 },
+    db,
+    fixtureTransport(
+      {
+        [url]: listing(
+          ids.map((id) => row(id, `Bounded fixture ${id}`)).join(""),
+        ),
+      },
+      Object.fromEntries(
+        ids.map((id) => [id, detail(id, "1 October 2026 at 5:00 PM NZDT")]),
+      ),
+    ),
+  );
+  for (let step = 0; step < 20; step++) {
+    const state = (
+      await db.query("SELECT state FROM gets_intake_runs WHERE id=$1", [runId])
+    ).rows[0].state;
+    if (state === "partial") break;
+    await worker.tick();
+  }
+  const before = (
+    await db.query(
+      "SELECT state,brief_attempts FROM gets_intake_runs WHERE id=$1",
+      [runId],
+    )
+  ).rows[0];
+  assert.deepEqual([before.state, before.brief_attempts], ["partial", 5]);
+  const counts = (await getsStatus(db, config, account)).briefCounts;
+  assert.equal(counts.complete, 5);
+  assert.equal(counts.pending, 1);
+  const approved = {
+    ...config,
+    getsOperatorTest: {
+      accountId: account,
+      expiresAt: new Date(Date.now() + 60000).toISOString(),
+    },
+  };
+  await retryGetsRun(db, approved, account, runId);
+  assert.equal(await drain(worker, runId), "complete");
+  assert.equal(
+    (
+      await db.query(
+        "SELECT count(*)::int AS n FROM gets_notice_briefs b JOIN gets_brief_items i ON i.brief_id=b.id WHERE i.run_id=$1",
+        [runId],
+      )
+    ).rows[0].n,
+    6,
+  );
+  assert.equal(
+    (
+      await db.query(
+        "SELECT brief_attempts FROM gets_intake_runs WHERE id=$1",
+        [runId],
+      )
+    ).rows[0].brief_attempts,
+    1,
+  );
 });
 test("two owner clicks attach to one approved queued run without making a network call", async () => {
   const dir = await mkdtemp(join(tmpdir(), "gets-approval-test-"));

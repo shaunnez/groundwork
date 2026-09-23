@@ -167,17 +167,30 @@ export function WatchlistView({
   go,
   onAdd,
   onImported,
+  onEvidence,
 }: {
   boot: Bootstrap;
   reports: ReportSummary[];
   go: Navigate;
   onAdd: () => void;
   onImported: () => Promise<void>;
+  onEvidence: (sourceId: string, quote: string) => void;
 }) {
   const [search, setSearch] = useState(""),
     [filter, setFilter] = useState("all"),
     [client, setClient] = useState(""),
+    [sector, setSector] = useState(""),
     [visible, setVisible] = useState(25);
+  const sectorOptions = [
+    ...new Map(
+      boot.opportunities
+        .filter((o) => o.groundwork_sector_id)
+        .map((o) => [
+          o.groundwork_sector_id,
+          o.groundwork_sector_name || "Sector",
+        ]),
+    ).entries(),
+  ];
   const latest = (o: Opportunity) =>
     reports.find((r) => r.kind === "pursuit" && r.opportunity_id === o.id);
   const rows = boot.opportunities.filter(
@@ -194,6 +207,10 @@ export function WatchlistView({
         .toLowerCase()
         .includes(search.toLowerCase()) &&
       (!client || o.client_id === client) &&
+      (!sector ||
+        (sector === "unknown"
+          ? !o.groundwork_sector_id
+          : o.groundwork_sector_id === sector)) &&
       (filter === "all" ||
         (filter === "assessed" ? Boolean(latest(o)) : !latest(o))),
   );
@@ -267,6 +284,22 @@ export function WatchlistView({
             </option>
           ))}
         </select>
+        <select
+          aria-label="Filter by Groundwork sector"
+          value={sector}
+          onChange={(e) => {
+            setSector(e.target.value);
+            setVisible(25);
+          }}
+        >
+          <option value="">All Groundwork sectors</option>
+          <option value="unknown">Unknown</option>
+          {sectorOptions.map(([id, name]) => (
+            <option key={id} value={id!}>
+              {name}
+            </option>
+          ))}
+        </select>
       </div>
       <div className="list-heading">
         <strong>{rows.length} tracked opportunities</strong>
@@ -290,6 +323,16 @@ export function WatchlistView({
           {rows.slice(0, visible).map((o) => {
             const r = latest(o);
             const preview = watchlistPreview(o, r);
+            const brief = !r ? o.notice_brief : null;
+            const citation = (unitId: string, quote: string) =>
+              o.notice_brief_source_id && (
+                <button
+                  className="notice-citation"
+                  onClick={() => onEvidence(unitId, quote)}
+                >
+                  View saved notice wording
+                </button>
+              );
             return (
               <article className="opportunity-row" key={o.id}>
                 <div>
@@ -301,20 +344,42 @@ export function WatchlistView({
                     {o.title}
                   </button>
                   <p className="small muted">
-                    {o.notice_id} · {provenance(o)}
+                    {o.notice_id} · {provenance(o)} · Groundwork sector:{" "}
+                    {o.groundwork_sector_name || "Unknown"}
                   </p>
                   <div className="watch-intelligence">
                     <div className="watch-intelligence-main">
                       <h3>Intelligence summary</h3>
-                      <p>{preview.summary}</p>
-                      <p className="watch-framing">{preview.framing}</p>
+                      <p>
+                        {brief?.summary.text || preview.summary}{" "}
+                        {brief &&
+                          citation(brief.summary.unitId, brief.summary.quote)}
+                      </p>
+                      <p className="watch-framing">
+                        {brief?.whyItMayMatter.text || preview.framing}{" "}
+                        {brief &&
+                          citation(
+                            brief.whyItMayMatter.unitId,
+                            brief.whyItMayMatter.quote,
+                          )}
+                      </p>
                     </div>
                     <div>
                       <h3>Red flags &amp; unknowns</h3>
-                      {preview.flags.length ? (
+                      {brief?.redFlags.length || preview.flags.length ? (
                         <ul>
-                          {preview.flags.map((flag) => (
-                            <li key={flag}>{flag}</li>
+                          {(brief
+                            ? brief.redFlags.map((item) => item.text)
+                            : preview.flags
+                          ).map((flag, index) => (
+                            <li key={`${index}:${flag}`}>
+                              {flag}{" "}
+                              {brief &&
+                                citation(
+                                  brief.redFlags[index].unitId,
+                                  brief.redFlags[index].quote,
+                                )}
+                            </li>
                           ))}
                         </ul>
                       ) : (
@@ -327,8 +392,18 @@ export function WatchlistView({
                     <div className="watch-actions">
                       <h3>Three recommended actions</h3>
                       <ol>
-                        {preview.actions.map((action) => (
-                          <li key={action}>{action}</li>
+                        {(brief
+                          ? brief.actions.map((item) => item.text)
+                          : preview.actions
+                        ).map((action, index) => (
+                          <li key={`${index}:${action}`}>
+                            {action}{" "}
+                            {brief &&
+                              citation(
+                                brief.actions[index].unitId,
+                                brief.actions[index].quote,
+                              )}
+                          </li>
                         ))}
                       </ol>
                     </div>
@@ -349,7 +424,9 @@ export function WatchlistView({
                       </div>
                     )}
                     <small className="watch-basis">
-                      {preview.basis}
+                      {brief
+                        ? "Saved public-notice brief · attachments not examined · full pursuit not assessed"
+                        : preview.basis}
                       {o.metadata.noticeUrl && (
                         <>
                           {" "}

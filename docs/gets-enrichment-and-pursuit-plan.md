@@ -2,6 +2,13 @@
 
 23 September 2026. Planning document; none of the changes below is implemented by this document.
 
+## Local delivery status · 23 September 2026
+
+- The selected RFx pack is admitted in the private local mirror: 13 current originals, including the drawings PDF and pricing XLSX, with checksums and reader outcomes. The withdrawn file is excluded. Nine files report complete reader coverage; four Office files report partial coverage, including unresolved draft-contract revision state. The original public-notice report remains saved.
+- Pursuit source links, citation location, section explanations, firm linkage and report maturity labels are implemented locally. A new complete RFP reassessment has **not** passed: the 13-file manifest yields 775,126 extracted characters against the current 160,000-character analysis limit, and four required sources still have partial reader coverage. The attempted run stopped before a model call.
+- Field mapping and review, editable sectors and Watchlist filtering are implemented locally. The 369 active opportunities in the mirror have 366 rule-based sector assignments and three Unknown assignments. This taxonomy and its classifications still need Bobby's review against a sampled set. The manual GETS enrichment path has fixture coverage, but its model-generated notice briefs have not been validated on a small live batch.
+- These results describe the local mirror and checkout. They have not been deployed to the hosted Groundwork application. A bounded full-pack analysis path and resolution of the four Office coverage outcomes are required before calling this selected RFP reassessment complete.
+
 ## Outcome and fixed decisions
 
 An owner presses **Check GETS now**. Groundwork imports the public notices, shows what it read and could not read, maps fields with inspectable provenance, assigns a Groundwork sector, and produces a bounded notice-level brief for each new or changed readable notice. The Watchlist shows the result and its evidence limits. A full pursuit package remains an explicit choice for a selected opportunity after the relevant source pack and firm context are available. Existing reports remain whole and immutable.
@@ -82,16 +89,16 @@ Run model tasks in small, resumable per-notice units. Use the saved semantic not
 
 ## Local RealMe/GETS access experiment
 
-Shaun used his own browser to sign in with RealMe and subscribe to RFx 34995788. The agent did not handle an MFA challenge. Credentials, tokens and cookies have not been copied into Groundwork, Git, logs or Railway. GETS's [supplier guide](https://www.gets.govt.nz/SupplierUserTenderHelp.htm) says subscription is required to access attachments. This establishes only what this account can see for this notice, not a reusable server integration or permission to automate other accounts.
+Shaun used his own browser to sign in with RealMe and subscribe to RFx 34995788. The agent did not handle an MFA challenge. No RealMe password was copied into Groundwork, Git, logs or Railway. The selected-project browser proof stores GETS-only session cookies under ignored `.local-groundwork/` at mode 0600 for a local headless rerun. GETS's [supplier guide](https://www.gets.govt.nz/SupplierUserTenderHelp.htm) says subscription is required to access attachments.
 
-The supplier account is active and subscribed; the 13 attachment names, sizes, GETS checksums and individual download links are visible. No attachment was downloaded or read during this inspection, so actual downloads and file integrity remain unverified. No tender response or question was submitted. Next, use a bounded owner-approved transfer of the full pack for local reader/coverage tests; retain each original, reader state and cited page or Office location, and check the PDF viewer against actual source bytes.
+The selected RFx now has 13 current files: 12 attachments and one addendum. The withdrawn draft contract version is excluded. A bounded local browser run downloaded the bulk ZIP, verified all 70,860,482 individual original bytes against the GETS file table and retained each file. A subsequent headless run reused the local GETS session; a missing pricing XLSX test copy was recovered from a fresh bulk download and reverified. Nine files had complete initial reader coverage. The four partial Office outcomes were two DOCX files with decorative council logos, an XLSX pricing schedule with a decorative logo, and the draft contract with substantive embedded images and tracked changes. All 47 drawing PDF pages were read as PDF text/OCR; engineering interpretation is out of this pilot's scope. The revision-aware DOCX reader now extracts both proposed insertion and deletion text, but does not infer accepted contract wording. No tender response or question was submitted.
 
-Only after the access experiment should we design a server-side authenticated route. It would need a supported supplier-access mechanism, account ownership, session handling, allowed download scope, addendum updates, audit and revocation. A successful browser login alone does not settle those questions or the existing GETS/MBIE access arrangement.
+The local browser and archive proof is separate from a hosted authenticated collector. A hosted route would need account ownership, session handling, selected-project scope, addendum updates, audit and revocation. The local proof does not copy browser state to Railway.
 
 ## Delivery order and stop conditions
 
-1. Completed: inspect the RealMe supplier view for RFx 34995788 and inventory its 13 subscribed attachments. Download, byte integrity and reader coverage remain to be tested.
-2. Test a bounded transfer of the 13-file pack, then deliver selected-opportunity document admission, including the large-file path, checksum and reader/coverage reconciliation. Keep direct authenticated GETS collection separate.
+1. Completed locally: inspect the subscribed RFx, download and reconcile the 13 current files, test bounded browser acquisition and reader coverage.
+2. Deliver selected-opportunity document admission, including the large-file path, checksum and reader/coverage reconciliation. The local browser acquisition proof remains separate from hosted authenticated collection.
 3. Deliver pursuit presentation fixes, firm-profile linkage and explicit report maturity/coverage states; verify a fresh RFP reassessment with actual admitted documents without changing the old report.
 4. Build mapping provenance, sector taxonomy/settings and a reviewed backfill of the tracked inventory.
 5. Extend the manual GETS button into staged, capped **public notice** enrichment; test unchanged/retry/partial cases, then validate a small real batch before widening the cap. Keep authenticated pack admission a selected-opportunity step.

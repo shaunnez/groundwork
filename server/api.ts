@@ -14,6 +14,7 @@ import { research } from "./research.ts";
 import Fastify from "fastify";
 import cookie from "@fastify/cookie";
 import multipart from "@fastify/multipart";
+import type { Readable } from "node:stream";
 import staticFiles from "@fastify/static";
 import rateLimit from "@fastify/rate-limit";
 import { randomUUID, randomBytes, timingSafeEqual } from "node:crypto";
@@ -33,6 +34,12 @@ import {
   setSourceArchived,
 } from "./source-management.ts";
 import { ingest } from "./sources.ts";
+import {
+  declareTenderPack,
+  importTenderFile,
+  packDetail,
+  reviewTenderDrawing,
+} from "./tender-packs.ts";
 import { fetchSource } from "./fetch-source.ts";
 import {
   searchUnits,
@@ -46,6 +53,21 @@ import {
   cancelGetsRun,
   retryGetsRun,
 } from "./gets/intake.ts";
+import {
+  backfillMappings,
+  correctMapping,
+  mappingQueue,
+  markMappingReviewed,
+} from "./gets/mapping.ts";
+import {
+  backfillSectors,
+  classifyOpportunity,
+  correctSector,
+  createSector,
+  editSector,
+  sectorSettings,
+} from "./sectors.ts";
+import { runReadinessIssues } from "./run-readiness.ts";
 declare module "fastify" {
   interface FastifyRequest {
     accountId: string;
@@ -63,6 +85,9 @@ export async function createApi(config: Config, db: Database) {
   await app.register(multipart, {
     limits: { fileSize: 20 * 1024 * 1024, files: 1 },
   });
+  app.addContentTypeParser("application/octet-stream", (req, payload, done) =>
+    done(null, payload),
+  );
   app.decorateRequest("accountId", "");
   app.decorateRequest("userId", "");
   app.decorateRequest("role", "reviewer");
@@ -107,7 +132,7 @@ export async function createApi(config: Config, db: Database) {
         config.publicOrigin
           ? origin !== config.publicOrigin
           : !["127.0.0.1", "localhost"].includes(u.hostname) ||
-            !["4318", "5178"].includes(u.port)
+            ![String(config.port), "4318", "5178"].includes(u.port)
       )
         return reply.code(403).send({ error: "Origin denied" });
     }
@@ -189,12 +214,19 @@ export async function createApi(config: Config, db: Database) {
   app.get("/api/bootstrap", async (req) => {
     const [opportunities, clients, reviews, budget] = await Promise.all([
       db.query(
-        "SELECT * FROM opportunities WHERE account_id=$1 ORDER BY created_at DESC",
+        `SELECT o.*,a.sector_id AS groundwork_sector_id,coalesce(g.name,'Unknown') AS groundwork_sector_name,
+                coalesce(a.method,'unrecorded') AS groundwork_sector_method,
+                b.payload AS notice_brief,b.source_id AS notice_brief_source_id
+         FROM opportunities o LEFT JOIN opportunity_sectors a ON a.opportunity_id=o.id AND a.account_id=o.account_id
+         LEFT JOIN groundwork_sectors g ON g.id=a.sector_id AND g.account_id=a.account_id
+         LEFT JOIN gets_notices n ON n.opportunity_id=o.id AND n.account_id=o.account_id
+         LEFT JOIN LATERAL (SELECT payload,source_id FROM gets_notice_briefs WHERE account_id=o.account_id AND revision_id=n.current_revision_id ORDER BY created_at DESC LIMIT 1) b ON true
+         WHERE o.account_id=$1 AND o.archived_at IS NULL ORDER BY o.created_at DESC`,
         [req.accountId],
       ),
       db.query("SELECT * FROM clients WHERE account_id=$1", [req.accountId]),
       db.query(
-        "SELECT v.*,r.kind,r.opportunity_id,o.title,o.metadata FROM reviews v JOIN reports r ON r.id=v.report_id JOIN opportunities o ON o.id=r.opportunity_id WHERE v.account_id=$1 ORDER BY v.created_at DESC",
+        "SELECT v.*,r.kind,r.opportunity_id,o.title,o.metadata FROM reviews v JOIN reports r ON r.id=v.report_id JOIN opportunities o ON o.id=r.opportunity_id WHERE v.account_id=$1 AND o.archived_at IS NULL ORDER BY v.created_at DESC",
         [req.accountId],
       ),
       db.query(
@@ -208,6 +240,7 @@ export async function createApi(config: Config, db: Database) {
       budget: budget.rows[0],
       mode: "local-internal",
       role: req.role,
+      modelEnabled: config.claudeSubscriptionApproved,
       researchEnabled:
         config.firecrawlIncludedConfirmed && !!config.firecrawlCredentialFile,
     };
@@ -223,6 +256,63 @@ export async function createApi(config: Config, db: Database) {
   );
   app.post("/api/gets/runs/:id/retry", async (req) =>
     retryGetsRun(db, config, req.accountId, asId(req.params)),
+  );
+  app.get("/api/gets/mappings", async (req) => {
+    const { filter, page } = z
+      .object({
+        filter: z
+          .enum([
+            "all",
+            "missing",
+            "changed",
+            "conflicting",
+            "unusual",
+            "unknown-sector",
+            "reviewed",
+          ])
+          .default("all"),
+        page: z.coerce.number().int().min(1).max(100).default(1),
+      })
+      .parse(req.query);
+    return mappingQueue(db, req.accountId, filter, page);
+  });
+  app.post("/api/gets/mappings/backfill", async (req) => {
+    const { limit } = z
+      .object({ limit: z.number().int().min(1).max(25).default(25) })
+      .parse(req.body ?? {});
+    return backfillMappings(db, store, req.accountId, limit);
+  });
+  app.post("/api/gets/mappings/:id/correct", async (req) =>
+    correctMapping(db, req.accountId, asId(req.params), req.userId, req.body),
+  );
+  app.post("/api/gets/mappings/:id/review", async (req) => {
+    const { reason } = z
+      .object({ reason: z.string() })
+      .strict()
+      .parse(req.body);
+    return markMappingReviewed(
+      db,
+      req.accountId,
+      asId(req.params),
+      req.userId,
+      reason,
+    );
+  });
+  app.get("/api/sectors", async (req) => sectorSettings(db, req.accountId));
+  app.post("/api/sectors", async (req) =>
+    createSector(db, req.accountId, req.body),
+  );
+  app.post("/api/sectors/:id", async (req) =>
+    editSector(db, req.accountId, asId(req.params), req.body),
+  );
+  app.post("/api/sectors/backfill", async (req) => {
+    const { limit } = z
+      .object({ limit: z.number().int().min(1).max(25).default(25) })
+      .parse(req.body ?? {});
+    return backfillSectors(db, req.accountId, limit);
+  });
+  app.post("/api/opportunities/:id/sector", async (req) =>
+    correctSector(db, req.accountId, asId(req.params), req.userId, req.body),
   );
   app.post("/api/clients", async (req) => {
     const x = ClientInput.parse(req.body),
@@ -247,8 +337,9 @@ export async function createApi(config: Config, db: Database) {
        r.payload->>'cutoff' AS cutoff,r.payload->'assessment'->'verdict' AS verdict,
        r.payload->'summarySentences' AS summary,r.payload->'intelligence'->'entities' AS entities,
        r.payload->>'evaluation' AS evaluation,v.state AS review_state
-       FROM reports r LEFT JOIN reviews v ON v.report_id=r.id AND v.account_id=r.account_id
-       WHERE r.account_id=$1 ORDER BY r.created_at DESC,r.id`,
+       FROM reports r JOIN opportunities o ON o.id=r.opportunity_id AND o.account_id=r.account_id
+       LEFT JOIN reviews v ON v.report_id=r.id AND v.account_id=r.account_id
+       WHERE r.account_id=$1 AND o.archived_at IS NULL ORDER BY r.created_at DESC,r.id`,
         [req.accountId],
       )
     ).rows,
@@ -256,19 +347,29 @@ export async function createApi(config: Config, db: Database) {
   app.post("/api/opportunities", async (req) => {
     const x = OpportunityInput.parse(req.body),
       opportunityId = randomUUID();
-    await db.query(
-      "INSERT INTO opportunities(id,account_id,client_id,title,buyer,notice_id,cutoff,metadata) VALUES($1,$2,$3,$4,$5,$6,$7,$8)",
-      [
-        opportunityId,
+    await transaction(db, async (c) => {
+      await c.query(
+        "INSERT INTO opportunities(id,account_id,client_id,title,buyer,notice_id,cutoff,metadata) VALUES($1,$2,$3,$4,$5,$6,$7,$8)",
+        [
+          opportunityId,
+          req.accountId,
+          x.clientId,
+          x.title,
+          x.buyer,
+          x.noticeId,
+          x.cutoff,
+          x,
+        ],
+      );
+      await classifyOpportunity(
+        c,
         req.accountId,
-        x.clientId,
+        opportunityId,
+        null,
         x.title,
-        x.buyer,
-        x.noticeId,
-        x.cutoff,
-        x,
-      ],
-    );
+        null,
+      );
+    });
     return { id: opportunityId };
   });
   const owned = async (accountId: string, opportunityId: string) => {
@@ -283,32 +384,194 @@ export async function createApi(config: Config, db: Database) {
   app.get("/api/opportunities/:id", async (req) => {
     const opportunityId = asId(req.params),
       opportunity = await owned(req.accountId, opportunityId);
-    const [sources, runs, reports, history] = await Promise.all([
-      db.query(
-        "SELECT id,name,media_type,origin,published_at,purpose,required,hash,reader,state,coverage,provenance,created_at FROM active_sources WHERE account_id=$1 AND opportunity_id=$2 ORDER BY created_at",
-        [req.accountId, opportunityId],
-      ),
-      db.query(
-        "SELECT * FROM runs WHERE account_id=$1 AND opportunity_id=$2 ORDER BY created_at DESC",
-        [req.accountId, opportunityId],
-      ),
-      db.query(
-        "SELECT id,kind,created_at,parent_report_id,intelligence_id,payload FROM reports WHERE account_id=$1 AND opportunity_id=$2 ORDER BY created_at DESC",
-        [req.accountId, opportunityId],
-      ),
-      db.query(
-        "SELECT s.id,s.name,s.media_type,s.coverage,s.state,s.purpose,s.provenance,s.published_at,s.required,l.status,l.successor_id,l.reason,l.updated_at FROM sources s JOIN source_lifecycle l ON l.source_id=s.id AND l.account_id=s.account_id WHERE s.account_id=$1 AND s.opportunity_id=$2 AND l.status<>'active' ORDER BY l.updated_at DESC",
-        [req.accountId, opportunityId],
-      ),
-    ]);
+    const [sources, runs, reports, history, packs, firmLink] =
+      await Promise.all([
+        db.query(
+          "SELECT id,name,media_type,origin,published_at,purpose,required,hash,reader,state,coverage,provenance,created_at FROM active_sources WHERE account_id=$1 AND opportunity_id=$2 ORDER BY created_at",
+          [req.accountId, opportunityId],
+        ),
+        db.query(
+          "SELECT * FROM runs WHERE account_id=$1 AND opportunity_id=$2 ORDER BY created_at DESC",
+          [req.accountId, opportunityId],
+        ),
+        db.query(
+          "SELECT id,kind,created_at,parent_report_id,intelligence_id,payload FROM reports WHERE account_id=$1 AND opportunity_id=$2 ORDER BY created_at DESC",
+          [req.accountId, opportunityId],
+        ),
+        db.query(
+          "SELECT s.id,s.name,s.media_type,s.coverage,s.state,s.purpose,s.provenance,s.published_at,s.required,l.status,l.successor_id,l.reason,l.updated_at FROM sources s JOIN source_lifecycle l ON l.source_id=s.id AND l.account_id=s.account_id WHERE s.account_id=$1 AND s.opportunity_id=$2 AND l.status<>'active' ORDER BY l.updated_at DESC",
+          [req.accountId, opportunityId],
+        ),
+        db.query(
+          "SELECT id FROM tender_packs WHERE opportunity_id=$1 AND account_id=$2 ORDER BY created_at DESC LIMIT 5",
+          [opportunityId, req.accountId],
+        ),
+        db.query(
+          "SELECT l.client_id,l.effective_date,l.source,l.created_at,c.legal_name FROM opportunity_firm_links l JOIN clients c ON c.id=l.client_id AND c.account_id=l.account_id WHERE l.opportunity_id=$1 AND l.account_id=$2 ORDER BY l.created_at DESC LIMIT 1",
+          [opportunityId, req.accountId],
+        ),
+      ]);
+    const latestRun = runs.rows[0];
+    if (latestRun) {
+      const sourceIds = latestRun.manifest?.sourceIds as string[] | undefined;
+      const [stageRows, callRows, dispatchRow, frozenSources, characters] =
+        await Promise.all([
+          db.query(
+            "SELECT name,state,started_at,finished_at,error FROM stages WHERE run_id=$1 AND account_id=$2 ORDER BY started_at",
+            [latestRun.id, req.accountId],
+          ),
+          db.query(
+            "SELECT status,usage FROM provider_calls WHERE run_id=$1 AND account_id=$2 ORDER BY created_at",
+            [latestRun.id, req.accountId],
+          ),
+          db.query(
+            "SELECT attempts,lease_until FROM dispatch WHERE run_id=$1",
+            [latestRun.id],
+          ),
+          sourceIds?.length
+            ? db.query(
+                "SELECT name,reader,required,coverage,published_at FROM sources WHERE account_id=$1 AND id=ANY($2::uuid[])",
+                [req.accountId, sourceIds],
+              )
+            : Promise.resolve({ rows: [] }),
+          sourceIds?.length
+            ? db.query(
+                "SELECT coalesce(sum(length(text_content)),0)::int AS count FROM units WHERE account_id=$1 AND source_id=ANY($2::uuid[])",
+                [req.accountId, sourceIds],
+              )
+            : Promise.resolve({ rows: [{ count: 0 }] }),
+        ]);
+      const usages = callRows.rows.map((row) =>
+        Number(row.usage?.apiEquivalentUsd),
+      );
+      latestRun.progress = {
+        stages: stageRows.rows,
+        workerAttempts: dispatchRow.rows[0]?.attempts ?? 0,
+        leaseUntil: dispatchRow.rows[0]?.lease_until ?? null,
+        modelCalls: callRows.rowCount,
+        apiEquivalentUsd: usages.reduce(
+          (total, value) => total + (Number.isFinite(value) ? value : 0),
+          0,
+        ),
+        readinessIssues: sourceIds?.length
+          ? runReadinessIssues(
+              frozenSources.rows,
+              latestRun.manifest.cutoff,
+              Number(characters.rows[0].count),
+            )
+          : [],
+        modelEnabled: config.claudeSubscriptionApproved,
+        resumable:
+          ["failed", "budget-blocked"].includes(latestRun.state) &&
+          config.claudeSubscriptionApproved &&
+          !callRows.rows.some((row) =>
+            ["failed", "reserved", "uncertain"].includes(row.status),
+          ),
+      };
+    }
     return {
       sourceHistory: history.rows,
       opportunity,
       sources: sources.rows,
       runs: runs.rows,
       reports: reports.rows,
+      tenderPacks: await Promise.all(
+        packs.rows.map((p) => packDetail(db, req.accountId, p.id)),
+      ),
+      firmLink: firmLink.rows[0] ?? null,
     };
   });
+  app.post("/api/opportunities/:id/firm", async (req) => {
+    const opportunityId = asId(req.params);
+    const { clientId } = z.object({ clientId: id }).strict().parse(req.body);
+    return transaction(db, async (c) => {
+      const opportunity = await c.query(
+        "SELECT client_id FROM opportunities WHERE id=$1 AND account_id=$2 FOR UPDATE",
+        [opportunityId, req.accountId],
+      );
+      if (!opportunity.rowCount) throw new Error("Opportunity not found");
+      const client = await c.query(
+        "SELECT id,context FROM clients WHERE id=$1 AND account_id=$2",
+        [clientId, req.accountId],
+      );
+      if (!client.rowCount)
+        throw new Error("Firm profile not found in this account");
+      if (opportunity.rows[0].client_id === clientId)
+        return { clientId, unchanged: true };
+      const effectiveDate = z
+        .string()
+        .date()
+        .parse(client.rows[0].context.effectiveDate);
+      const source = z
+        .string()
+        .trim()
+        .min(1)
+        .max(200)
+        .parse(client.rows[0].context.origin ?? "user-declared");
+      await c.query(
+        "UPDATE opportunities SET client_id=$3 WHERE id=$1 AND account_id=$2",
+        [opportunityId, req.accountId, clientId],
+      );
+      await c.query(
+        "INSERT INTO opportunity_firm_links(id,account_id,opportunity_id,client_id,actor_id,effective_date,source) VALUES($1,$2,$3,$4,$5,$6,$7)",
+        [
+          randomUUID(),
+          req.accountId,
+          opportunityId,
+          clientId,
+          req.userId,
+          effectiveDate,
+          source,
+        ],
+      );
+      return { clientId, effectiveDate, source };
+    });
+  });
+  app.post("/api/opportunities/:id/tender-packs", async (req) =>
+    declareTenderPack(
+      db,
+      req.accountId,
+      asId(req.params),
+      req.userId,
+      req.body,
+    ),
+  );
+  app.get("/api/tender-packs/:id", async (req) =>
+    packDetail(db, req.accountId, asId(req.params)),
+  );
+  app.put("/api/tender-packs/:id/files/:fileId", async (req) => {
+    const fileId = z
+      .string()
+      .regex(/^\d{1,20}$/)
+      .parse((req.params as { fileId: string }).fileId);
+    return importTenderFile(
+      db,
+      store,
+      req.accountId,
+      asId(req.params),
+      fileId,
+      req.userId,
+      req.body as Readable,
+    );
+  });
+  app.post(
+    "/api/tender-packs/:id/files/:fileId/drawing-review",
+    async (req) => {
+      const fileId = z
+        .string()
+        .regex(/^\d{1,20}$/)
+        .parse((req.params as { fileId: string }).fileId);
+      const { note } = z.object({ note: z.string() }).strict().parse(req.body);
+      return reviewTenderDrawing(
+        db,
+        req.accountId,
+        asId(req.params),
+        fileId,
+        req.userId,
+        note,
+      );
+    },
+  );
   app.post("/api/opportunities/:id/sources", async (req) => {
     const opportunityId = asId(req.params);
     await owned(req.accountId, opportunityId);
@@ -423,10 +686,13 @@ export async function createApi(config: Config, db: Database) {
       )
       .header("X-Content-Type-Options", "nosniff")
       .type("application/octet-stream");
-    const body = await store.get(req.accountId, r.rows[0].object_ref);
-    if (hash(body) !== r.rows[0].hash)
-      throw new Error("Frozen source integrity check failed");
-    return body;
+    return reply.send(
+      await store.verifiedStream(
+        req.accountId,
+        r.rows[0].object_ref,
+        r.rows[0].hash,
+      ),
+    );
   });
   app.post("/api/opportunities/:id/search", async (req) => {
     const opportunityId = asId(req.params);
@@ -495,6 +761,11 @@ export async function createApi(config: Config, db: Database) {
     return result;
   });
   app.post("/api/opportunities/:id/runs", async (req) => {
+    if (
+      !config.claudeSubscriptionApproved &&
+      process.env.GROUNDWORK_TEST_MODE !== "1"
+    )
+      throw new Error("Report generation is not enabled in this workspace");
     const opportunityId = asId(req.params);
     const input = z
       .object({
@@ -502,6 +773,7 @@ export async function createApi(config: Config, db: Database) {
         cutoff: z.string().date().optional(),
         excludedSourceIds: z.array(id).max(20).default([]),
         scopeNote: z.string().max(2000).default(""),
+        allowIncompleteTenderPack: z.boolean().default(false),
       })
       .strict()
       .parse(req.body ?? {});
@@ -511,6 +783,30 @@ export async function createApi(config: Config, db: Database) {
         [opportunityId, req.accountId],
       );
       if (!opp.rowCount) throw new Error("Not found");
+      const latestPackRow = await c.query(
+        "SELECT id FROM tender_packs WHERE opportunity_id=$1 AND account_id=$2 ORDER BY created_at DESC LIMIT 1",
+        [opportunityId, req.accountId],
+      );
+      const tenderPack = latestPackRow.rowCount
+        ? await packDetail(db, req.accountId, latestPackRow.rows[0].id)
+        : null;
+      if (
+        tenderPack &&
+        !tenderPack.complete &&
+        !input.allowIncompleteTenderPack
+      )
+        throw new Error(
+          `Tender pack ${tenderPack.rfxId} is incomplete (${tenderPack.counts.received}/${tenderPack.counts.expected} originals, ${tenderPack.counts.readable} readable); upload or resolve every named file before an exhaustive reassessment`,
+        );
+      if (
+        input.allowIncompleteTenderPack &&
+        (!tenderPack ||
+          tenderPack.complete ||
+          input.scopeNote.trim().length < 30)
+      )
+        throw new Error(
+          "A narrow incomplete-pack override requires a specific scope reason of at least 30 characters",
+        );
       if (input.parentReportId) {
         const p = await c.query(
           "SELECT r.id,i.cutoff FROM reports r JOIN intelligence i ON i.id=r.intelligence_id WHERE r.id=$1 AND r.account_id=$2 AND r.opportunity_id=$3 AND r.kind='pursuit'",
@@ -541,6 +837,23 @@ export async function createApi(config: Config, db: Database) {
           (s) => !input.excludedSourceIds.includes(s.id),
         ),
       };
+      const selectedSources = await c.query(
+        "SELECT name,reader,required,coverage,published_at FROM sources WHERE account_id=$1 AND id=ANY($2::uuid[])",
+        [req.accountId, sources.rows.map((s) => s.id)],
+      );
+      const characters = await c.query(
+        "SELECT coalesce(sum(length(text_content)),0)::int AS count FROM units WHERE account_id=$1 AND source_id=ANY($2::uuid[])",
+        [req.accountId, sources.rows.map((s) => s.id)],
+      );
+      const readinessIssues = runReadinessIssues(
+        selectedSources.rows,
+        input.cutoff ?? opp.rows[0].cutoff,
+        Number(characters.rows[0].count),
+      );
+      if (readinessIssues.length)
+        throw Object.assign(new Error(readinessIssues.join(" | ")), {
+          statusCode: 409,
+        });
       if (
         !sources.rows.some((s) => s.purpose === "notice" && s.state === "read")
       )
@@ -566,6 +879,17 @@ export async function createApi(config: Config, db: Database) {
           input.excludedSourceIds.includes(s.id),
         ),
         scopeNote: input.scopeNote,
+        tenderPack: tenderPack
+          ? {
+              id: tenderPack.id,
+              rfxId: tenderPack.rfxId,
+              noticeRevisionId: tenderPack.noticeRevisionId,
+              observedAt: tenderPack.observedAt,
+              complete: tenderPack.complete,
+              files: tenderPack.files,
+              narrowOverride: input.allowIncompleteTenderPack,
+            }
+          : null,
         reviewFeedback,
         client: clientRow.rows[0] ?? null,
         sourceIds: sources.rows.map((s) => s.id),
@@ -634,6 +958,31 @@ export async function createApi(config: Config, db: Database) {
         );
       if (!["failed", "budget-blocked"].includes(r.rows[0].state))
         throw new Error("Only a failed or blocked run can resume");
+      if (!config.claudeSubscriptionApproved)
+        throw Object.assign(
+          new Error("Claude subscription report generation is disabled here"),
+          { statusCode: 409 },
+        );
+      const sourceIds = r.rows[0].manifest.sourceIds as string[];
+      const [sources, characters] = await Promise.all([
+        c.query(
+          "SELECT name,reader,required,coverage,published_at FROM sources WHERE account_id=$1 AND id=ANY($2::uuid[])",
+          [req.accountId, sourceIds],
+        ),
+        c.query(
+          "SELECT coalesce(sum(length(text_content)),0)::int AS count FROM units WHERE account_id=$1 AND source_id=ANY($2::uuid[])",
+          [req.accountId, sourceIds],
+        ),
+      ]);
+      const readinessIssues = runReadinessIssues(
+        sources.rows,
+        r.rows[0].manifest.cutoff,
+        Number(characters.rows[0].count),
+      );
+      if (readinessIssues.length)
+        throw Object.assign(new Error(readinessIssues.join(" | ")), {
+          statusCode: 409,
+        });
       await c.query(
         "UPDATE runs SET state='queued',started_at=now(),error=null,updated_at=now() WHERE id=$1",
         [runId],
@@ -653,6 +1002,22 @@ export async function createApi(config: Config, db: Database) {
     );
     if (!r.rowCount) return reply.code(404).send({ error: "Not found" });
     const report = r.rows[0];
+    const cited = (report.payload.assessment?.evidence ?? []) as {
+      id: string;
+      unitId: string;
+    }[];
+    const locations = cited.length
+      ? await db.query(
+          `SELECT u.id,u.location,s.id AS source_id,s.name AS source_name
+       FROM units u JOIN sources s ON s.id=u.source_id AND s.account_id=u.account_id
+       WHERE u.id=ANY($1::uuid[]) AND u.account_id=$2`,
+          [cited.map((e) => e.unitId), req.accountId],
+        )
+      : { rows: [] };
+    const byUnit = new Map(locations.rows.map((row) => [row.id, row]));
+    const citationLocations = Object.fromEntries(
+      cited.map((e) => [e.id, byUnit.get(e.unitId) ?? null]),
+    );
     let comparison = null;
     const parentId =
       report.parent_report_id ??
@@ -689,6 +1054,7 @@ export async function createApi(config: Config, db: Database) {
     );
     return {
       ...report,
+      citationLocations,
       outcomes: (
         await db.query(
           "SELECT * FROM outcomes WHERE report_id=$1 AND account_id=$2 ORDER BY created_at",

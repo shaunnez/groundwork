@@ -18,10 +18,12 @@ type Run = {
   unique_discovered: number;
   details_read: number;
   details_failed: number;
+  brief_attempts: number;
   error: string | null;
   started_at: string;
 };
 type Status = {
+  briefsPerAttempt: number;
   access: {
     enabled: boolean;
     reason: string;
@@ -30,6 +32,7 @@ type Status = {
     expiresAt?: string;
   };
   runs: Run[];
+  briefCounts: Record<string, number>;
   items: {
     rfx_id: string;
     state: "pending" | "failed";
@@ -205,7 +208,7 @@ export function GetsIntakePanel({
                   void act(() => request(`/gets/runs/${latest.id}/retry`, {}))
                 }
               >
-                Retry unfinished notices
+                Continue unfinished check
               </Button>
             )}
           </div>
@@ -229,6 +232,12 @@ export function GetsIntakePanel({
                 {latest.new_count} new · {latest.changed_count} changed ·{" "}
                 {latest.unchanged_count} unchanged · {latest.details_failed}{" "}
                 unread
+              </span>
+              <span>
+                Notice briefs (limit {status.briefsPerAttempt} per attempt):{" "}
+                {status.briefCounts.complete || 0} complete ·{" "}
+                {status.briefCounts.pending || 0} pending ·{" "}
+                {status.briefCounts.failed || 0} failed
               </span>
               <details>
                 <summary>Coverage details</summary>

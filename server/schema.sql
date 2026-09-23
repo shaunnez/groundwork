@@ -3,7 +3,10 @@ CREATE TABLE IF NOT EXISTS memberships (user_id uuid NOT NULL, account_id uuid R
 CREATE TABLE IF NOT EXISTS sessions (token_hash text PRIMARY KEY, user_id uuid NOT NULL, account_id uuid NOT NULL REFERENCES accounts(id) ON DELETE CASCADE, expires_at timestamptz NOT NULL);
 CREATE TABLE IF NOT EXISTS clients (id uuid PRIMARY KEY, account_id uuid NOT NULL REFERENCES accounts(id) ON DELETE CASCADE, legal_name text NOT NULL, context jsonb NOT NULL, created_at timestamptz NOT NULL DEFAULT now(), UNIQUE(id,account_id));
 CREATE TABLE IF NOT EXISTS opportunities (id uuid PRIMARY KEY, account_id uuid NOT NULL REFERENCES accounts(id) ON DELETE CASCADE, client_id uuid, title text NOT NULL, buyer text NOT NULL, notice_id text NOT NULL, cutoff date NOT NULL, metadata jsonb NOT NULL, created_at timestamptz NOT NULL DEFAULT now(), UNIQUE(id,account_id), FOREIGN KEY(client_id,account_id) REFERENCES clients(id,account_id));
-CREATE TABLE IF NOT EXISTS sources (id uuid PRIMARY KEY, account_id uuid NOT NULL, opportunity_id uuid NOT NULL, name text NOT NULL, media_type text NOT NULL, origin text, published_at date, purpose text NOT NULL CHECK(purpose IN ('notice','context','awards','rfp','addendum')), required boolean NOT NULL, hash text NOT NULL, object_ref text NOT NULL, reader text NOT NULL, state text NOT NULL CHECK(state IN ('read','partial','unread')), coverage jsonb NOT NULL, extraction_ref text, provenance text NOT NULL CHECK(provenance IN ('public','synthetic')), created_at timestamptz NOT NULL DEFAULT now(), UNIQUE(id,account_id), FOREIGN KEY(opportunity_id,account_id) REFERENCES opportunities(id,account_id) ON DELETE CASCADE);
+ALTER TABLE opportunities ADD COLUMN IF NOT EXISTS archived_at timestamptz;
+CREATE TABLE IF NOT EXISTS sources (id uuid PRIMARY KEY, account_id uuid NOT NULL, opportunity_id uuid NOT NULL, name text NOT NULL, media_type text NOT NULL, origin text, published_at date, purpose text NOT NULL CHECK(purpose IN ('notice','context','awards','rfp','addendum')), required boolean NOT NULL, hash text NOT NULL, object_ref text NOT NULL, reader text NOT NULL, state text NOT NULL CHECK(state IN ('read','partial','unread')), coverage jsonb NOT NULL, extraction_ref text, provenance text NOT NULL CHECK(provenance IN ('public','synthetic','authenticated')), created_at timestamptz NOT NULL DEFAULT now(), UNIQUE(id,account_id), FOREIGN KEY(opportunity_id,account_id) REFERENCES opportunities(id,account_id) ON DELETE CASCADE);
+ALTER TABLE sources DROP CONSTRAINT IF EXISTS sources_provenance_check;
+ALTER TABLE sources ADD CONSTRAINT sources_provenance_check CHECK(provenance IN ('public','synthetic','authenticated'));
 CREATE TABLE IF NOT EXISTS units (id uuid PRIMARY KEY, account_id uuid NOT NULL, source_id uuid NOT NULL, ordinal integer NOT NULL, location text NOT NULL, text_content text NOT NULL, search_vector tsvector GENERATED ALWAYS AS (to_tsvector('english',text_content)) STORED, FOREIGN KEY(source_id,account_id) REFERENCES sources(id,account_id) ON DELETE CASCADE, UNIQUE(source_id,ordinal));
 CREATE INDEX IF NOT EXISTS units_search ON units USING gin(search_vector);
 CREATE TABLE IF NOT EXISTS runs (id uuid PRIMARY KEY, account_id uuid NOT NULL, opportunity_id uuid NOT NULL, input_hash text NOT NULL, manifest jsonb NOT NULL, state text NOT NULL CHECK(state IN ('queued','running','succeeded','failed','cancelled','budget-blocked')), stage text NOT NULL DEFAULT 'admit', error text, parent_report_id uuid, created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now(), UNIQUE(id,account_id), FOREIGN KEY(opportunity_id,account_id) REFERENCES opportunities(id,account_id) ON DELETE CASCADE);
@@ -135,3 +138,124 @@ DO $$ BEGIN
 END $$;
 DROP TRIGGER IF EXISTS gets_revisions_immutable ON gets_notice_revisions;
 CREATE TRIGGER gets_revisions_immutable BEFORE UPDATE ON gets_notice_revisions FOR EACH ROW EXECUTE FUNCTION prevent_snapshot_update();
+
+-- A declared tender pack is a frozen inventory. Receipts point at immutable
+-- source versions; failed transfers remain inspectable without claiming coverage.
+CREATE TABLE IF NOT EXISTS tender_packs (
+ id uuid PRIMARY KEY, account_id uuid NOT NULL, opportunity_id uuid NOT NULL,
+ rfx_id text NOT NULL, notice_revision_id uuid NOT NULL, manifest jsonb NOT NULL,
+ created_by uuid NOT NULL, created_at timestamptz NOT NULL DEFAULT now(),
+ UNIQUE(id,account_id),
+ FOREIGN KEY(opportunity_id,account_id) REFERENCES opportunities(id,account_id) ON DELETE CASCADE,
+ FOREIGN KEY(notice_revision_id,account_id) REFERENCES gets_notice_revisions(id,account_id)
+);
+CREATE TABLE IF NOT EXISTS tender_pack_files (
+ pack_id uuid NOT NULL, account_id uuid NOT NULL, file_id text NOT NULL,
+ source_id uuid NOT NULL, actual_bytes bigint NOT NULL, actual_sha256 text NOT NULL,
+ admitted_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY(pack_id,file_id),
+ FOREIGN KEY(pack_id,account_id) REFERENCES tender_packs(id,account_id) ON DELETE CASCADE,
+ FOREIGN KEY(source_id,account_id) REFERENCES sources(id,account_id) ON DELETE CASCADE
+);
+ALTER TABLE tender_pack_files DROP CONSTRAINT IF EXISTS tender_pack_files_source_id_account_id_fkey;
+ALTER TABLE tender_pack_files ADD CONSTRAINT tender_pack_files_source_id_account_id_fkey FOREIGN KEY(source_id,account_id) REFERENCES sources(id,account_id) ON DELETE CASCADE;
+CREATE TABLE IF NOT EXISTS tender_pack_attempts (
+ id uuid PRIMARY KEY, account_id uuid NOT NULL, pack_id uuid NOT NULL,
+ file_id text NOT NULL, outcome text NOT NULL CHECK(outcome IN ('rejected','admitted')),
+ actual_bytes bigint, actual_sha256 text, detail text NOT NULL,
+ created_at timestamptz NOT NULL DEFAULT now(),
+ FOREIGN KEY(pack_id,account_id) REFERENCES tender_packs(id,account_id) ON DELETE CASCADE
+);
+DROP TRIGGER IF EXISTS tender_packs_immutable ON tender_packs;
+CREATE TRIGGER tender_packs_immutable BEFORE UPDATE ON tender_packs FOR EACH ROW EXECUTE FUNCTION prevent_snapshot_update();
+DROP TRIGGER IF EXISTS tender_pack_files_immutable ON tender_pack_files;
+CREATE TRIGGER tender_pack_files_immutable BEFORE UPDATE ON tender_pack_files FOR EACH ROW EXECUTE FUNCTION prevent_snapshot_update();
+CREATE TABLE IF NOT EXISTS tender_pack_reviews (
+ id uuid PRIMARY KEY, account_id uuid NOT NULL, pack_id uuid NOT NULL,
+ file_id text NOT NULL, source_id uuid NOT NULL, actor_id uuid NOT NULL,
+ note text NOT NULL, reviewed_at timestamptz NOT NULL DEFAULT now(),
+ UNIQUE(pack_id,file_id),
+ FOREIGN KEY(pack_id,file_id) REFERENCES tender_pack_files(pack_id,file_id) ON DELETE CASCADE,
+ FOREIGN KEY(source_id,account_id) REFERENCES sources(id,account_id) ON DELETE CASCADE
+);
+DROP TRIGGER IF EXISTS tender_pack_reviews_immutable ON tender_pack_reviews;
+CREATE TRIGGER tender_pack_reviews_immutable BEFORE UPDATE ON tender_pack_reviews FOR EACH ROW EXECUTE FUNCTION prevent_snapshot_update();
+CREATE TABLE IF NOT EXISTS opportunity_firm_links (
+ id uuid PRIMARY KEY, account_id uuid NOT NULL, opportunity_id uuid NOT NULL,
+ client_id uuid NOT NULL, actor_id uuid NOT NULL, effective_date date NOT NULL,
+ source text NOT NULL, created_at timestamptz NOT NULL DEFAULT now(),
+ FOREIGN KEY(opportunity_id,account_id) REFERENCES opportunities(id,account_id) ON DELETE CASCADE,
+ FOREIGN KEY(client_id,account_id) REFERENCES clients(id,account_id) ON DELETE CASCADE
+);
+DROP TRIGGER IF EXISTS opportunity_firm_links_immutable ON opportunity_firm_links;
+CREATE TRIGGER opportunity_firm_links_immutable BEFORE UPDATE ON opportunity_firm_links FOR EACH ROW EXECUTE FUNCTION prevent_snapshot_update();
+
+CREATE TABLE IF NOT EXISTS gets_mapping_versions (
+ id uuid PRIMARY KEY, account_id uuid NOT NULL, notice_id uuid NOT NULL,
+ revision_id uuid NOT NULL, version integer NOT NULL CHECK(version>=1),
+ trace jsonb NOT NULL, projection jsonb NOT NULL, flags jsonb NOT NULL,
+ review_state text NOT NULL CHECK(review_state IN ('pending','reviewed')),
+ actor_id uuid, reason text, created_at timestamptz NOT NULL DEFAULT now(),
+ UNIQUE(revision_id,version), UNIQUE(id,account_id),
+ FOREIGN KEY(notice_id,account_id) REFERENCES gets_notices(id,account_id) ON DELETE CASCADE,
+ FOREIGN KEY(revision_id,account_id) REFERENCES gets_notice_revisions(id,account_id) ON DELETE CASCADE
+);
+DROP TRIGGER IF EXISTS gets_mapping_versions_immutable ON gets_mapping_versions;
+CREATE TRIGGER gets_mapping_versions_immutable BEFORE UPDATE ON gets_mapping_versions FOR EACH ROW EXECUTE FUNCTION prevent_snapshot_update();
+
+CREATE TABLE IF NOT EXISTS sector_taxonomy (
+ account_id uuid PRIMARY KEY REFERENCES accounts(id) ON DELETE CASCADE,
+ version integer NOT NULL DEFAULT 1 CHECK(version>=1), updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS groundwork_sectors (
+ id uuid PRIMARY KEY, account_id uuid NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+ name text NOT NULL, keywords text[] NOT NULL DEFAULT '{}', status text NOT NULL CHECK(status IN ('active','archived')),
+ created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now(),
+ UNIQUE(id,account_id)
+);
+CREATE UNIQUE INDEX IF NOT EXISTS unique_active_sector_name ON groundwork_sectors(account_id,lower(name)) WHERE status='active';
+CREATE TABLE IF NOT EXISTS opportunity_sectors (
+ account_id uuid NOT NULL, opportunity_id uuid NOT NULL, sector_id uuid,
+ method text NOT NULL CHECK(method IN ('rule','person','unknown')),
+ classifier_version text NOT NULL, taxonomy_version integer NOT NULL,
+ notice_revision_id uuid, reason text NOT NULL, evidence_pointer text,
+ updated_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY(account_id,opportunity_id),
+ FOREIGN KEY(opportunity_id,account_id) REFERENCES opportunities(id,account_id) ON DELETE CASCADE,
+ FOREIGN KEY(sector_id,account_id) REFERENCES groundwork_sectors(id,account_id) ON DELETE CASCADE,
+ FOREIGN KEY(notice_revision_id,account_id) REFERENCES gets_notice_revisions(id,account_id) ON DELETE CASCADE
+);
+CREATE TABLE IF NOT EXISTS opportunity_sector_events (
+ id uuid PRIMARY KEY, account_id uuid NOT NULL, opportunity_id uuid NOT NULL,
+ sector_id uuid, method text NOT NULL, classifier_version text NOT NULL,
+ taxonomy_version integer NOT NULL, notice_revision_id uuid,
+ reason text NOT NULL, evidence_pointer text, actor_id uuid,
+ created_at timestamptz NOT NULL DEFAULT now(),
+ FOREIGN KEY(opportunity_id,account_id) REFERENCES opportunities(id,account_id) ON DELETE CASCADE,
+ FOREIGN KEY(sector_id,account_id) REFERENCES groundwork_sectors(id,account_id) ON DELETE CASCADE,
+ FOREIGN KEY(notice_revision_id,account_id) REFERENCES gets_notice_revisions(id,account_id) ON DELETE CASCADE
+);
+DROP TRIGGER IF EXISTS opportunity_sector_events_immutable ON opportunity_sector_events;
+CREATE TRIGGER opportunity_sector_events_immutable BEFORE UPDATE ON opportunity_sector_events FOR EACH ROW EXECUTE FUNCTION prevent_snapshot_update();
+
+-- Notice briefs are separate, immutable public-notice outputs. Full pursuits
+-- retain their own explicit source manifests and report versions.
+ALTER TABLE gets_intake_runs ADD COLUMN IF NOT EXISTS brief_attempts integer NOT NULL DEFAULT 0;
+CREATE TABLE IF NOT EXISTS gets_notice_briefs (
+ id uuid PRIMARY KEY, account_id uuid NOT NULL, revision_id uuid NOT NULL,
+ source_id uuid NOT NULL, method_key text NOT NULL, payload jsonb NOT NULL,
+ provenance text NOT NULL CHECK(provenance IN ('live','fixture')),
+ created_at timestamptz NOT NULL DEFAULT now(), UNIQUE(account_id,revision_id,method_key),
+ UNIQUE(id,account_id),
+ FOREIGN KEY(revision_id,account_id) REFERENCES gets_notice_revisions(id,account_id) ON DELETE CASCADE,
+ FOREIGN KEY(source_id,account_id) REFERENCES sources(id,account_id) ON DELETE CASCADE
+);
+DROP TRIGGER IF EXISTS gets_notice_briefs_immutable ON gets_notice_briefs;
+CREATE TRIGGER gets_notice_briefs_immutable BEFORE UPDATE ON gets_notice_briefs FOR EACH ROW EXECUTE FUNCTION prevent_snapshot_update();
+CREATE TABLE IF NOT EXISTS gets_brief_items (
+ run_id uuid NOT NULL, account_id uuid NOT NULL, rfx_id text NOT NULL,
+ revision_id uuid NOT NULL, state text NOT NULL CHECK(state IN ('pending','complete','failed')),
+ brief_id uuid, attempts integer NOT NULL DEFAULT 0, error text,
+ updated_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY(run_id,rfx_id),
+ FOREIGN KEY(run_id,account_id) REFERENCES gets_intake_runs(id,account_id) ON DELETE CASCADE,
+ FOREIGN KEY(revision_id,account_id) REFERENCES gets_notice_revisions(id,account_id),
+ FOREIGN KEY(brief_id,account_id) REFERENCES gets_notice_briefs(id,account_id)
+);

@@ -46,7 +46,7 @@ export function WorkspaceHeader({
   onSignOut: () => void;
 }) {
   const menu = useRef<HTMLDetailsElement>(null);
-  const operator = ["ops", "delivery"].includes(page);
+  const operator = ["ops", "delivery", "mapping", "sectors"].includes(page);
   const active = operator
     ? page
     : ["home", "market", "reports"].includes(page)
@@ -76,6 +76,8 @@ export function WorkspaceHeader({
           {(operator
             ? [
                 ["Review queue", "ops"],
+                ["GETS mapping", "mapping"],
+                ["Sectors", "sectors"],
                 ["Refresh & delivery", "delivery"],
               ]
             : [

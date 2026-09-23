@@ -50,7 +50,7 @@ export async function createCollection(
     throw new Error("Client not found");
   const opportunities = (
     await db.query(
-      "SELECT * FROM opportunities WHERE account_id=$1 AND ($2::uuid IS NULL OR client_id=$2) ORDER BY id",
+      "SELECT * FROM opportunities WHERE account_id=$1 AND archived_at IS NULL AND ($2::uuid IS NULL OR client_id=$2) ORDER BY id",
       [accountId, clientId],
     )
   ).rows;
@@ -145,7 +145,7 @@ export async function readCollection(
     payload = row.payload as CollectionPayload;
   const current = (
     await db.query(
-      "SELECT id FROM opportunities WHERE account_id=$1 AND ($2::uuid IS NULL OR client_id=$2) ORDER BY id",
+      "SELECT id FROM opportunities WHERE account_id=$1 AND archived_at IS NULL AND ($2::uuid IS NULL OR client_id=$2) ORDER BY id",
       [accountId, payload.clientId],
     )
   ).rows.map((o) => o.id);
@@ -204,7 +204,7 @@ export async function deliverCollection(
     const payload = collection.payload as CollectionPayload;
     // Same row locks used by ingestion, report save, reviews and single-report delivery.
     await c.query(
-      "SELECT id FROM opportunities WHERE account_id=$1 AND id=ANY($2::uuid[]) ORDER BY id FOR UPDATE",
+      "SELECT id FROM opportunities WHERE account_id=$1 AND archived_at IS NULL AND id=ANY($2::uuid[]) ORDER BY id FOR UPDATE",
       [accountId, payload.items.map((i) => i.opportunityId)],
     );
     const state = await readCollection(c, accountId, id);

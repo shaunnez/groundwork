@@ -17,7 +17,7 @@ export const SourceMetadata = z
     ]),
     publishedAt: z.string().date().nullable(),
     required: z.boolean(),
-    provenance: z.enum(["public", "synthetic"]),
+    provenance: z.enum(["public", "synthetic", "authenticated"]),
     reason: z.string().trim().min(3).max(1000),
   })
   .strict();

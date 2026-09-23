@@ -17,6 +17,8 @@ import {
 } from "./Workflows";
 import { DecisionsView, ReviewQueue } from "./Decisions";
 import { BriefView } from "./Brief";
+import { GetsMappingReview } from "./GetsMappingReview";
+import { SectorSettings } from "./SectorSettings";
 import { Heading, WorkspaceHeader, WorkspaceFooter } from "./Chrome";
 import {
   request,
@@ -48,6 +50,8 @@ const pages: Page[] = [
   "firm",
   "ops",
   "delivery",
+  "mapping",
+  "sectors",
 ];
 const subscribe = (fn: () => void) => {
   window.addEventListener("hashchange", fn);
@@ -244,6 +248,8 @@ export function WorkspaceApp() {
         firm: "Firm profiles",
         ops: "Reviewer tools",
         delivery: "Refresh & delivery",
+        mapping: "GETS mapping review",
+        sectors: "Groundwork sectors",
       }[page];
     document.getElementById("main-content")?.focus({ preventScroll: true });
   }, [route, page]);
@@ -443,6 +449,7 @@ export function WorkspaceApp() {
             go={go}
             onAdd={() => setAdding(true)}
             onImported={refresh}
+            onEvidence={(id, quote) => void openEvidence(id, quote)}
           />
         );
         break;
@@ -619,12 +626,27 @@ export function WorkspaceApp() {
           </>
         );
         break;
+      case "mapping":
+        content = <GetsMappingReview go={go} owner={boot.role === "owner"} />;
+        break;
+      case "sectors":
+        content = (
+          <SectorSettings
+            go={go}
+            owner={boot.role === "owner"}
+            onSaved={refresh}
+          />
+        );
+        break;
       default:
         content = (
           <PursuitView
             detail={currentDetail!}
             report={currentReport}
             client={client}
+            clients={boot!.clients}
+            owner={boot!.role === "owner"}
+            onRefresh={reloadDetail}
             go={go}
             onEvidence={(id, quote) => void openEvidence(id, quote)}
             busy={busy}

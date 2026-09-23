@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Badge, Button, Empty, I, KeyFacts, Notice } from "../ui";
 import { EnrichedSections } from "../LocalDeliverables";
 import { Heading } from "./Chrome";
@@ -7,6 +8,7 @@ import {
   evidenceIds,
   kindLabel,
   provenance,
+  request,
   type Client,
   type Detail,
   type Navigate,
@@ -25,6 +27,39 @@ const sections = [
   ["Gaps & next steps", "gaps"],
   ["Version comparison", "changes"],
 ];
+function reportMaturity(report: SavedReport): string {
+  if (
+    report.payload.tenderPack?.complete &&
+    report.payload.requirements.status === "complete"
+  )
+    return "RFP reassessment";
+  if (
+    report.payload.sourceInventory.some(
+      (s) => s.purpose === "rfp" || s.purpose === "addendum",
+    )
+  )
+    return "Limited tender assessment";
+  return report.payload.sourceInventory.every((s) => s.purpose === "notice")
+    ? "Notice-only pursuit"
+    : "Enriched public pursuit";
+}
+function getsNoticeUrl(value: string | null): string | null {
+  try {
+    const url = new URL(value || "");
+    return url.protocol === "https:" && url.hostname === "www.gets.govt.nz"
+      ? url.href
+      : null;
+  } catch {
+    return null;
+  }
+}
+function nzClosing(value: string | null): string {
+  if (!value) return "Closing date unknown";
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime())
+    ? "Closing date unknown"
+    : `Closes ${new Intl.DateTimeFormat("en-NZ", { timeZone: "Pacific/Auckland", day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" }).format(parsed)}`;
+}
 function jumpTo(id: string) {
   const section = document.getElementById(id);
   // References can target a finding inside the additional-findings disclosure.
@@ -52,6 +87,7 @@ export function Citation({
   const e = report.payload.assessment.evidence.find((e) => e.id === id);
   if (!e) return null;
   const s = report.payload.quoteStates[id];
+  const location = report.citationLocations?.[id];
   return (
     <button
       className="citation"
@@ -67,8 +103,21 @@ export function Citation({
       }
     >
       <I.File size={14} />
-      {e.kind === "quote" ? "Source quote" : "Source evidence"} ·{" "}
-      {id.replace(/^ev/, "")}
+      <span>
+        {location
+          ? `${location.source_name} · ${location.location}`
+          : "Source location unavailable"}
+      </span>
+      {e.kind === "quote" && (
+        <span className="citation-quote">“{e.excerpt}”</span>
+      )}
+      <span className="small muted">
+        {s === "VERBATIM"
+          ? "Exact wording verified"
+          : s === "VERBATIM_MODULO_SPACING"
+            ? "Wording verified with spacing normalised"
+            : "Quote not mechanically verified"}
+      </span>
     </button>
   );
 }
@@ -211,7 +260,11 @@ function createClaimRenderer(
           }}
         >
           <I.ArrowRight size={16} />
-          See finding in {first}
+          <span>
+            {report.payload.assessment.claims.find((c) => c.id === id)?.text ||
+              "Finding"}{" "}
+            <small>Read full finding in {first}</small>
+          </span>
         </a>
       );
     shown.set(id, section);
@@ -225,14 +278,17 @@ export function AssessmentBody({
   report,
   client,
   onEvidence,
+  noticeUrl,
 }: {
   report: SavedReport;
   client?: Client;
   onEvidence: (id: string, quote?: string) => void;
+  noticeUrl?: string | null;
 }) {
   const p = report.payload,
     a = p.assessment,
     intel = p.intelligence;
+  const frozenClient = p.frozenClient === undefined ? client : p.frozenClient;
   const shown = new Map<string, string>();
   const claim = createClaimRenderer(report, onEvidence, shown);
   return (
@@ -243,10 +299,7 @@ export function AssessmentBody({
         className="assessment-summary commercial-summary"
       >
         <span className="eyebrow">
-          {p.requirements.status === "complete"
-            ? "RFP REASSESSMENT"
-            : "EVIDENCE-BACKED PURSUIT"}{" "}
-          · INTERNAL DRAFT
+          {reportMaturity(report).toUpperCase()} · INTERNAL DRAFT
         </span>
         <h2>Executive summary</h2>
         <p className="assessment-verdict">{a.verdict.recommendation}</p>
@@ -278,6 +331,43 @@ export function AssessmentBody({
             ? "Model-generated; analyst review required"
             : "Fixture output"}
         </small>
+        <details className="assessment-basis">
+          <summary>Assessment basis and frozen source coverage</summary>
+          {noticeUrl && (
+            <p>
+              <a href={noticeUrl} target="_blank" rel="noopener noreferrer">
+                Open original GETS notice
+              </a>
+            </p>
+          )}
+          {p.sourceInventory.map((source) => (
+            <p key={source.id} className="small">
+              {source.name} · {source.purpose}
+              {source.reader ? ` · ${source.reader}` : ""}
+              {source.state ? ` · ${source.state}` : ""}
+              {source.coverage
+                ? ` · ${source.coverage.read}/${source.coverage.total ?? "?"} ${source.coverage.unit}s read`
+                : ""}
+              {source.coverage?.failures?.length
+                ? ` · ${source.coverage.failures.join("; ")}`
+                : ""}
+            </p>
+          ))}
+          {p.tenderPack && (
+            <p className="small">
+              GETS pack {p.tenderPack.rfxId} ·{" "}
+              {p.tenderPack.complete
+                ? "all declared originals reconciled"
+                : "incomplete pack; see named file states"}
+            </p>
+          )}
+          {reportMaturity(report) === "Notice-only pursuit" && (
+            <p className="small">
+              Protected tender attachments were not examined in this version.
+              Missing evidence is not a negative finding.
+            </p>
+          )}
+        </details>
       </section>
       <section id="assessment-competition" tabIndex={-1}>
         <h2>The opportunity and competitive structure</h2>
@@ -349,26 +439,27 @@ export function AssessmentBody({
       <section id="assessment-firm" tabIndex={-1} className="client-layer">
         <span className="eyebrow">YOUR FIRM · SEPARATE CONTEXT</span>
         <h2>
-          {client
-            ? `What this means for ${client.legal_name}`
+          {frozenClient
+            ? `What this means for ${frozenClient.legal_name}`
             : "Your firm’s position"}
         </h2>
-        {client ? (
+        {frozenClient ? (
           <>
             <p>
-              {client.context.capabilities ||
+              {frozenClient.context.capabilities ||
                 "Capabilities have not been supplied."}
             </p>
             <p className="small muted">
-              Current profile supplied by your team, effective{" "}
-              {date(client.context.effectiveDate)}. It may differ from the
-              context frozen in this report.
+              Firm profile frozen for this report, effective{" "}
+              {date(frozenClient.context.effectiveDate)}.
             </p>
           </>
         ) : (
           <Notice title="No firm profile supplied" tone="info">
             The assessment cannot establish your eligibility or disqualify your
-            firm from missing information.
+            firm from missing information. Supply services and capabilities,
+            relevant credentials, current relationships, delivery capacity and
+            case examples.
           </Notice>
         )}
         {claim(a.verdict.nextActionClaimId, "Your firm")}
@@ -376,6 +467,11 @@ export function AssessmentBody({
       <section id="assessment-gravity" tabIndex={-1} className="section-gap">
         <span className="eyebrow">THE DECISIVE FACTOR</span>
         <h2>Centre of gravity analysis</h2>
+        <p className="section-explainer">
+          This tests which evidenced factor most changes the pursuit decision,
+          then links it to a practical response. A thin source pack can leave
+          that factor unresolved.
+        </p>
         <div className="gravity-panel">
           {claim(a.centreOfGravity.factorClaimId, "Centre of gravity")}
           <div className="gravity-implication">
@@ -412,6 +508,11 @@ export function AssessmentBody({
       <section id="assessment-cone" tabIndex={-1} className="section-gap">
         <span className="eyebrow">TEST THE RANGE OF OUTCOMES</span>
         <h2>Cone of plausibility</h2>
+        <p className="section-explainer">
+          These are conditional planning outcomes and signals to watch. Compare
+          their assumptions with the evidence; they are not probabilities or a
+          prediction of bidders.
+        </p>
         <p className="small muted">
           Planning scenarios, not a measured probability distribution.
         </p>
@@ -444,6 +545,10 @@ export function AssessmentBody({
       <section id="assessment-hypotheses" tabIndex={-1} className="section-gap">
         <span className="eyebrow">CHALLENGE THE COMPETITIVE READ</span>
         <h2>Analysis of competing hypotheses</h2>
+        <p className="section-explainer">
+          Compare alternative explanations against supporting and contradictory
+          evidence. An empty evidence column means the question remains open.
+        </p>
         <p>{a.hypotheses.event}</p>
         <p className="small muted">{a.hypotheses.timeframe}</p>
         <div className="hypothesis-list">
@@ -505,6 +610,10 @@ export function AssessmentBody({
       <section id="assessment-risks" tabIndex={-1} className="section-gap">
         <span className="eyebrow">DELIVERY & COMMERCIAL EXPOSURE</span>
         <h2>Risk register</h2>
+        <p className="section-explainer">
+          Use each risk to check its evidence, trigger, impact and mitigation
+          before committing delivery or commercial terms.
+        </p>
         <div className="assessment-risk-list">
           {a.risks.map((r, i) => (
             <article key={r.id}>
@@ -530,6 +639,11 @@ export function AssessmentBody({
       </section>
       <section id="assessment-gaps" tabIndex={-1}>
         <h2>Intelligence gaps and next steps</h2>
+        <p className="section-explainer">
+          These are the facts still needed to strengthen the assessment. An
+          unread source or missing observation is a gap, not proof that a
+          condition is absent.
+        </p>
         {claim(a.summary.biggestGap, "Gaps & next steps")}
         <ul className="assessment-limitations">
           {p.limitations.map((s, i) => (
@@ -553,6 +667,9 @@ export function PursuitView({
   detail,
   report,
   client,
+  clients = [],
+  owner = false,
+  onRefresh,
   go,
   onEvidence,
   busy,
@@ -562,6 +679,9 @@ export function PursuitView({
   detail: Detail;
   report: SavedReport | null;
   client?: Client;
+  clients?: Client[];
+  owner?: boolean;
+  onRefresh?: () => Promise<void>;
   go: Navigate;
   onEvidence: (id: string, quote?: string) => void;
   busy: boolean;
@@ -569,6 +689,10 @@ export function PursuitView({
   fixed?: boolean;
 }) {
   const o = detail.opportunity;
+  const noticeUrl = getsNoticeUrl(o.metadata.noticeUrl);
+  const [selectedFirm, setSelectedFirm] = useState(o.client_id ?? "");
+  const [firmError, setFirmError] = useState("");
+  const [savingFirm, setSavingFirm] = useState(false);
   const companionClaim = report
     ? createClaimRenderer(report, onEvidence)
     : null;
@@ -587,8 +711,84 @@ export function PursuitView({
             ? `${report ? kindLabel[report.kind] : "Report"} · ${o.buyer}`
             : `${o.title} · ${o.buyer}`
         }
-        actions={<Badge tone="info">{provenance(o)}</Badge>}
+        actions={
+          <>
+            <Badge tone="info">{provenance(o)}</Badge>
+            {noticeUrl && (
+              <a
+                className="button secondary"
+                href={noticeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Open original GETS notice
+              </a>
+            )}
+          </>
+        }
       />
+      <p className="small muted">
+        RFx {o.notice_id} · {nzClosing(o.metadata.closingAt)} ·{" "}
+        {report ? reportMaturity(report) : "No saved assessment"}
+        {report ? ` · Assessment cutoff ${date(report.payload.cutoff)}` : ""}
+      </p>
+      {owner && /^\d+$/.test(o.notice_id) && (
+        <section className="connected-panel firm-link-panel">
+          <h2>Firm profile for future assessments</h2>
+          {detail.firmLink ? (
+            <p className="small">
+              Linked {detail.firmLink.legal_name} · effective{" "}
+              {date(detail.firmLink.effective_date)} · source{" "}
+              {detail.firmLink.source}. Saved reports keep their earlier frozen
+              profile.
+            </p>
+          ) : (
+            <p className="small">
+              No firm profile linked. Firm fit and eligibility remain unknown.
+            </p>
+          )}
+          <form
+            className="inline"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!selectedFirm) return;
+              setFirmError("");
+              setSavingFirm(true);
+              void request(`/opportunities/${o.id}/firm`, {
+                clientId: selectedFirm,
+              })
+                .then(() => onRefresh?.())
+                .catch((error: Error) => setFirmError(error.message))
+                .finally(() => setSavingFirm(false));
+            }}
+          >
+            <label>
+              Existing firm profile{" "}
+              <select
+                value={selectedFirm}
+                onChange={(e) => setSelectedFirm(e.target.value)}
+                required
+              >
+                <option value="">Choose a profile</option>
+                {clients.map((firm) => (
+                  <option key={firm.id} value={firm.id}>
+                    {firm.legal_name} · effective {firm.context.effectiveDate}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <Button
+              type="submit"
+              disabled={
+                !selectedFirm || selectedFirm === o.client_id || savingFirm
+              }
+            >
+              {savingFirm ? "Linking…" : "Link profile"}
+            </Button>
+          </form>
+          {firmError && <p role="alert">{firmError}</p>}
+        </section>
+      )}
       {report?.freshness.stale && (
         <Notice title="New evidence or a newer assessment is available">
           This saved version keeps its original findings.{" "}
@@ -727,6 +927,7 @@ export function PursuitView({
                     report={report}
                     client={client}
                     onEvidence={onEvidence}
+                    noticeUrl={noticeUrl}
                   />
                 </>
               )}

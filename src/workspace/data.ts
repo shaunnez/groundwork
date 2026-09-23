@@ -18,7 +18,9 @@ export type Page =
   | "brief"
   | "firm"
   | "ops"
-  | "delivery";
+  | "delivery"
+  | "mapping"
+  | "sectors";
 export type Navigate = (
   page: Page,
   opportunityId?: string,
@@ -41,6 +43,20 @@ export interface Opportunity {
   notice_id: string;
   cutoff: string;
   client_id: string | null;
+  groundwork_sector_id?: string | null;
+  groundwork_sector_name?: string;
+  groundwork_sector_method?: string;
+  notice_brief?: {
+    summary: { text: string; unitId: string; quote: string };
+    whyItMayMatter: { text: string; unitId: string; quote: string };
+    redFlags: { text: string; unitId: string; quote: string }[];
+    actions: [
+      { text: string; unitId: string; quote: string },
+      { text: string; unitId: string; quote: string },
+      { text: string; unitId: string; quote: string },
+    ];
+  } | null;
+  notice_brief_source_id?: string | null;
   created_at: string;
   metadata: {
     category: string;
@@ -126,6 +142,24 @@ export interface Run {
   stage: string;
   error: string | null;
   created_at: string;
+  started_at?: string | null;
+  updated_at?: string;
+  progress?: {
+    stages: {
+      name: string;
+      state: string;
+      started_at: string;
+      finished_at: string | null;
+      error: string | null;
+    }[];
+    workerAttempts: number;
+    leaseUntil: string | null;
+    modelCalls: number;
+    apiEquivalentUsd: number;
+    readinessIssues: string[];
+    modelEnabled: boolean;
+    resumable: boolean;
+  };
 }
 export interface Intelligence {
   entities: { name: string; status: string; evidenceSourceIds: string[] }[];
@@ -174,12 +208,23 @@ export interface SavedReport {
   kind: Kind;
   created_at: string;
   parent_report_id: string | null;
+  citationLocations?: Record<
+    string,
+    {
+      id: string;
+      location: string;
+      source_id: string;
+      source_name: string;
+    } | null
+  >;
   payload: VerifiedReport & {
     sourcePursuitId?: string;
     cutoff: string;
     intelligence: Intelligence;
     sourceInventory: Source[];
     requirements: Requirements;
+    tenderPack?: TenderPack | null;
+    frozenClient?: Client | null;
     deliverable?: Deliverable;
   };
   review: { state: string; reasons: string[] } | null;
@@ -230,6 +275,39 @@ export interface Detail {
   sources: Source[];
   runs: Run[];
   reports: SavedReport[];
+  tenderPacks?: TenderPack[];
+  firmLink?: {
+    client_id: string;
+    effective_date: string;
+    source: string;
+    created_at: string;
+    legal_name: string;
+  } | null;
+}
+export interface TenderPack {
+  id: string;
+  rfxId: string;
+  noticeRevisionId: string;
+  observedAt: string;
+  complete: boolean;
+  counts: { expected: number; received: number; readable: number };
+  files: {
+    fileId: string;
+    name: string;
+    bytes: number;
+    sha256: string;
+    kind: "attachment" | "addendum";
+    status: "current" | "withdrawn";
+    sourceId: string | null;
+    actualBytes: number | null;
+    actualSha256: string | null;
+    reader: string;
+    coverage: Source["coverage"] | null;
+    state: string;
+    problem: string | null;
+    technicalReviewRequired: boolean;
+    technicalReview: { note: string; reviewedAt: string } | null;
+  }[];
 }
 export class RequestError extends Error {
   constructor(
@@ -263,6 +341,26 @@ export async function request<T>(path: string, body?: unknown): Promise<T> {
       response.status,
     );
   return data;
+}
+export async function uploadTenderFile(
+  packId: string,
+  fileId: string,
+  file: File,
+): Promise<void> {
+  const response = await fetch(`/api/tender-packs/${packId}/files/${fileId}`, {
+    method: "PUT",
+    headers: {
+      "content-type": "application/octet-stream",
+      "x-groundwork-request": "local",
+    },
+    body: file,
+  });
+  const data = await response.json();
+  if (!response.ok)
+    throw new RequestError(
+      data.error || "Tender file could not be admitted",
+      response.status,
+    );
 }
 export const kindLabel: Record<Kind, string> = {
   pursuit: "Pursuit package",

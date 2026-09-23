@@ -26,10 +26,13 @@ export async function ingest(
     replacesId?: string;
     actorId?: string;
     reason?: string;
+    maxFileBytes?: number;
+    skipPackPageLimit?: boolean;
+    originalPath?: string;
   },
 ) {
-  if (input.body.length > 20 * 1024 * 1024)
-    throw new Error("File limit: 20 MB");
+  if (input.body.length > (input.maxFileBytes ?? 20 * 1024 * 1024))
+    throw new Error("File exceeds the upload limit");
   if (input.replacesId && !input.actorId)
     throw new Error("Replacement requires an accountable actor");
   const ownership = await db.query(
@@ -66,14 +69,17 @@ export async function ingest(
       [opportunityId, accountId, input.replacesId ?? null],
     );
     if (count.rows[0].count >= 20) throw new Error("Pack limit: 20 documents");
-    if (input.body.length > 20 * 1024 * 1024)
-      throw new Error("File limit: 20 MB");
+    if (input.body.length > (input.maxFileBytes ?? 20 * 1024 * 1024))
+      throw new Error("File exceeds the upload limit");
     if (
+      !input.skipPackPageLimit &&
       input.mediaType === "application/pdf" &&
       count.rows[0].pages + (result.coverage.total ?? 0) > 200
     )
       throw new Error("Pack limit: 200 PDF pages");
-    const objectRef = await store.put(accountId, input.body);
+    const objectRef = input.originalPath
+      ? await store.putFile(accountId, input.originalPath)
+      : await store.put(accountId, input.body);
     const extractionRef = await store.put(accountId, JSON.stringify(result));
     await c.query(
       "INSERT INTO sources(id,account_id,opportunity_id,name,media_type,origin,published_at,purpose,required,hash,object_ref,reader,state,coverage,extraction_ref,provenance) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)",

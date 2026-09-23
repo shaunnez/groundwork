@@ -31,6 +31,7 @@ import {
 } from "../shared/contracts.ts";
 import { callClaude } from "./claude.ts";
 import { GetsIntakeWorker } from "./gets/intake.ts";
+import { runReadinessIssues } from "./run-readiness.ts";
 import {
   validateAssessment,
   composeReport,
@@ -193,28 +194,17 @@ export class Worker {
           "Frozen source hashes no longer match the admitted evidence",
         );
       const cutoff = z.string().date().parse(run.manifest.cutoff);
-      for (const s of src.rows) {
-        if (s.required && !completeCoverage(s.coverage))
-          throw new Error(
-            `${s.name}: ${s.reader}: ${s.coverage.failures.join("; ") || "Incomplete source coverage"}`,
-          );
-        if (
-          s.published_at &&
-          new Date(s.published_at).toISOString().slice(0, 10) > cutoff
-        )
-          throw new Error(
-            `${s.name}: published after assessment cutoff; create a current assessment separately`,
-          );
-      }
       const u = await this.db.query(
         'SELECT id,source_id AS "sourceId",ordinal,location,text_content AS text FROM units WHERE source_id=ANY($1::uuid[]) AND account_id=$2 ORDER BY source_id,ordinal',
         [sourceIds, run.account_id],
       );
       const units = u.rows as SourceUnit[];
-      if (units.reduce((n, u) => n + u.text.length, 0) > 160000)
-        throw new Error(
-          "Evidence exceeds current bounded analysis context; narrow the manifest or add a systematic bounded pass",
-        );
+      const readinessIssues = runReadinessIssues(
+        src.rows,
+        cutoff,
+        units.reduce((n, unit) => n + unit.text.length, 0),
+      );
+      if (readinessIssues.length) throw new Error(readinessIssues.join(" | "));
       const opp = {
         title: z.string().parse(run.manifest.metadata.title),
         buyer: z.string().parse(run.manifest.metadata.buyer),
@@ -451,6 +441,10 @@ export class Worker {
           purpose: s.purpose,
           provenance: s.provenance,
           publishedAt: s.published_at,
+          hash: s.hash,
+          reader: s.reader,
+          state: s.state,
+          coverage: s.coverage,
         })),
         units,
         requirements,
@@ -588,6 +582,11 @@ export class Worker {
                       `Explicitly narrowed scope: ${run.manifest.scopeNote}. Excluded documents: ${run.manifest.excludedSources.map((s: { name: string }) => s.name).join(", ")}. Requirements coverage applies only to the admitted subset.`,
                     ]
                   : []),
+                ...(run.manifest.tenderPack && !run.manifest.tenderPack.complete
+                  ? [
+                      `Tender pack ${run.manifest.tenderPack.rfxId} is incomplete. Narrow scope: ${run.manifest.scopeNote}. Missing or unread files remain outside exhaustive RFP coverage.`,
+                    ]
+                  : []),
               ],
               scope: {
                 note: run.manifest.scopeNote ?? null,
@@ -595,6 +594,8 @@ export class Worker {
               },
               intelligence,
               sourceInventory: context.sourceInventory,
+              tenderPack: run.manifest.tenderPack ?? null,
+              frozenClient: client,
               cutoff,
             },
           ],

@@ -1195,3 +1195,137 @@
     width: 100%;
   }
 }
+.tender-pack-list {
+  display: grid;
+  gap: 0.75rem;
+  margin-block: 1rem;
+}
+.tender-file-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(13rem, 18rem);
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--line, #cfdaeb);
+  background: #f5f9ff;
+}
+.tender-file-row:nth-child(even) {
+  background: #fff;
+}
+.tender-file-row strong,
+.tender-file-row p {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 700px) {
+  .tender-file-row {
+    grid-template-columns: 1fr;
+  }
+}
+.section-explainer {
+  padding: 0.8rem 1rem;
+  margin: 0.75rem 0 1.25rem;
+  border-left: 3px solid #477dc6;
+  background: #eef5ff;
+  color: #173657;
+}
+.citation {
+  max-width: 100%;
+  text-align: left;
+  white-space: normal;
+}
+.citation-quote {
+  display: block;
+  font-style: italic;
+  overflow-wrap: anywhere;
+}
+.source-quote-mark {
+  background: #ffe47a;
+  color: #102b4b;
+  outline: 2px solid #c69313;
+  scroll-margin-block: 5rem;
+}
+.finding-reference {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  max-width: 100%;
+}
+.finding-reference span {
+  overflow-wrap: anywhere;
+}
+.finding-reference small {
+  display: block;
+}
+.firm-link-panel {
+  margin-block: 1rem;
+}
+.mapping-list {
+  display: grid;
+  gap: 0.75rem;
+  margin-block: 1rem;
+}
+.mapping-row {
+  padding: 1rem;
+  border: 1px solid #c8d8ed;
+  background: #fff;
+}
+.mapping-row:nth-child(even) {
+  background: #f3f8ff;
+}
+.mapping-row p {
+  overflow-wrap: anywhere;
+}
+.mapping-fields {
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+  margin-block: 1rem;
+}
+.mapping-field {
+  padding: 0.75rem;
+  border: 1px solid #d6e1f0;
+  background: #fff;
+}
+.mapping-field p {
+  margin: 0.35rem 0;
+}
+.mapping-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.sector-list,
+.sector-assignment-list {
+  display: grid;
+  gap: 0.65rem;
+  margin-block: 1rem;
+}
+.sector-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.7rem;
+  padding: 1rem;
+  border: 1px solid #c8d8ed;
+  background: #fff;
+}
+.sector-row:nth-child(even) {
+  background: #f3f8ff;
+}
+.sector-row > form,
+.sector-row > details {
+  flex-basis: 100%;
+}
+.connected-app .notice-citation {
+  border: 0;
+  background: transparent;
+  color: var(--blue-700, #215b96);
+  padding: 0;
+  font: inherit;
+  font-size: 0.78em;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.connected-app .notice-citation:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}

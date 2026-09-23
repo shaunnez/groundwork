@@ -132,6 +132,35 @@ test("New unassessed notices are named and block a complete collection; prior co
     /immutable/,
   );
 });
+test("archived synthetic opportunity leaves historical reports intact and exits new collections", async () => {
+  const record = await db.query(
+    "SELECT opportunity_id FROM reports WHERE id=$1 AND account_id=$2",
+    [parents[0], account],
+  );
+  const opportunityId = record.rows[0].opportunity_id as string;
+  await db.query(
+    "UPDATE opportunities SET archived_at=now() WHERE id=$1 AND account_id=$2",
+    [opportunityId, account],
+  );
+  const next = await createCollection(db, account, "weekly", null);
+  const current = await readCollection(db, account, next.id);
+  assert.equal(
+    current.items.some((item) => item.opportunityId === opportunityId),
+    false,
+  );
+  assert.equal(
+    (
+      await db.query("SELECT count(*)::int AS count FROM reports WHERE id=$1", [
+        parents[0],
+      ])
+    ).rows[0].count,
+    1,
+  );
+  assert.equal(
+    (await readCollection(db, account, collectionId)).items.length,
+    2,
+  );
+});
 test.after(async () => {
   await db.query("DELETE FROM accounts WHERE id=ANY($1::uuid[])", [
     [account, other],

@@ -23,6 +23,7 @@ const Config = z.object({
   claudeHome: z.string().optional(),
   reviewerSecret: z.string().min(32).optional(),
   getsApprovalFile: z.string().optional(),
+  getsBriefsPerAttempt: z.number().int().min(1).max(500).default(25),
   getsOperatorTest: z
     .object({
       accountId: z.string().uuid(),
@@ -58,6 +59,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
         env.GROUNDWORK_FIRECRAWL_INCLUDED_CONFIRMED === "true",
       firecrawlCredentialFile: env.GROUNDWORK_FIRECRAWL_CREDENTIAL_FILE,
       getsApprovalFile: env.GROUNDWORK_GETS_APPROVAL_FILE,
+      getsBriefsPerAttempt: Number(
+        env.GROUNDWORK_GETS_BRIEFS_PER_ATTEMPT || 25,
+      ),
       getsOperatorTest: env.GROUNDWORK_GETS_TEST_ACCOUNT_ID
         ? {
             accountId: env.GROUNDWORK_GETS_TEST_ACCOUNT_ID,

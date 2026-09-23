@@ -15,6 +15,7 @@ import {
   latestPursuit,
   provenance,
   request,
+  uploadTenderFile,
   type Bootstrap,
   type Detail,
   type EvidenceSource,
@@ -599,6 +600,7 @@ export function SourceDialog({
                 key={selected.id}
                 text={selected.text}
                 mediaType={source.media_type}
+                quote={selected.id === unitId ? quote : undefined}
               />
             </div>
           ) : (
@@ -670,6 +672,15 @@ export function UploadView({
         title="Add the documents. Test the assumptions."
         description={detail.opportunity.title}
       />
+      {/^\d+$/.test(detail.opportunity.notice_id) &&
+        detail.opportunity.metadata.noticeUrl?.includes("gets.govt.nz") && (
+          <TenderPackPanel
+            detail={detail}
+            busy={busy}
+            action={action}
+            onSaved={onSaved}
+          />
+        )}
       <div className="two-col connected-form-layout">
         <section className="connected-panel">
           {done && (
@@ -812,6 +823,221 @@ export function UploadView({
     </>
   );
 }
+
+function TenderPackPanel({
+  detail,
+  busy,
+  action,
+  onSaved,
+}: {
+  detail: Detail;
+  busy: boolean;
+  action: Action;
+  onSaved: () => Promise<void>;
+}) {
+  const [manifest, setManifest] = useState("");
+  const pack = detail.tenderPacks?.[0];
+  return (
+    <section
+      className="connected-panel section-gap"
+      aria-labelledby="tender-pack-title"
+    >
+      <span className="eyebrow">SELECTED GETS NOTICE</span>
+      <h2 id="tender-pack-title">Import tender documents</h2>
+      <p>
+        Declare the subscribed attachment inventory, then supply each original
+        from an authorised owner transfer. GETS/RealMe sign-in stays in your
+        browser. A saved notice and its revision are required.
+      </p>
+      {!pack ? (
+        <form
+          className="connected-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void action(async () => {
+              const parsed = JSON.parse(manifest) as unknown;
+              await request(
+                `/opportunities/${detail.opportunity.id}/tender-packs`,
+                parsed,
+              );
+              await onSaved();
+            }, "Tender inventory declared. Originals are still required.");
+          }}
+        >
+          <label>
+            GETS attachment inventory JSON
+            <textarea
+              required
+              rows={6}
+              value={manifest}
+              onChange={(e) => setManifest(e.target.value)}
+              placeholder='{"rfxId":"34995788","observedAt":"2026-09-23T00:00:00+12:00","files":[{"fileId":"...","name":"...pdf","bytes":123,"sha256":"...","kind":"attachment"}]}'
+            />
+          </label>
+          <p className="small muted">
+            Each file needs its GETS identifier, displayed name, byte size,
+            SHA-256 checksum and attachment or addendum type. The inventory is
+            frozen when saved.
+          </p>
+          <Button type="submit" disabled={busy}>
+            Declare inventory
+          </Button>
+        </form>
+      ) : (
+        <>
+          <p>
+            <strong>
+              {pack.counts.received} of {pack.counts.expected} originals
+              admitted; {pack.counts.readable} readable.
+            </strong>{" "}
+            {pack.complete
+              ? "Pack reconciled for this snapshot."
+              : "RFP coverage remains incomplete."}
+          </p>
+          <p className="small muted">
+            RFx {pack.rfxId} · GETS inventory observed {date(pack.observedAt)} ·
+            notice revision {pack.noticeRevisionId}
+          </p>
+          <div className="tender-pack-list">
+            {pack.files.map((entry) => (
+              <TenderFileRow
+                key={entry.fileId}
+                packId={pack.id}
+                entry={entry}
+                busy={busy}
+                action={action}
+                onSaved={onSaved}
+              />
+            ))}
+          </div>
+          <p className="small muted">
+            A changed GETS inventory requires a new declared pack. Older
+            originals and report citations remain available.
+          </p>
+        </>
+      )}
+    </section>
+  );
+}
+
+function TenderFileRow({
+  packId,
+  entry,
+  busy,
+  action,
+  onSaved,
+}: {
+  packId: string;
+  entry: NonNullable<Detail["tenderPacks"]>[number]["files"][number];
+  busy: boolean;
+  action: Action;
+  onSaved: () => Promise<void>;
+}) {
+  const [selected, setSelected] = useState<File | null>(null);
+  return (
+    <article className="tender-file-row">
+      <div>
+        <strong>{entry.name}</strong>
+        <p className="small muted">
+          GETS file {entry.fileId} · {entry.kind} ·{" "}
+          {entry.bytes.toLocaleString()} bytes · SHA-256 {entry.sha256}
+        </p>
+        <p className="small">
+          {entry.state} · {entry.reader}
+          {entry.coverage
+            ? ` · ${entry.coverage.read}/${entry.coverage.total ?? "?"} ${entry.coverage.unit}s read`
+            : ""}
+        </p>
+        {entry.problem && (
+          <p className="small" role="status">
+            {entry.problem}
+          </p>
+        )}
+        {entry.technicalReviewRequired && (
+          <p className="small" role="status">
+            {entry.technicalReview
+              ? `Drawing review recorded ${date(entry.technicalReview.reviewedAt)}: ${entry.technicalReview.note}`
+              : "Drawing interpretation has not been reviewed; file reconciliation depends on reader coverage, not this optional review."}
+          </p>
+        )}
+        {entry.sourceId && (
+          <a href={`/api/sources/${entry.sourceId}/download`}>
+            Download preserved original
+          </a>
+        )}
+        {entry.sourceId &&
+          entry.technicalReviewRequired &&
+          !entry.technicalReview &&
+          entry.state === "read" && (
+            <details>
+              <summary>Record drawing review</summary>
+              <form
+                className="connected-form"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const note = String(
+                    new FormData(e.currentTarget).get("note") || "",
+                  );
+                  void action(async () => {
+                    await request(
+                      `/tender-packs/${packId}/files/${entry.fileId}/drawing-review`,
+                      { note },
+                    );
+                    await onSaved();
+                  }, "Drawing review recorded.");
+                }}
+              >
+                <label>
+                  What pages and technical content were checked?
+                  <textarea
+                    name="note"
+                    minLength={30}
+                    maxLength={2000}
+                    required
+                  />
+                </label>
+                <Button type="submit" disabled={busy}>
+                  Record review
+                </Button>
+              </form>
+            </details>
+          )}
+      </div>
+      {entry.status === "current" && !entry.sourceId && (
+        <div className="connected-form">
+          <label>
+            Supply original
+            <input
+              type="file"
+              accept=".pdf,.docx,.xlsx"
+              onChange={(e) => setSelected(e.target.files?.[0] ?? null)}
+            />
+          </label>
+          <Button
+            type="button"
+            disabled={busy || !selected}
+            onClick={() => {
+              if (!selected) return;
+              void action(async () => {
+                if (selected.name !== entry.name)
+                  throw new Error(`Choose ${entry.name}`);
+                if (selected.size !== entry.bytes)
+                  throw new Error(
+                    `Expected ${entry.bytes} bytes for ${entry.name}`,
+                  );
+                await uploadTenderFile(packId, entry.fileId, selected);
+                await onSaved();
+                setSelected(null);
+              }, `${entry.name} admitted with its reader outcome.`);
+            }}
+          >
+            Verify and admit
+          </Button>
+        </div>
+      )}
+    </article>
+  );
+}
 export function RequestView({
   detail,
   go,
@@ -830,7 +1056,9 @@ export function RequestView({
   const [cutoff, setCutoff] = useState(
       latest?.payload.cutoff || detail.opportunity.cutoff,
     ),
-    [excluded, setExcluded] = useState<string[]>([]);
+    [excluded, setExcluded] = useState<string[]>([]),
+    [narrowPack, setNarrowPack] = useState(false);
+  const pack = detail.tenderPacks?.[0];
   return (
     <>
       <Heading
@@ -862,6 +1090,7 @@ export function RequestView({
                         : null,
                     excludedSourceIds: excluded,
                     scopeNote: val(f, "scopeNote"),
+                    allowIncompleteTenderPack: narrowPack,
                   },
                 );
                 await onRefresh();
@@ -885,6 +1114,21 @@ export function RequestView({
               </Notice>
             )}
             <h3>{detail.sources.length} saved sources</h3>
+            {pack && !pack.complete && (
+              <Notice title="Tender pack is incomplete" tone="warning">
+                {pack.counts.received} of {pack.counts.expected} originals
+                admitted; {pack.counts.readable} readable. Complete the named
+                files before an exhaustive RFP reassessment. A narrower run must
+                state its limits.
+                <Button
+                  kind="text"
+                  type="button"
+                  onClick={() => go("upload", detail.opportunity.id)}
+                >
+                  Import tender documents
+                </Button>
+              </Notice>
+            )}
             {detail.sources.map((s) => (
               <div className="connected-source-row" key={s.id}>
                 <I.File size={20} />
@@ -900,7 +1144,7 @@ export function RequestView({
                 </Badge>
               </div>
             ))}
-            <details>
+            <details open={pack && !pack.complete ? true : undefined}>
               <summary>Define a narrower evidence scope</summary>
               <p className="small muted">
                 Exclusions remain named on the assessment. This does not certify
@@ -922,9 +1166,24 @@ export function RequestView({
                   Exclude {s.name}
                 </label>
               ))}
+              {pack && !pack.complete && (
+                <label className="connected-check">
+                  <input
+                    type="checkbox"
+                    checked={narrowPack}
+                    onChange={(e) => setNarrowPack(e.target.checked)}
+                  />
+                  I am requesting a limited assessment; missing or unread tender
+                  files remain explicit gaps.
+                </label>
+              )}
               <label>
                 Scope and reason for exclusions
-                <textarea name="scopeNote" required={excluded.length > 0} />
+                <textarea
+                  name="scopeNote"
+                  required={excluded.length > 0 || narrowPack}
+                  minLength={narrowPack ? 30 : undefined}
+                />
               </label>
             </details>
             <p className="small muted">
@@ -932,7 +1191,12 @@ export function RequestView({
               versions remain readable while the assessment runs.
             </p>
             <Button
-              disabled={busy || !!run || !detail.sources.length}
+              disabled={
+                busy ||
+                !!run ||
+                !detail.sources.length ||
+                (!!pack && !pack.complete && !narrowPack)
+              }
               type="submit"
             >
               {run
@@ -988,12 +1252,41 @@ export function ProgressView({
   const run = detail.runs[0],
     latest = latestPursuit(detail);
   const stages: Record<string, string> = {
-    admit: "Preparing your evidence",
+    admit: "Checking the evidence scope",
     intelligence: "Building competitive context",
     assess: "Writing the assessment",
     verify: "Checking claims and citations",
     saved: "Report saved",
   };
+  const progress = run?.progress;
+  const stopped =
+    run &&
+    ["failed", "cancelled", "budget-blocked", "succeeded"].includes(run.state);
+  const elapsedSeconds = run
+    ? Math.max(
+        0,
+        Math.floor(
+          (new Date(
+            stopped ? (run.updated_at ?? run.created_at) : Date.now(),
+          ).getTime() -
+            new Date(run.created_at).getTime()) /
+            1000,
+        ),
+      )
+    : 0;
+  const elapsedLabel =
+    elapsedSeconds < 60
+      ? `${elapsedSeconds} seconds`
+      : `${Math.floor(elapsedSeconds / 60)} minute${Math.floor(elapsedSeconds / 60) === 1 ? "" : "s"}`;
+  const stageLabel = (name: string) =>
+    ({
+      "entity-observations": "Finding named market participants",
+      "verify-entities": "Checking market participant evidence",
+      "correct-assessment": "Correcting unsupported claims",
+      "verify-correction": "Checking corrected claims",
+    })[name] ??
+    stages[name] ??
+    name.replaceAll("-", " ");
   return (
     <>
       <Heading
@@ -1002,7 +1295,15 @@ export function ProgressView({
         title={
           run?.state === "succeeded"
             ? "Your assessment is ready."
-            : "Your evidence, under review."
+            : run?.state === "failed"
+              ? "This assessment stopped."
+              : run?.state === "cancelled"
+                ? "This assessment was cancelled."
+                : run?.state === "budget-blocked"
+                  ? "This assessment is blocked."
+                  : run?.state === "queued"
+                    ? "Your assessment is waiting to start."
+                    : "Your evidence is being reviewed."
         }
         description={detail.opportunity.title}
       />
@@ -1019,16 +1320,103 @@ export function ProgressView({
       ) : (
         <section className="connected-panel">
           <Badge tone={run.state === "failed" ? "warning" : "info"}>
-            {run.state === "succeeded" ? "Saved for review" : run.state}
+            {run.state === "succeeded"
+              ? "Saved for review"
+              : run.state === "failed"
+                ? "Stopped"
+                : run.state === "budget-blocked"
+                  ? "Blocked by usage limit"
+                  : run.state}
           </Badge>
-          <h2>{stages[run.stage] || "Reviewing source requirements"}</h2>
-          <p>Requested {new Date(run.created_at).toLocaleString("en-NZ")}</p>
+          <h2>
+            {run.state === "queued"
+              ? "Waiting for an analysis worker"
+              : run.state === "failed" && progress?.readinessIssues.length
+                ? "Stopped before model analysis"
+                : stages[run.stage] || "Reviewing source requirements"}
+          </h2>
+          <p>
+            Requested {new Date(run.created_at).toLocaleString("en-NZ")} ·
+            {run.state === "queued"
+              ? ` waiting for ${elapsedLabel}`
+              : run.state === "running"
+                ? ` elapsed ${elapsedLabel}`
+                : ` ended after ${elapsedLabel}`}
+          </p>
+          {run.started_at && (
+            <p className="small muted">
+              Worker started {new Date(run.started_at).toLocaleString("en-NZ")}
+            </p>
+          )}
+          {run.state === "queued" && progress?.workerAttempts === 0 && (
+            <Notice title="Not started yet" tone="warning">
+              No worker has claimed this request. No evidence analysis or model
+              call has begun.
+            </Notice>
+          )}
+          {progress &&
+            !progress.modelEnabled &&
+            ["queued", "running"].includes(run.state) && (
+              <Notice title="Model work is disabled here" tone="warning">
+                This workspace has not enabled Claude subscription report
+                generation. The run cannot generate a report until that setting
+                is resolved.
+              </Notice>
+            )}
+          {!!progress?.readinessIssues.length && (
+            <Notice title="Evidence scope blocks this run" tone="warning">
+              <ul>
+                {progress.readinessIssues.map((issue) => (
+                  <li key={issue}>{issue}</li>
+                ))}
+              </ul>
+              The saved source manifest cannot be changed in place. Start a new
+              request with a narrower, fully readable scope.
+            </Notice>
+          )}
+          {progress && (
+            <div className="section-gap">
+              <h3>Recorded progress</h3>
+              {progress.stages.length ? (
+                <ol>
+                  {progress.stages.map((stage) => (
+                    <li key={stage.name}>
+                      {stageLabel(stage.name)} · {stage.state}
+                      {stage.finished_at
+                        ? ` · finished ${new Date(stage.finished_at).toLocaleTimeString("en-NZ")}`
+                        : ""}
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <p>
+                  {run.state === "failed" && run.stage === "admit"
+                    ? "The worker stopped while checking the evidence scope, before model analysis."
+                    : "No processing stage has started."}
+                </p>
+              )}
+              <p className="small muted">
+                {progress.modelCalls} model call
+                {progress.modelCalls === 1 ? "" : "s"} recorded · US$
+                {progress.apiEquivalentUsd.toFixed(2)} API-equivalent usage
+                estimate. Actual subscription billing is not reported here.
+              </p>
+              {["queued", "running"].includes(run.state) && (
+                <p className="small muted">
+                  No reliable completion time is available for this source
+                  scope.
+                </p>
+              )}
+            </div>
+          )}
           {["running", "queued"].includes(run.state) && (
             <>
-              <Loading
-                label={stages[run.stage] || "Reviewing evidence"}
-                rows={3}
-              />
+              {run.state === "running" && (
+                <Loading
+                  label={stages[run.stage] || "Reviewing evidence"}
+                  rows={3}
+                />
+              )}
               <Button
                 disabled={busy}
                 kind="secondary"
@@ -1043,24 +1431,32 @@ export function ProgressView({
               </Button>
             </>
           )}
-          {run.error && (
-            <Notice title="This assessment needs attention" tone="error">
-              {run.error}
-            </Notice>
-          )}
+          {run.error &&
+            !(
+              progress?.readinessIssues.length &&
+              progress.readinessIssues.every((issue) =>
+                run.error?.includes(issue),
+              )
+            ) && (
+              <Notice title="This assessment needs attention" tone="error">
+                {run.error}
+              </Notice>
+            )}
           {["failed", "cancelled", "budget-blocked"].includes(run.state) && (
             <div className="inline">
-              <Button
-                disabled={busy}
-                onClick={() =>
-                  void action(async () => {
-                    await request("/runs/" + run.id + "/resume", {});
-                    await onRefresh();
-                  }, "Resume requested.")
-                }
-              >
-                Resume safely
-              </Button>
+              {progress?.resumable && !progress.readinessIssues.length && (
+                <Button
+                  disabled={busy}
+                  onClick={() =>
+                    void action(async () => {
+                      await request("/runs/" + run.id + "/resume", {});
+                      await onRefresh();
+                    }, "Resume requested.")
+                  }
+                >
+                  Resume safely
+                </Button>
+              )}
               <Button
                 kind="secondary"
                 onClick={() => go("sources", detail.opportunity.id)}

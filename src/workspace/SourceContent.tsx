@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "../ui";
+import { quoteSpan } from "../../shared/source-geometry";
 
 function FieldValue({ value, depth = 0 }: { value: unknown; depth?: number }) {
   if (value === null) return <span className="muted">null</span>;
@@ -48,11 +49,19 @@ function FieldValue({ value, depth = 0 }: { value: unknown; depth?: number }) {
 export function SourceContent({
   text,
   mediaType,
+  quote,
 }: {
   text: string;
   mediaType: string;
+  quote?: string;
 }) {
   const [raw, setRaw] = useState(false);
+  const mark = useRef<HTMLElement>(null);
+  const span = quote ? quoteSpan(text, quote) : null;
+  useEffect(() => {
+    if (span)
+      mark.current?.scrollIntoView({ block: "center", behavior: "instant" });
+  }, [text, quote, span?.start]);
   let data: unknown;
   let structured = false;
   if (mediaType.includes("json")) {
@@ -73,10 +82,28 @@ export function SourceContent({
           </Button>
         </div>
       )}
-      {structured && !raw ? (
+      {quote && !span && (
+        <p className="small muted" role="status">
+          The quoted wording could not be uniquely located in this extracted
+          section. No text has been marked.
+        </p>
+      )}
+      {structured && !raw && !quote ? (
         <FieldValue value={data} />
       ) : (
-        <div className="connected-source-text">{text}</div>
+        <div className="connected-source-text">
+          {span ? (
+            <>
+              {text.slice(0, span.start)}
+              <mark ref={mark} className="source-quote-mark">
+                {text.slice(span.start, span.end)}
+              </mark>
+              {text.slice(span.end)}
+            </>
+          ) : (
+            text
+          )}
+        </div>
       )}
     </>
   );

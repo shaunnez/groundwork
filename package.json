@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "test:sites": "node --test tests/sites-worker.test.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test tests/domain.test.ts",
+    "test": "node --experimental-strip-types --test tests/domain.test.ts tests/domain-sector-classifier.test.ts",
     "dev:api": "tsx server/api.ts",
     "dev:worker": "tsx server/worker.ts",
     "setup:local": "tsx scripts/setup-local.ts",

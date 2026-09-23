@@ -1,0 +1,134 @@
+[
+  {
+    "name": "Buildings and facilities",
+    "keywords": [
+      "roofing",
+      "roof replacement",
+      "classroom refurbishment",
+      "building refurbishment",
+      "cladding",
+      "school building",
+      "facility maintenance"
+    ]
+  },
+  {
+    "name": "Civil and transport infrastructure",
+    "keywords": [
+      "bridge works",
+      "road construction",
+      "pavement rehabilitation",
+      "footpath",
+      "highway",
+      "runway",
+      "wharf construction",
+      "slip remediation"
+    ]
+  },
+  {
+    "name": "Water and utilities",
+    "keywords": [
+      "wastewater",
+      "stormwater",
+      "watermain",
+      "water supply",
+      "sewer",
+      "drainage",
+      "water treatment"
+    ]
+  },
+  {
+    "name": "Digital and telecommunications",
+    "keywords": [
+      "software",
+      "erp system",
+      "cloud service",
+      "telecommunications",
+      "data centre",
+      "cybersecurity",
+      "digital platform"
+    ]
+  },
+  {
+    "name": "Health and care",
+    "keywords": [
+      "clinical",
+      "surgery",
+      "mental health",
+      "diagnostic",
+      "patient care",
+      "counselling",
+      "health services"
+    ]
+  },
+  {
+    "name": "Education and training",
+    "keywords": [
+      "training services",
+      "professional development",
+      "curriculum",
+      "teaching services",
+      "learning programme"
+    ]
+  },
+  {
+    "name": "Environment and land",
+    "keywords": [
+      "biodiversity",
+      "pest control",
+      "landfill",
+      "ecological",
+      "environmental monitoring",
+      "waste management",
+      "coastal restoration"
+    ]
+  },
+  {
+    "name": "Professional and business services",
+    "keywords": [
+      "consultancy",
+      "consulting services",
+      "audit services",
+      "legal services",
+      "research services",
+      "asset management review"
+    ]
+  },
+  {
+    "name": "Goods and equipment",
+    "keywords": [
+      "equipment supply",
+      "vehicle supply",
+      "appliances",
+      "uniforms",
+      "consumables",
+      "medical devices"
+    ]
+  },
+  {
+    "name": "Transport services and logistics",
+    "keywords": [
+      "bus services",
+      "passenger transport",
+      "freight services",
+      "logistics services",
+      "travel services"
+    ]
+  },
+  {
+    "name": "Energy and electricity",
+    "keywords": ["electricity", "energy supply", "substation", "solar"]
+  },
+  {
+    "name": "Security and emergency services",
+    "keywords": [
+      "security services",
+      "emergency management",
+      "criminal history",
+      "fire and emergency"
+    ]
+  },
+  {
+    "name": "Public funding and partnerships",
+    "keywords": ["funding", "grant programme", "partnership opportunity"]
+  }
+]

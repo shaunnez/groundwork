@@ -138,6 +138,9 @@ export function SourceEditor({
               Evidence origin
               <select name="provenance" defaultValue={source.provenance}>
                 <option value="public">Public evidence</option>
+                <option value="authenticated">
+                  Authenticated tender evidence
+                </option>
                 <option value="synthetic">Synthetic evaluation</option>
               </select>
             </label>

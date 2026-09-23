@@ -12,13 +12,12 @@ export interface UnitGeometry {
   method: "native" | "ocr";
   regions: TextRegion[];
 }
-/** Match only within the cited unit. Ambiguous/non-matching quotations get no box. */
-export function quoteRegions(
+/** Exact or whitespace-normalised match within one extracted unit, only if unique. */
+export function quoteSpan(
   text: string,
   quote: string,
-  geometry?: UnitGeometry | null,
-): TextRegion[] {
-  if (!geometry || !quote.trim()) return [];
+): { start: number; end: number } | null {
+  if (!quote.trim()) return null;
   let normalized = "";
   const offsets: number[] = [];
   for (let i = 0; i < text.length; i++) {
@@ -29,9 +28,19 @@ export function quoteRegions(
   }
   const needle = quote.replace(/\s+/g, " ").trim();
   const index = normalized.indexOf(needle);
-  if (index < 0 || normalized.indexOf(needle, index + 1) >= 0) return [];
-  const start = offsets[index],
-    end = offsets[index + needle.length - 1] + 1;
+  if (index < 0 || normalized.indexOf(needle, index + 1) >= 0) return null;
+  return { start: offsets[index], end: offsets[index + needle.length - 1] + 1 };
+}
+/** Match only within the cited unit. Ambiguous/non-matching quotations get no box. */
+export function quoteRegions(
+  text: string,
+  quote: string,
+  geometry?: UnitGeometry | null,
+): TextRegion[] {
+  if (!geometry || !quote.trim()) return [];
+  const span = quoteSpan(text, quote);
+  if (!span) return [];
+  const { start, end } = span;
   return geometry.regions.filter(
     (r) =>
       r.end > start &&

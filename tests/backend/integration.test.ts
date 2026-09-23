@@ -118,29 +118,23 @@ test("A2 unsupported source remains named; A4 search cannot report absence", asy
   });
   assert.equal(search.json().state, "not_searched");
 });
-test("A12 concurrent start deduplicates; required unread source fails before model call", async () => {
+test("A12 required unread source is rejected before a run or model call is queued", async () => {
+  const before = await db.query(
+    "SELECT count(*)::int AS n FROM runs WHERE opportunity_id=$1",
+    [opportunityId],
+  );
   const results = await Promise.all([
     post(`/api/opportunities/${opportunityId}/runs`, {}),
     post(`/api/opportunities/${opportunityId}/runs`, {}),
   ]);
-  assert.equal(results[0].json().id, results[1].json().id);
-  const worker = new Worker(config, db);
-  const runId = results[0].json().id;
-  await db.query(
-    "UPDATE dispatch SET lease_owner=$2,lease_until=now()+interval '45 seconds' WHERE run_id=$1",
-    [runId, worker.owner],
+  assert.equal(results[0].statusCode, 409);
+  assert.equal(results[1].statusCode, 409);
+  assert.match(results[0].json().error, /Pricing.xlsx.*xlsx-cells-v1.*reader/);
+  const after = await db.query(
+    "SELECT count(*)::int AS n FROM runs WHERE opportunity_id=$1",
+    [opportunityId],
   );
-  await db.query("UPDATE runs SET state='running' WHERE id=$1", [runId]);
-  const run = (await db.query("SELECT * FROM runs WHERE id=$1", [runId]))
-    .rows[0];
-  await worker.process(run);
-  const r = (await db.query("SELECT * FROM runs WHERE id=$1", [runId])).rows[0];
-  assert.equal(r.state, "failed");
-  assert.match(r.error, /Pricing.xlsx.*xlsx-cells-v1.*reader/);
-  const calls = await db.query("SELECT * FROM provider_calls WHERE run_id=$1", [
-    runId,
-  ]);
-  assert.equal(calls.rowCount, 0);
+  assert.equal(after.rows[0].n, before.rows[0].n);
 });
 test("A13 concurrent budget reservations and uncertain outcomes retain allowance", async () => {
   const budgetId = `test-${randomUUID()}`;

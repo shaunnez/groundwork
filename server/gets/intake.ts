@@ -6,7 +6,10 @@ import { transaction, type Database } from "../db.ts";
 import { extract } from "../extract.ts";
 import { recordSourceEvent, supersede } from "../source-management.ts";
 import { ObjectStore, hash } from "../storage.ts";
+import { classifyOpportunity } from "../sectors.ts";
 import { getsAccess } from "./access.ts";
+import { carryForwardOverrides, saveInitialMapping } from "./mapping.ts";
+import { createNoticeBrief } from "./brief.ts";
 import {
   canonicalGetsDetail,
   GETS_PARSER_VERSION,
@@ -59,6 +62,7 @@ type Run = {
   details_read: number;
   details_failed: number;
   attempts: number;
+  brief_attempts: number;
   started_at: Date;
   lease_owner: string | null;
 };
@@ -132,11 +136,11 @@ export async function getsStatus(
 ) {
   const [runs, notices] = await Promise.all([
     db.query(
-      "SELECT id,scope,requested_rfx_id,state,mode,pages_attempted,pages_read,rows_observed,unique_discovered,duplicate_sightings,details_read,details_failed,new_count,changed_count,unchanged_count,advertised_total,error,started_at,updated_at,finished_at FROM gets_intake_runs WHERE account_id=$1 ORDER BY started_at DESC LIMIT 12",
+      "SELECT id,scope,requested_rfx_id,state,mode,pages_attempted,pages_read,rows_observed,unique_discovered,duplicate_sightings,details_read,details_failed,new_count,changed_count,unchanged_count,brief_attempts,advertised_total,error,started_at,updated_at,finished_at FROM gets_intake_runs WHERE account_id=$1 ORDER BY started_at DESC LIMIT 12",
       [accountId],
     ),
     db.query(
-      "SELECT n.rfx_id,n.opportunity_id,n.first_seen_at,n.last_checked_at,r.fields,r.retrieved_at,r.semantic_hash FROM gets_notices n JOIN gets_notice_revisions r ON r.id=n.current_revision_id AND r.account_id=n.account_id WHERE n.account_id=$1 ORDER BY n.last_checked_at DESC LIMIT 500",
+      "SELECT n.rfx_id,n.opportunity_id,n.first_seen_at,n.last_checked_at,r.fields,r.retrieved_at,r.semantic_hash,b.payload AS brief,b.source_id AS brief_source_id FROM gets_notices n JOIN gets_notice_revisions r ON r.id=n.current_revision_id AND r.account_id=n.account_id LEFT JOIN LATERAL (SELECT payload,source_id FROM gets_notice_briefs WHERE account_id=n.account_id AND revision_id=r.id ORDER BY created_at DESC LIMIT 1) b ON true WHERE n.account_id=$1 ORDER BY n.last_checked_at DESC LIMIT 500",
       [accountId],
     ),
   ]);
@@ -146,11 +150,19 @@ export async function getsStatus(
         [runs.rows[0].id, accountId],
       )
     : { rows: [] };
+  const briefs = runs.rows[0]
+    ? await db.query(
+        "SELECT state,count(*)::int AS count FROM gets_brief_items WHERE run_id=$1 AND account_id=$2 GROUP BY state",
+        [runs.rows[0].id, accountId],
+      )
+    : { rows: [] };
   return {
     access: getsAccess(config, accountId),
+    briefsPerAttempt: config.getsBriefsPerAttempt,
     runs: runs.rows,
     notices: notices.rows,
     items: items.rows,
+    briefCounts: Object.fromEntries(briefs.rows.map((r) => [r.state, r.count])),
   };
 }
 export async function cancelGetsRun(
@@ -186,7 +198,11 @@ export async function retryGetsRun(
       [id],
     );
     await c.query(
-      "UPDATE gets_intake_runs SET state='queued',details_failed=0,pages_attempted=pages_read,attempts=0,started_at=now(),error=null,lease_owner=null,lease_until=null,updated_at=now(),finished_at=null WHERE id=$1",
+      "UPDATE gets_brief_items SET state='pending',attempts=0,error=null WHERE run_id=$1 AND state='failed'",
+      [id],
+    );
+    await c.query(
+      "UPDATE gets_intake_runs SET state='queued',details_failed=0,pages_attempted=pages_read,attempts=0,brief_attempts=0,started_at=now(),error=null,lease_owner=null,lease_until=null,updated_at=now(),finished_at=null WHERE id=$1",
       [id],
     );
     return { id };
@@ -362,6 +378,20 @@ async function saveDetail(
       GETS_PARSER_VERSION,
     ],
   );
+  await saveInitialMapping(
+    c,
+    run.account_id,
+    noticeId,
+    revisionId,
+    html,
+    fields,
+  );
+  const mapped = await carryForwardOverrides(
+    c,
+    run.account_id,
+    previous,
+    revisionId,
+  );
   await c.query(
     "UPDATE gets_notices SET current_revision_id=$2,last_checked_at=now() WHERE id=$1",
     [noticeId, revisionId],
@@ -399,12 +429,31 @@ async function saveDetail(
       "UPDATE opportunities SET title=$2,buyer=$3,cutoff=$4,metadata=$5 WHERE id=$1",
       [
         opportunityId,
-        fields.title,
-        fields.buyer,
+        mapped.title ?? fields.title,
+        mapped.buyer ?? fields.buyer,
         nzToday(),
-        opportunityMetadata(fields, nzToday(), run.mode),
+        {
+          ...opportunityMetadata(fields, nzToday(), run.mode),
+          title: mapped.title ?? fields.title,
+          buyer: mapped.buyer ?? fields.buyer,
+          category: mapped.category ?? "unspecified",
+          regions: mapped.region ? [mapped.region] : fields.regions,
+          closingAt: mapped.closesAt,
+          dateStatus: mapped.closesAt ? "known" : "not_published",
+          noticeType: mapped.noticeType,
+          status: mapped.status,
+          overview: mapped.overview,
+        },
       ],
     );
+  await classifyOpportunity(
+    c,
+    run.account_id,
+    opportunityId!,
+    revisionId,
+    mapped.title ?? fields.title,
+    mapped.overview,
+  );
   return {
     revisionId,
     outcome: previous ? ("changed" as const) : ("new" as const),
@@ -444,6 +493,14 @@ export class GetsIntakeWorker {
   async tick() {
     const run = await this.claim();
     if (!run) return false;
+    const heartbeat = setInterval(() => {
+      void this.db
+        .query(
+          "UPDATE gets_intake_runs SET lease_until=now()+interval '45 seconds' WHERE id=$1 AND lease_owner=$2 AND state='running'",
+          [run.id, this.owner],
+        )
+        .catch(() => {});
+    }, 10000);
     try {
       if (
         run.mode === "live" &&
@@ -468,11 +525,19 @@ export class GetsIntakeWorker {
           [run.id],
         );
         if (pending.rowCount) await this.readDetail(run, pending.rows[0]);
-        else await this.finish(run);
+        else {
+          const brief = await this.db.query(
+            "SELECT rfx_id,revision_id,attempts FROM gets_brief_items WHERE run_id=$1 AND state='pending' ORDER BY rfx_id LIMIT 1",
+            [run.id],
+          );
+          if (brief.rowCount) await this.readBrief(run, brief.rows[0]);
+          else await this.finish(run);
+        }
       }
     } catch (error) {
       await this.terminal(run, "partial", (error as Error).message);
     } finally {
+      clearInterval(heartbeat);
       await this.release(run);
     }
     return true;
@@ -625,6 +690,11 @@ export class GetsIntakeWorker {
           "UPDATE gets_intake_items SET state='read',attempts=attempts+1,error=null,revision_id=$3 WHERE run_id=$1 AND rfx_id=$2",
           [run.id, item.rfx_id, saved.revisionId],
         );
+        if (saved.outcome !== "unchanged")
+          await c.query(
+            "INSERT INTO gets_brief_items(run_id,account_id,rfx_id,revision_id,state) VALUES($1,$2,$3,$4,'pending') ON CONFLICT(run_id,rfx_id) DO UPDATE SET revision_id=EXCLUDED.revision_id,state='pending',error=null",
+            [run.id, run.account_id, item.rfx_id, saved.revisionId],
+          );
         await c.query(
           `UPDATE gets_intake_runs SET details_read=details_read+1,attempts=attempts+1,
           new_count=new_count+($2='new')::int,changed_count=changed_count+($2='changed')::int,
@@ -666,6 +736,54 @@ export class GetsIntakeWorker {
         );
     });
   }
+  private async readBrief(
+    run: Run,
+    item: { rfx_id: string; revision_id: string; attempts: number },
+  ) {
+    if (run.brief_attempts >= this.config.getsBriefsPerAttempt) {
+      await this.terminal(
+        run,
+        "partial",
+        `Notice brief limit reached (${this.config.getsBriefsPerAttempt} per manual attempt); continue this check to resume pending briefs`,
+      );
+      return;
+    }
+    await this.db.query(
+      "UPDATE gets_intake_runs SET brief_attempts=brief_attempts+1,updated_at=now() WHERE id=$1 AND lease_owner=$2 AND state='running'",
+      [run.id, this.owner],
+    );
+    try {
+      const id = await createNoticeBrief(
+        this.db,
+        this.config,
+        this.store,
+        run.account_id,
+        run.id,
+        item.rfx_id,
+        item.revision_id,
+        run.mode,
+      );
+      await transaction(this.db, async (c) => {
+        await fenced(c, run, this.owner);
+        await c.query(
+          "UPDATE gets_brief_items SET state='complete',brief_id=$3,attempts=attempts+1,error=null,updated_at=now() WHERE run_id=$1 AND rfx_id=$2",
+          [run.id, item.rfx_id, id],
+        );
+      });
+    } catch (error) {
+      await transaction(this.db, async (c) => {
+        await fenced(c, run, this.owner);
+        await c.query(
+          "UPDATE gets_brief_items SET state='failed',attempts=attempts+1,error=$3,updated_at=now() WHERE run_id=$1 AND rfx_id=$2",
+          [run.id, item.rfx_id, (error as Error).message],
+        );
+        await c.query(
+          "UPDATE gets_intake_runs SET error=$2,updated_at=now() WHERE id=$1",
+          [run.id, `RFx ${item.rfx_id} brief: ${(error as Error).message}`],
+        );
+      });
+    }
+  }
   private async finish(run: Run) {
     await transaction(this.db, async (c) => {
       await fenced(c, run, this.owner);
@@ -674,6 +792,11 @@ export class GetsIntakeWorker {
         [run.id],
       );
       const row = count.rows[0];
+      const briefs = await c.query(
+        "SELECT count(*)::int AS total,count(*) FILTER (WHERE state='complete')::int AS complete,count(*) FILTER (WHERE state='failed')::int AS failed FROM gets_brief_items WHERE run_id=$1",
+        [run.id],
+      );
+      const brief = briefs.rows[0];
       const current = await c.query(
         "SELECT pages_attempted,pages_read,unique_discovered,details_read,details_failed,listings_done,advertised_total FROM gets_intake_runs WHERE id=$1",
         [run.id],
@@ -692,10 +815,18 @@ export class GetsIntakeWorker {
         "UPDATE gets_intake_runs SET state=$2,error=$3,finished_at=now(),updated_at=now() WHERE id=$1",
         [
           run.id,
-          reconciles && !row.failed ? "complete" : "partial",
-          reconciles && !row.failed
+          reconciles &&
+          !row.failed &&
+          !brief.failed &&
+          brief.complete === brief.total
+            ? "complete"
+            : "partial",
+          reconciles &&
+          !row.failed &&
+          !brief.failed &&
+          brief.complete === brief.total
             ? null
-            : "GETS check incomplete: unread listing or failed detail remains",
+            : "GETS check incomplete: unread listing, failed detail or failed notice brief remains",
         ],
       );
     });

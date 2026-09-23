@@ -69,7 +69,7 @@ export async function callClaude<T>(
   db: Database,
   store: ObjectStore,
   accountId: string,
-  runId: string,
+  runId: string | null,
   key: string,
   prompt: string,
   schema: z.ZodType<T>,

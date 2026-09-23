@@ -152,7 +152,7 @@ export async function extractOffice(
   mediaType: string,
   buffer: Buffer,
 ): Promise<Extraction> {
-  const reader = mediaType === DOCX ? "docx-structure-v1" : "xlsx-cells-v1";
+  const reader = mediaType === DOCX ? "docx-structure-v2" : "xlsx-cells-v1";
   const unit = mediaType === DOCX ? "section" : "sheet";
   const units: SourceUnit[] = [];
   const failures: string[] = [];
@@ -180,6 +180,14 @@ export async function extractOffice(
       let ordinal = 0;
       for (const name of names) {
         const doc = xml(parts.get(name));
+        const parents = new Map<Node, Node>();
+        const indexParents = (node: Node) => {
+          for (const nested of node.children) {
+            parents.set(nested, node);
+            indexParents(nested);
+          }
+        };
+        indexParents(doc);
         const tableLocations = new Map<Node, string>();
         descendants(doc, "tbl").forEach((table, tableIndex) => {
           table.children
@@ -197,7 +205,8 @@ export async function extractOffice(
                 });
             });
         });
-        // These require visual/embedded readers; text-only success must not conceal them.
+        // Tracked alternatives are extracted below, but the source does not
+        // identify which wording the parties regard as operative.
         for (const tag of [
           "drawing",
           "pict",
@@ -208,18 +217,31 @@ export async function extractOffice(
         ])
           if (descendants(doc, tag).length)
             failures.push(
-              `${name}: ${tag} content needs visual, embedded-object or tracked-change review`,
+              `${name}: ${tag} ${tag === "del" || tag === "ins" ? "alternatives extracted; revision acceptance unresolved" : "content needs visual or embedded-object review"}`,
             );
         for (const p of descendants(doc, "p")) {
-          const texts: string[] = [];
-          const visit = (n: Node) => {
-            if (n.name === "t") texts.push(text(n));
-            else if (n.name === "tab") texts.push("\t");
-            else if (n.name === "br") texts.push("\n");
-            else n.children.forEach(visit);
+          const visit = (n: Node): string => {
+            if (n.name === "t" || n.name === "delText") return text(n);
+            if (n.name === "tab") return "\t";
+            if (n.name === "br") return "\n";
+            const inner = n.children.map(visit).join("");
+            if (n.name === "ins" || n.name === "del") {
+              const label =
+                n.name === "ins" ? "proposed insertion" : "proposed deletion";
+              const attribution = [n.attrs.author, n.attrs.date]
+                .filter(Boolean)
+                .join(", ");
+              return `⟦${label}${attribution ? ` (${attribution})` : ""}: ${inner}⟧`;
+            }
+            return inner;
           };
-          visit(p);
-          const value = texts.join("").trim();
+          let value = visit(p).trim();
+          let ancestor = parents.get(p);
+          while (ancestor) {
+            if (ancestor.name === "ins" || ancestor.name === "del")
+              value = `⟦proposed ${ancestor.name === "ins" ? "insertion" : "deletion"}: ${value}⟧`;
+            ancestor = parents.get(ancestor);
+          }
           if (value)
             add(
               value,
@@ -228,7 +250,10 @@ export async function extractOffice(
             );
         }
       }
-      total = units.length + failures.length;
+      // Paragraph coverage counts paragraphs only. Embedded content and
+      // unresolved revisions stay explicit failures instead of invented
+      // missing paragraphs in the denominator.
+      total = units.length;
       if (!total) {
         total = 1;
         failures.push("Word document has no readable paragraphs");
