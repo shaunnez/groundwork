@@ -288,6 +288,102 @@ test("durable outcomes survive restart, suppress duplicates and expose partial p
       },
       async () => {},
     );
+    const repairRunId = randomUUID();
+    await db.query(
+      "INSERT INTO runs(id,account_id,opportunity_id,input_hash,manifest,state) VALUES($1,$2,$3,$4,$5,'running')",
+      [repairRunId, accountId, opportunityId, randomUUID(), run.manifest],
+    );
+    const repairNames: string[] = [];
+    const segment = [...segmentUnit(source)][0];
+    const repaired = await analyseReadableUnits(
+      db,
+      { ...run, id: repairRunId },
+      [source],
+      async (name, _input, prompt) => {
+        repairNames.push(name);
+        if (repairNames.length === 2)
+          assert.match(
+            prompt,
+            /prior response failed deterministic quote validation/,
+          );
+        return {
+          outcomes: [
+            {
+              segmentId: segment.id,
+              items: [
+                {
+                  text: "Return signed form",
+                  quote:
+                    repairNames.length === 1
+                      ? "Supplier must submit a signed form."
+                      : "Supplier must return the signed form.",
+                  kind: "requirement" as const,
+                  mandatory: true,
+                  contradiction: null,
+                },
+              ],
+            },
+          ],
+        };
+      },
+      async () => {},
+    );
+    assert.deepEqual(repairNames, [
+      "analyse-00000",
+      "analyse-00000-quote-repair-1",
+    ]);
+    assert.equal(repaired.segmentsProcessed, 1);
+    const repairedItems = await db.query(
+      "SELECT quote FROM analysis_items WHERE run_id=$1",
+      [repairRunId],
+    );
+    assert.deepEqual(
+      repairedItems.rows.map((item) => item.quote),
+      ["Supplier must return the signed form."],
+    );
+    const rejectedRunId = randomUUID();
+    await db.query(
+      "INSERT INTO runs(id,account_id,opportunity_id,input_hash,manifest,state) VALUES($1,$2,$3,$4,$5,'running')",
+      [rejectedRunId, accountId, opportunityId, randomUUID(), run.manifest],
+    );
+    let rejectedCalls = 0;
+    await assert.rejects(
+      analyseReadableUnits(
+        db,
+        { ...run, id: rejectedRunId },
+        [source],
+        async () => {
+          rejectedCalls++;
+          return {
+            outcomes: [
+              {
+                segmentId: segment.id,
+                items: [
+                  {
+                    text: "Unverified",
+                    quote: "A phrase absent from every saved segment.",
+                    kind: "fact" as const,
+                    mandatory: false,
+                    contradiction: null,
+                  },
+                ],
+              },
+            ],
+          };
+        },
+        async () => {},
+      ),
+      /Quote does not match saved segment/,
+    );
+    assert.equal(rejectedCalls, 3);
+    const rejectedLedger = await db.query(
+      "SELECT state FROM analysis_segments WHERE run_id=$1",
+      [rejectedRunId],
+    );
+    assert.deepEqual(
+      rejectedLedger.rows.map((item) => item.state),
+      ["failed"],
+    );
     const digest = await analysisDigest(db, runId);
     assert.equal(digest.totals.requirement_occurrences, 1);
     assert.equal(digest.totals.distinct_requirements, 1);

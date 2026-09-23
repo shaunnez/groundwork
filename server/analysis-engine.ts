@@ -4,7 +4,6 @@ import { transaction } from "./db.ts";
 import type { SourceUnit } from "./domain/evidence.ts";
 import {
   ANALYSIS_METHOD,
-  BatchAnalysisSchema,
   analysisBatchesAsync,
   excludedUnitId,
   highLevelExclusionReason,
@@ -19,6 +18,43 @@ type Run = {
   account_id: string;
   manifest: { sourceIds: string[]; sourceHashes: string[] };
 };
+
+async function validatedAnalysisBatch(
+  name: string,
+  input: unknown,
+  batch: {
+    segments: Parameters<typeof validateBatchAnalysis>[0];
+    prompt: string;
+  },
+  model: (
+    name: string,
+    input: unknown,
+    prompt: string,
+  ) => Promise<BatchAnalysis>,
+): Promise<BatchAnalysis> {
+  let validationError = "";
+  for (let attempt = 0; attempt <= 2; attempt++) {
+    const raw = await model(
+      attempt ? `${name}-quote-repair-${attempt}` : name,
+      attempt ? { input, validationError, repairAttempt: attempt } : input,
+      attempt
+        ? `${batch.prompt}\nThe prior response failed deterministic quote validation: ${validationError}. Regenerate every outcome. Copy each quote directly from its own segment as a contiguous substring; omit any item you cannot quote exactly. Do not paraphrase or combine segments.`
+        : batch.prompt,
+    );
+    try {
+      return validateBatchAnalysis(batch.segments, raw);
+    } catch (error) {
+      if (
+        attempt === 2 ||
+        !(error instanceof Error) ||
+        !error.message.startsWith("Quote does not match saved segment ")
+      )
+        throw error;
+      validationError = error.message;
+    }
+  }
+  throw new Error("Quote repair attempts exhausted");
+}
 
 export async function* streamSourceUnits(
   db: Database,
@@ -110,7 +146,7 @@ export async function analyseReadableUnits(
     );
     if (done.rows[0].count === batch.segments.length) continue;
     try {
-      const raw = await model(
+      const output = await validatedAnalysisBatch(
         name,
         {
           method: ANALYSIS_METHOD,
@@ -125,11 +161,8 @@ export async function analyseReadableUnits(
             textHash: hash(s.text),
           })),
         },
-        batch.prompt,
-      );
-      const output = validateBatchAnalysis(
-        batch.segments,
-        BatchAnalysisSchema.parse(raw),
+        batch,
+        model,
       );
       await active();
       await transaction(db, async (c) => {
