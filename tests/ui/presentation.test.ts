@@ -5,6 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { load } from "cheerio";
 import {
   AssessmentBody,
+  Citation,
   PursuitView,
 } from "../../src/workspace/Assessment.tsx";
 import { PursuitOverview } from "../../src/workspace/PursuitOverview.tsx";
@@ -303,6 +304,39 @@ test("saved report keeps the full analysis and version metadata", () => {
   assert.equal($("#assessment-summary").length, 1);
   assert.match($(".report-outline").text(), /Saved version/);
   assert.match($(".report-outline").text(), /Frozen sources/);
+  assert.equal(
+    $(".report-outline a[aria-current='location']").text(),
+    "Executive summary",
+  );
+  assert.equal(
+    $("#assessment-gaps .assessment-limitations li").length,
+    report.payload.limitations.length,
+  );
+  assert.match($("#assessment-gaps").text(), /Known limitations/);
+});
+
+test("citation preview softens decorative source banners without changing the exact quote", () => {
+  const report = reportFixture();
+  const exact =
+    "***** THIS IS A CONTRACT DETAILS NOTICE ***** This procurement is concluded.";
+  report.payload.assessment.evidence[0].excerpt = exact;
+  report.payload.quoteStates.e1 = "VERBATIM";
+  const $ = load(
+    renderToStaticMarkup(
+      createElement(Citation, {
+        report,
+        id: "e1",
+        onEvidence: () => {},
+      }),
+    ),
+  );
+  assert.match(
+    $(".citation-quote").text(),
+    /THIS IS A CONTRACT DETAILS NOTICE/,
+  );
+  assert.doesNotMatch($(".citation-quote").text(), /\*{3,}/);
+  assert.match($(".citation").text(), /Exact wording verified/);
+  assert.equal(report.payload.assessment.evidence[0].excerpt, exact);
 });
 
 test("each saved finding renders once and repeated placements link to existing findings", () => {

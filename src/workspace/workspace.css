@@ -1446,6 +1446,20 @@
   grid-column: 2;
   min-width: 0;
 }
+.connected-app .citation-quote {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  padding: 7px 9px;
+  border-left: 2px solid #b8cadb;
+  background: #fff;
+  color: #39556d;
+  font-size: 11px;
+  font-style: normal;
+  line-height: 1.45;
+  text-decoration: none;
+}
 .connected-app .source-references .connected-citations {
   margin: 0;
 }
@@ -1706,6 +1720,12 @@
   border-radius: 4px;
   background: #fff;
 }
+.connected-app .gravity-panel h3 {
+  color: var(--navy);
+}
+.connected-app .gravity-panel .small {
+  color: #496176;
+}
 .connected-app .gravity-implication {
   padding-top: 20px;
   margin-top: 20px;
@@ -1739,11 +1759,59 @@
 .connected-app .report-layout .report-outline {
   padding-right: 28px;
   border-right: 1px solid #c8d8e8;
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+}
+.connected-app .report-outline .package-navigation a[aria-current="location"] {
+  padding-left: 12px;
+  border-left: 3px solid var(--blue);
+  background: #e6f1fb;
+  color: var(--navy);
+  font-weight: 600;
 }
 .connected-app .report-layout .report-body {
   width: 100%;
   max-width: none;
   padding-left: 36px;
+}
+
+.connected-app .assessment-gap-priority {
+  margin: 20px 0;
+  padding: 18px 20px;
+  border-left: 4px solid var(--blue);
+  background: #f1f7fc;
+}
+.connected-app .assessment-gap-priority h3,
+.connected-app .assessment-gap-list h3 {
+  margin: 0 0 8px;
+  color: var(--navy);
+  font-size: 16px;
+}
+.connected-app .assessment-gap-priority .finding-reference {
+  margin-bottom: 0;
+}
+.connected-app .assessment-gap-list {
+  border: 1px solid #cbdbea;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.connected-app .assessment-gap-list h3 {
+  margin: 0;
+  padding: 14px 18px;
+  background: #e6f1fb;
+}
+.connected-app .assessment-gap-list .assessment-limitations {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.connected-app .assessment-gap-list .assessment-limitations li {
+  margin: 0;
+  padding: 13px 18px;
+  border-top: 1px solid #d7e3ee;
+}
+.connected-app .assessment-gap-list .assessment-limitations li:nth-child(even) {
+  background: #f4f8fc;
 }
 
 .connected-app .pursuit-overview {
@@ -2001,6 +2069,8 @@
   .connected-app .report-layout .report-outline {
     padding-right: 20px;
     border: 1px solid var(--line);
+    max-height: none;
+    overflow-y: visible;
   }
   .connected-app .report-layout .report-body {
     padding-left: 0;

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Badge, Button, Empty, I, KeyFacts, Notice } from "../ui";
 import { EnrichedSections } from "../LocalDeliverables";
 import { Heading } from "./Chrome";
@@ -61,6 +61,12 @@ function jumpTo(id: string) {
   });
   section?.focus({ preventScroll: true });
 }
+function quotePreview(excerpt: string): string {
+  const banner = excerpt.match(/^\*{3,}\s*(.*?)\s*\*{3,}\s*/s);
+  return banner
+    ? `${banner[1].trim()} — ${excerpt.slice(banner[0].length).trim()}`
+    : excerpt;
+}
 export function Citation({
   report,
   id,
@@ -95,7 +101,7 @@ export function Citation({
           : "Source location unavailable"}
       </span>
       {e.kind === "quote" && (
-        <span className="citation-quote">“{e.excerpt}”</span>
+        <span className="citation-quote">“{quotePreview(e.excerpt)}”</span>
       )}
       <span className="small muted">
         {s === "VERBATIM"
@@ -623,19 +629,28 @@ export function AssessmentBody({
           ))}
         </div>
       </section>
-      <section id="assessment-gaps" tabIndex={-1}>
+      <section id="assessment-gaps" tabIndex={-1} className="section-gap">
+        <span className="eyebrow">EVIDENCE & FOLLOW-UP</span>
         <h2>Intelligence gaps and next steps</h2>
         <p className="section-explainer">
           These are the facts still needed to strengthen the assessment. An
           unread source or missing observation is a gap, not proof that a
           condition is absent.
         </p>
-        {claim(a.summary.biggestGap, "Gaps & next steps")}
-        <ul className="assessment-limitations">
-          {p.limitations.map((s, i) => (
-            <li key={i}>{s}</li>
-          ))}
-        </ul>
+        <div className="assessment-gap-priority">
+          <h3>Priority gap</h3>
+          {claim(a.summary.biggestGap, "Gaps & next steps")}
+        </div>
+        {p.limitations.length > 0 && (
+          <div className="assessment-gap-list">
+            <h3>Known limitations</h3>
+            <ul className="assessment-limitations">
+              {p.limitations.map((s, i) => (
+                <li key={i}>{s}</li>
+              ))}
+            </ul>
+          </div>
+        )}
         <details>
           <summary>Additional findings and source checks</summary>
           {a.claims
@@ -679,6 +694,38 @@ export function PursuitView({
   const [selectedFirm, setSelectedFirm] = useState(opportunity.client_id ?? "");
   const [firmError, setFirmError] = useState("");
   const [savingFirm, setSavingFirm] = useState(false);
+  const [activeSection, setActiveSection] = useState("summary");
+  useEffect(() => {
+    if (!fixed || !report || report.payload.deliverable) return;
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const marker = Math.min(window.innerHeight * 0.28, 220);
+      let visible = sections[0][1];
+      for (const [, id] of sections) {
+        const section = document.getElementById(`assessment-${id}`);
+        if (section && section.getBoundingClientRect().top <= marker)
+          visible = id;
+      }
+      if (
+        Math.ceil(window.scrollY + window.innerHeight) >=
+        document.documentElement.scrollHeight - 8
+      )
+        visible = sections[sections.length - 1][1];
+      setActiveSection(visible);
+    };
+    const schedule = () => {
+      if (!frame) frame = window.requestAnimationFrame(update);
+    };
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    schedule();
+    return () => {
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+      window.cancelAnimationFrame(frame);
+    };
+  }, [fixed, report?.id, report?.payload.deliverable]);
   const companionClaim = report
     ? createClaimRenderer(report, onEvidence)
     : null;
@@ -750,16 +797,12 @@ export function PursuitView({
                     <label className="mobile-report-contents">
                       Jump to section
                       <select
-                        defaultValue=""
+                        value={activeSection}
                         onChange={(event) => {
-                          if (event.target.value)
-                            jumpTo("assessment-" + event.target.value);
-                          event.target.value = "";
+                          setActiveSection(event.target.value);
+                          jumpTo("assessment-" + event.target.value);
                         }}
                       >
-                        <option value="" disabled>
-                          Select a section
-                        </option>
                         {sections.map(([label, id]) => (
                           <option key={id} value={id}>
                             {label}
@@ -775,8 +818,12 @@ export function PursuitView({
                         <a
                           key={id}
                           href={"#assessment-" + id}
+                          aria-current={
+                            activeSection === id ? "location" : undefined
+                          }
                           onClick={(event) => {
                             event.preventDefault();
+                            setActiveSection(id);
                             jumpTo("assessment-" + id);
                           }}
                         >
