@@ -2,12 +2,14 @@ import { useState } from "react";
 import { Badge, Button, Empty, I, KeyFacts, Notice } from "../ui";
 import { EnrichedSections } from "../LocalDeliverables";
 import { Heading } from "./Chrome";
+import { PursuitOverview } from "./PursuitOverview";
 import {
   claimText,
   date,
   evidenceIds,
   kindLabel,
   provenance,
+  reportMaturity,
   request,
   type Client,
   type Detail,
@@ -27,22 +29,6 @@ const sections = [
   ["Gaps & next steps", "gaps"],
   ["Version comparison", "changes"],
 ];
-function reportMaturity(report: SavedReport): string {
-  if (
-    report.payload.tenderPack?.complete &&
-    report.payload.requirements.status === "complete"
-  )
-    return "RFP reassessment";
-  if (
-    report.payload.sourceInventory.some(
-      (s) => s.purpose === "rfp" || s.purpose === "addendum",
-    )
-  )
-    return "Limited tender assessment";
-  return report.payload.sourceInventory.every((s) => s.purpose === "notice")
-    ? "Notice-only pursuit"
-    : "Enriched public pursuit";
-}
 function getsNoticeUrl(value: string | null): string | null {
   try {
     const url = new URL(value || "");
@@ -688,9 +674,9 @@ export function PursuitView({
   onDerive: (kind: "watchlist" | "competitor" | "weekly") => void;
   fixed?: boolean;
 }) {
-  const o = detail.opportunity;
-  const noticeUrl = getsNoticeUrl(o.metadata.noticeUrl);
-  const [selectedFirm, setSelectedFirm] = useState(o.client_id ?? "");
+  const opportunity = detail.opportunity;
+  const noticeUrl = getsNoticeUrl(opportunity.metadata.noticeUrl);
+  const [selectedFirm, setSelectedFirm] = useState(opportunity.client_id ?? "");
   const [firmError, setFirmError] = useState("");
   const [savingFirm, setSavingFirm] = useState(false);
   const companionClaim = report
@@ -705,15 +691,15 @@ export function PursuitView({
           page: fixed ? "reports" : "watchlist",
         }}
         eyebrow={fixed ? "SAVED REPORT" : "PURSUIT ROOM"}
-        title={fixed ? o.title : "Understand the field before you bid."}
+        title={opportunity.title}
         description={
           fixed
-            ? `${report ? kindLabel[report.kind] : "Report"} · ${o.buyer}`
-            : `${o.title} · ${o.buyer}`
+            ? `${report ? kindLabel[report.kind] : "Report"} · ${opportunity.buyer}`
+            : opportunity.buyer
         }
         actions={
           <>
-            <Badge tone="info">{provenance(o)}</Badge>
+            <Badge tone="info">{provenance(opportunity)}</Badge>
             {noticeUrl && (
               <a
                 className="button secondary"
@@ -728,314 +714,250 @@ export function PursuitView({
         }
       />
       <p className="small muted">
-        RFx {o.notice_id} · {nzClosing(o.metadata.closingAt)} ·{" "}
-        {report ? reportMaturity(report) : "No saved assessment"}
-        {report ? ` · Assessment cutoff ${date(report.payload.cutoff)}` : ""}
+        RFx {opportunity.notice_id} ·{" "}
+        {nzClosing(opportunity.metadata.closingAt)}
+        {report ? ` · ${reportMaturity(report)}` : " · No saved assessment"}
+        {fixed && report
+          ? ` · Assessment cutoff ${date(report.payload.cutoff)}`
+          : ""}
       </p>
-      {owner && /^\d+$/.test(o.notice_id) && (
-        <section className="connected-panel firm-link-panel">
-          <h2>Firm profile for future assessments</h2>
-          {detail.firmLink ? (
-            <p className="small">
-              Linked {detail.firmLink.legal_name} · effective{" "}
-              {date(detail.firmLink.effective_date)} · source{" "}
-              {detail.firmLink.source}. Saved reports keep their earlier frozen
-              profile.
-            </p>
-          ) : (
-            <p className="small">
-              No firm profile linked. Firm fit and eligibility remain unknown.
-            </p>
-          )}
-          <form
-            className="firm-link-form"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (!selectedFirm) return;
-              setFirmError("");
-              setSavingFirm(true);
-              void request(`/opportunities/${o.id}/firm`, {
-                clientId: selectedFirm,
-              })
-                .then(() => onRefresh?.())
-                .catch((error: Error) => setFirmError(error.message))
-                .finally(() => setSavingFirm(false));
-            }}
-          >
-            <label>
-              Existing firm profile{" "}
-              <select
-                value={selectedFirm}
-                onChange={(e) => setSelectedFirm(e.target.value)}
-                required
-              >
-                <option value="">Choose a profile</option>
-                {clients.map((firm) => (
-                  <option key={firm.id} value={firm.id}>
-                    {firm.legal_name} · effective {firm.context.effectiveDate}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <Button
-              type="submit"
-              disabled={
-                !selectedFirm || selectedFirm === o.client_id || savingFirm
-              }
-            >
-              {savingFirm ? "Linking…" : "Link profile"}
-            </Button>
-          </form>
-          {firmError && <p role="alert">{firmError}</p>}
-        </section>
-      )}
-      {report?.freshness.stale && (
-        <Notice title="New evidence or a newer assessment is available">
-          This saved version keeps its original findings.{" "}
-          <Button kind="text" onClick={() => go("request", o.id)}>
-            Request an updated assessment
-          </Button>
-        </Notice>
-      )}
-      {report?.review?.state === "changes-requested" && (
-        <Notice title="Corrections requested">
-          Read the reviewer feedback before relying on this assessment.
-        </Notice>
-      )}
-      <div
-        className={
-          fixed
-            ? "report-layout connected-report-layout"
-            : "intelligence-layout"
-        }
-      >
-        {fixed && report && (
-          <aside className="report-outline">
-            <span className="eyebrow">IN THIS REPORT</span>
-            {!report.payload.deliverable && (
-              <label className="mobile-report-contents">
-                Jump to section
-                <select
-                  defaultValue=""
-                  onChange={(event) => {
-                    if (event.target.value)
-                      jumpTo("assessment-" + event.target.value);
-                    event.target.value = "";
-                  }}
+      {fixed ? (
+        <>
+          {report?.freshness.stale && (
+            <Notice title="New evidence or a newer assessment is available">
+              This saved version keeps its original findings.{" "}
+              {owner && (
+                <Button
+                  kind="text"
+                  onClick={() => go("request", opportunity.id)}
                 >
-                  <option value="" disabled>
-                    Select a section
-                  </option>
-                  {sections.map(([label, id]) => (
-                    <option key={id} value={id}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-            {!report.payload.deliverable && (
-              <nav className="package-navigation" aria-label="Report sections">
-                {sections.map(([label, id]) => (
-                  <a
-                    key={id}
-                    href={"#assessment-" + id}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      jumpTo("assessment-" + id);
-                    }}
-                  >
-                    {label}
-                  </a>
-                ))}
-              </nav>
-            )}
-            <label>
-              Saved version
-              <select
-                aria-label="Assessment version"
-                value={report.id}
-                onChange={(e) => go("report", o.id, e.target.value)}
-              >
-                {detail.reports.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {kindLabel[r.kind]} · {date(r.created_at)} ·{" "}
-                    {new Date(r.created_at).toLocaleTimeString("en-NZ")}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <Badge>
-              {report.review?.state === "approved"
-                ? "Internally reviewed"
-                : "Awaiting review"}
-            </Badge>
-            <Button kind="text" onClick={() => go("pursuit", o.id)}>
-              Return to pursuit <I.ArrowRight size={16} />
-            </Button>
-            <Button kind="text" onClick={() => go("sources", o.id)}>
-              Inspect source library
-            </Button>
-          </aside>
-        )}
-        <article
-          className={"connected-assessment" + (fixed ? " report-body" : "")}
-        >
+                  Request an updated assessment
+                </Button>
+              )}
+            </Notice>
+          )}
+          {report?.review?.state === "changes-requested" && (
+            <Notice title="Corrections requested">
+              Read the reviewer feedback before relying on this assessment.
+            </Notice>
+          )}
           {report ? (
-            <>
-              {report.payload.deliverable ? (
-                <div className="connected-deliverable">
-                  <EnrichedSections
-                    data={report.payload.deliverable}
-                    comparison={report.comparison || undefined}
-                    renderClaim={(id) => companionClaim!(id, "this report")}
-                  />
-                  <Button
-                    kind="secondary"
-                    onClick={() =>
-                      go("report", o.id, report.payload.sourcePursuitId)
+            <div className="report-layout connected-report-layout">
+              <aside className="report-outline">
+                <span className="eyebrow">IN THIS REPORT</span>
+                {!report.payload.deliverable && (
+                  <>
+                    <label className="mobile-report-contents">
+                      Jump to section
+                      <select
+                        defaultValue=""
+                        onChange={(event) => {
+                          if (event.target.value)
+                            jumpTo("assessment-" + event.target.value);
+                          event.target.value = "";
+                        }}
+                      >
+                        <option value="" disabled>
+                          Select a section
+                        </option>
+                        {sections.map(([label, id]) => (
+                          <option key={id} value={id}>
+                            {label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <nav
+                      className="package-navigation"
+                      aria-label="Report sections"
+                    >
+                      {sections.map(([label, id]) => (
+                        <a
+                          key={id}
+                          href={"#assessment-" + id}
+                          onClick={(event) => {
+                            event.preventDefault();
+                            jumpTo("assessment-" + id);
+                          }}
+                        >
+                          {label}
+                        </a>
+                      ))}
+                    </nav>
+                  </>
+                )}
+                <label>
+                  Saved version
+                  <select
+                    aria-label="Assessment version"
+                    value={report.id}
+                    onChange={(event) =>
+                      go("report", opportunity.id, event.target.value)
                     }
                   >
-                    Read the underlying pursuit <I.ArrowRight size={16} />
-                  </Button>
-                </div>
-              ) : (
-                <>
-                  {!fixed && (
-                    <details className="package-contents" open>
-                      <summary>In this pursuit package</summary>
-                      <nav
-                        className="package-navigation"
-                        aria-label="Pursuit package sections"
+                    {detail.reports.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {kindLabel[item.kind]} · {date(item.created_at)} ·{" "}
+                        {new Date(item.created_at).toLocaleTimeString("en-NZ")}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <dl className="report-version-facts">
+                  <div>
+                    <dt>Assessment basis</dt>
+                    <dd>{reportMaturity(report)}</dd>
+                  </div>
+                  <div>
+                    <dt>Cutoff</dt>
+                    <dd>{date(report.payload.cutoff)}</dd>
+                  </div>
+                  <div>
+                    <dt>Frozen sources</dt>
+                    <dd>{report.payload.sourceInventory.length}</dd>
+                  </div>
+                </dl>
+                <Badge
+                  tone={
+                    report.review?.state === "approved" ? "success" : "info"
+                  }
+                >
+                  {report.review?.state === "approved"
+                    ? "Internally reviewed"
+                    : report.review?.state === "changes-requested"
+                      ? "Corrections requested"
+                      : "Analyst review required"}
+                </Badge>
+                <Button
+                  kind="text"
+                  onClick={() => go("pursuit", opportunity.id)}
+                >
+                  Return to pursuit <I.ArrowRight size={16} />
+                </Button>
+                <Button
+                  kind="text"
+                  onClick={() => go("sources", opportunity.id)}
+                >
+                  Inspect source library
+                </Button>
+              </aside>
+              <article className="connected-assessment report-body">
+                {report.payload.deliverable ? (
+                  <div className="connected-deliverable">
+                    <EnrichedSections
+                      data={report.payload.deliverable}
+                      comparison={report.comparison || undefined}
+                      renderClaim={(id) => companionClaim!(id, "this report")}
+                    />
+                    {report.payload.sourcePursuitId && (
+                      <Button
+                        kind="secondary"
+                        onClick={() =>
+                          go(
+                            "report",
+                            opportunity.id,
+                            report.payload.sourcePursuitId,
+                          )
+                        }
                       >
-                        {sections.map(([label, id]) => (
-                          <a
-                            href={"#assessment-" + id}
-                            key={id}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              jumpTo("assessment-" + id);
-                            }}
-                          >
-                            {label}
-                          </a>
-                        ))}
-                      </nav>
-                    </details>
-                  )}
+                        Read the underlying pursuit <I.ArrowRight size={16} />
+                      </Button>
+                    )}
+                  </div>
+                ) : (
                   <AssessmentBody
                     report={report}
                     client={client}
                     onEvidence={onEvidence}
                     noticeUrl={noticeUrl}
                   />
-                </>
-              )}
-            </>
+                )}
+              </article>
+            </div>
           ) : (
             <Empty
-              title="Understand this opportunity"
-              description="Add the notice and supporting evidence, then request a pursuit assessment. Your saved source pack stays available while analysis runs."
+              title="No saved report available"
+              description="Choose an assessment from the report library."
               action={
-                <Button
-                  onClick={() =>
-                    go(detail.sources.length ? "request" : "upload", o.id)
-                  }
-                >
-                  {detail.sources.length
-                    ? "Request assessment"
-                    : "Add source evidence"}
-                </Button>
+                <Button onClick={() => go("reports")}>Open reports</Button>
               }
             />
           )}
-        </article>
-        {!fixed && (
-          <aside className="pursuit-rail">
-            <span className="eyebrow">THE NEXT STEP</span>
-            <h2>
-              {report ? "Keep the evidence current" : "Build the evidence pack"}
-            </h2>
-            <p>
-              Add documents or request an updated assessment when new evidence
-              arrives. Previous reports stay available.
-            </p>
-            <Button onClick={() => go("upload", o.id)}>
-              Add RFP for reassessment
-            </Button>
-            <Button kind="text" onClick={() => go("request", o.id)}>
-              {report ? "Request reassessment" : "Request assessment"}
-            </Button>
-            <hr />
-            <h3>Assessment basis</h3>
-            <p className="small">
-              {o.notice_id}
-              <br />
-              As at {date(report?.payload.cutoff || o.cutoff)}
-              <br />
-              {detail.sources.length} saved sources
-            </p>
-            <Button kind="text" onClick={() => go("sources", o.id)}>
-              Inspect source library
-            </Button>
-            <Button
-              kind="text"
-              onClick={() => go("requirements", o.id, report?.id)}
-            >
-              Requirements & evidence
-            </Button>
-            <hr />
-            <h3>Your firm’s decision</h3>
-            <p className="small">
-              Keep your commercial decision separate from the assessment.
-            </p>
-            <Button
-              kind="secondary"
-              disabled={!report}
-              onClick={() => go("decisions", o.id, report?.id)}
-            >
-              Record decision
-            </Button>
-            {report && (
-              <>
-                <hr />
-                <h3>Saved report versions</h3>
-                <select
-                  aria-label="Assessment version"
-                  value={report.id}
-                  onChange={(e) => go("report", o.id, e.target.value)}
-                >
-                  {detail.reports.map((r) => (
-                    <option key={r.id} value={r.id}>
-                      {kindLabel[r.kind]} · {date(r.created_at)} ·{" "}
-                      {new Date(r.created_at).toLocaleTimeString("en-NZ")}
-                    </option>
-                  ))}
-                </select>
-                <p className="small muted">
-                  Internal draft ·{" "}
-                  {report.review?.state === "approved"
-                    ? "Internally reviewed"
-                    : "Analyst review required"}
+        </>
+      ) : (
+        <>
+          <PursuitOverview
+            detail={detail}
+            report={report}
+            owner={owner}
+            busy={busy}
+            go={go}
+            onEvidence={onEvidence}
+            onDerive={onDerive}
+          />
+          {owner && /^\d+$/.test(opportunity.notice_id) && (
+            <section className="connected-panel firm-link-panel pursuit-firm-link">
+              <h2>Firm profile for future assessments</h2>
+              {detail.firmLink ? (
+                <p className="small">
+                  Linked {detail.firmLink.legal_name} · effective{" "}
+                  {date(detail.firmLink.effective_date)} · source{" "}
+                  {detail.firmLink.source}. Saved reports keep their earlier
+                  frozen profile.
                 </p>
-                <hr />
-                <h3>Use this intelligence</h3>
-                {(["watchlist", "competitor", "weekly"] as const).map((k) => (
-                  <Button
-                    key={k}
-                    kind="text"
-                    disabled={busy}
-                    onClick={() => onDerive(k)}
+              ) : (
+                <p className="small">
+                  No firm profile linked. Firm fit and eligibility remain
+                  unknown.
+                </p>
+              )}
+              <form
+                className="firm-link-form"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  if (!selectedFirm) return;
+                  setFirmError("");
+                  setSavingFirm(true);
+                  void request(`/opportunities/${opportunity.id}/firm`, {
+                    clientId: selectedFirm,
+                  })
+                    .then(() => onRefresh?.())
+                    .catch((error: Error) => setFirmError(error.message))
+                    .finally(() => setSavingFirm(false));
+                }}
+              >
+                <label>
+                  Existing firm profile{" "}
+                  <select
+                    value={selectedFirm}
+                    onChange={(event) => setSelectedFirm(event.target.value)}
+                    required
                   >
-                    Open {kindLabel[k].toLowerCase()}
-                    <I.ArrowRight size={15} />
-                  </Button>
-                ))}
-              </>
-            )}
-          </aside>
-        )}
-      </div>
+                    <option value="">Choose a profile</option>
+                    {clients.map((firm) => (
+                      <option key={firm.id} value={firm.id}>
+                        {firm.legal_name} · effective{" "}
+                        {firm.context.effectiveDate}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <Button
+                  type="submit"
+                  disabled={
+                    !selectedFirm ||
+                    selectedFirm === opportunity.client_id ||
+                    savingFirm
+                  }
+                >
+                  {savingFirm ? "Linking…" : "Link profile"}
+                </Button>
+              </form>
+              {firmError && <p role="alert">{firmError}</p>}
+            </section>
+          )}
+        </>
+      )}
     </>
   );
 }

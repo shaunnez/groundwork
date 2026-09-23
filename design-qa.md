@@ -86,3 +86,30 @@ These checks validate fictional frontend behaviour, not analytical accuracy, pro
 - Checked all ten package navigation destinations and unchanged hash routing. Rechecked centre-of-gravity navigation separately after a fast navigation sequence intersected smooth scrolling; the destination received focus correctly. Navigation respects the reduced-motion preference in code; that OS preference was not changed during QA.
 - No captured browser errors or warnings during the checks. TypeScript, 23 domain tests, production build, four Sites packaging tests and final whitespace checks passed.
 - Local prototype only; no hosted deployment, live analytical run, or authenticated sharing verification performed.
+
+# Pursuit Room and Saved Report design QA
+
+**Source visual truth:** `/Users/shaun/.codex/generated_images/01a0cc52-20b6-7d21-83fa-bcb16ce964dc/exec-29295347-8a9a-4e9f-99b0-690e9afc6bb1.png` (1536 × 1024 px, two page concepts). The mock is a direction for hierarchy and page roles; its fictional copy, dates, publication and sharing controls are not application data or approved behavior.
+
+**Rendered implementation:** Browser captures of `http://localhost:5178/#/pursuit?opportunity=16566f8a-83f0-4160-9151-19a787571da4` and `http://localhost:5178/#/report?opportunity=16566f8a-83f0-4160-9151-19a787571da4&report=460370bc-bb15-4458-a68d-720428168fd7`. Captures were produced in Chrome through `cua_repl` during this review; that browser interface does not expose a filesystem screenshot path. Desktop viewport: 1920 × 907 CSS px at density 1. Mobile viewport: 390 × 844 CSS px at density 1. The implementation screenshot pixels match those viewport dimensions. The source is a two-screen composition, so comparison used each relevant mock panel against its full-width live page; no pixel-perfect scale claim is made.
+
+**State:** Signed-in local workspace, saved public pursuit assessment with analyst review pending. Separate component checks covered no assessment, saved notice-only brief, queued, running, failed, cancelled and budget-blocked requests, incomplete tender pack, and partial or failed source coverage.
+
+## Findings and comparison history
+
+- Initial browser comparison found source coverage text rendered as `section s` and multiple report versions labeled with only the same date. Fixed the unit plural and included the saved time in version options. The revised browser capture showed `1/1 section read` and distinct version labels.
+- The source uses a compact decision snapshot and a left report outline. The implementation retains those regions, navy/blue surfaces, serif headings, light rows and clear report navigation. Live citations and analysis make the report substantially longer than the mock. This is expected because the mock has abbreviated fictional content while the saved report keeps its actual evidence.
+- The mock shows a `Published` state and a sharing action. The live report correctly shows `Analyst review required` and keeps the report private. This is an intentional product-state difference.
+- Mobile pursuit content stacks, and the saved report presents its section selector before the report body. The top navigation remains horizontally scrollable by the existing application design; primary page content has no horizontal overflow.
+
+**Fidelity surfaces:** Source Serif 4 and Inter, heading hierarchy and weights follow the established Groundwork UI. Spacing preserves the selected snapshot/outline composition at the larger live viewport. Navy, pale-blue and white tokens align with the reference. Neither screen needs raster imagery; existing icons remain legible. Copy comes from saved records and current run/source states, with no invented assessment weights or publication claim.
+
+**Focused regions:** The Latest read assessment basis/review column, source coverage rows, report version selector, and report outline were inspected in browser captures. The live cited report's content density is intentionally higher than the source mock.
+
+**Primary interactions tested:** Pursuit Room → Read full report → Return to pursuit. Browser console errors checked: none.
+
+**Remaining P0/P1/P2 findings:** None.
+
+**Implementation checklist:** Complete. The two page roles, responsive layout, actual-state presentation, and report navigation were checked.
+
+final result: passed

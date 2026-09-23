@@ -700,7 +700,7 @@ export function WorkspaceApp() {
             {error}
           </Notice>
         )}
-        {running && page !== "processing" && (
+        {running && page !== "processing" && page !== "pursuit" && (
           <Notice title="Your assessment is in progress" tone="info">
             Your previous report remains available.{" "}
             <Button kind="text" onClick={() => go("processing", opportunityId)}>
