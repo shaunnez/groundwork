@@ -71,7 +71,11 @@ export class HostedGetsSession implements GetsCollectionSession {
   private page: Page | null = null;
   private budget = new RealMeLoginBudget();
   private lastRequestAt = 0;
-  constructor(private readonly configureContext?: (context: BrowserContext) => Promise<void>) {}
+  constructor(
+    private readonly configureContext?: (
+      context: BrowserContext,
+    ) => Promise<void>,
+  ) {}
   get loginRetries() {
     return this.budget.loginRetries;
   }
@@ -198,6 +202,18 @@ export class HostedGetsSession implements GetsCollectionSession {
       throw new GetsCollectionBlocked(
         `RFx ${rfxId}: attachment access unavailable; no selected-notice subscription step was offered`,
       );
+    try {
+      await page
+        .locator(
+          'form[action*="RegisterInterest.htm"], a[href*="ExternalGetProjectFile.htm"], a[href*="ExternalGetAddendumFile.htm"]',
+        )
+        .first()
+        .waitFor({ timeout: 30000 });
+    } catch {
+      throw new GetsCollectionBlocked(
+        `RFx ${rfxId}: selected-notice subscription did not finish loading`,
+      );
+    }
     if (new URL(page.url()).hostname !== "www.gets.govt.nz")
       throw new GetsCollectionBlocked(`RFx ${rfxId}: subscription left GETS`);
     try {
@@ -205,33 +221,49 @@ export class HostedGetsSession implements GetsCollectionSession {
     } catch {
       /* supplier details may need submission */
     }
-    const form = page.locator('form[action*="RegisterInterest"]').first();
+    const form = page.locator('form[action*="RegisterInterest.htm"]').first();
     if (await form.count()) {
       const action = new URL((await form.getAttribute("action"))!, page.url());
+      const selectedId = await form
+        .locator('input[name="projectID"]')
+        .inputValue();
       if (
         action.hostname !== "www.gets.govt.nz" ||
-        (action.searchParams.get("projectID") ??
-          new URL(page.url()).searchParams.get("projectID")) !== rfxId
+        action.pathname !== "/DCC/RegisterInterest.htm" ||
+        (await form.getAttribute("method"))?.toLowerCase() !== "post" ||
+        selectedId !== rfxId ||
+        new URL(page.url()).searchParams.get("projectID") !== rfxId
       )
         throw new GetsCollectionBlocked(
           `RFx ${rfxId}: subscription form did not match the selected notice`,
         );
-      const submit = form
-        .locator('button[type="submit"],input[type="submit"]')
-        .first();
+      for (const name of [
+        "firstName",
+        "lastName",
+        "telephoneNumber",
+        "emailAddress1",
+      ]) {
+        if (
+          !(
+            await form.locator('input[name="' + name + '"]').inputValue()
+          ).trim()
+        )
+          throw new GetsCollectionBlocked(
+            "RFx " + rfxId + ": subscription details need owner review",
+          );
+      }
+      for (const name of ["receiveMail", "registerCategory"]) {
+        const checkbox = form.locator(
+          'input[type="checkbox"][name="' + name + '"]',
+        );
+        if (await checkbox.count()) await checkbox.uncheck();
+      }
+      const submit = form.locator(
+        'input[type="submit"][name="registerSubmitBtn"]',
+      );
       if (!(await submit.count()))
         throw new GetsCollectionBlocked(
           `RFx ${rfxId}: subscription form needs owner review`,
-        );
-      await submit.click();
-    } else if (
-      /RegisterInterest\.htm/i.test(new URL(page.url()).pathname) &&
-      new URL(page.url()).searchParams.get("projectID") === rfxId
-    ) {
-      const submit = page.getByRole("button", { name: /^submit$/i }).first();
-      if (!(await submit.count()))
-        throw new GetsCollectionBlocked(
-          `RFx ${rfxId}: subscription details need owner review`,
         );
       await submit.click();
     } else
