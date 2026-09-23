@@ -45,7 +45,7 @@ Reference: `/prototype/#/home`. Connected local preview: http://127.0.0.1:5178/l
 - **31 tests passed:** 23 domain, four source/finding presentation tests, four Sites routing/build checks. TypeScript, production build, changed-file formatting and diff whitespace checks passed.
 - The existing main-bundle warning remains (~553 kB minified). Backend tests were not rerun for this presentation-only change. No inference or research calls were made.
 
-Private captures and viewport results: `/Users/shaun/projects/procint/.local-groundwork/browser/design-polish/`. Early full-page captures were rejected because of compositor stitching; final viewport captures and direct browser checks are the usable evidence. The request-form captures were replaced after detecting a stale screenshot frame.
+Private captures and viewport results: `/Users/shaun/projects/groundwork/.local-groundwork/browser/design-polish/`. Early full-page captures were rejected because of compositor stitching; final viewport captures and direct browser checks are the usable evidence. The request-form captures were replaced after detecting a stale screenshot frame.
 
 ## Boundaries
 

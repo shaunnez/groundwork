@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 const browser = await chromium.launch({ headless: true }),
   context = await browser.newContext({
     storageState:
-      "/Users/shaun/projects/procint/.local-groundwork/browser/session.json",
+      "/Users/shaun/projects/groundwork/.local-groundwork/browser/session.json",
     viewport: { width: 1440, height: 1000 },
   }),
   page = await context.newPage();
@@ -40,7 +40,7 @@ await page.locator(".cited-unit").waitFor();
 await page
   .locator(".local-evidence")
   .screenshot({
-    path: "/Users/shaun/projects/procint/.local-groundwork/browser/rfp-evidence.png",
+    path: "/Users/shaun/projects/groundwork/.local-groundwork/browser/rfp-evidence.png",
   });
 await page.getByRole("button", { name: "Close evidence" }).click();
 await page
@@ -86,7 +86,7 @@ for (const [button, heading] of [
   await page
     .locator(".local-report")
     .screenshot({
-      path: `/Users/shaun/projects/procint/.local-groundwork/browser/${button.replaceAll(" ", "-")}.png`,
+      path: `/Users/shaun/projects/groundwork/.local-groundwork/browser/${button.replaceAll(" ", "-")}.png`,
     });
 }
 await page
@@ -111,7 +111,7 @@ assert.equal(
 );
 await page.setViewportSize({ width: 390, height: 844 });
 await page.screenshot({
-  path: "/Users/shaun/projects/procint/.local-groundwork/browser/operations-mobile.png",
+  path: "/Users/shaun/projects/groundwork/.local-groundwork/browser/operations-mobile.png",
   fullPage: true,
 });
 assert.equal(

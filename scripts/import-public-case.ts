@@ -17,7 +17,7 @@ try {
   );
   const receipt = JSON.parse(
     await readFile(
-      "/Users/shaun/projects/procint/.local-groundwork/receipts/psychometric-award.json",
+      "/Users/shaun/projects/groundwork/.local-groundwork/receipts/psychometric-award.json",
       "utf8",
     ),
   );
@@ -120,7 +120,7 @@ try {
     },
   );
   await writeFile(
-    "/Users/shaun/projects/procint/.local-groundwork/receipts/public-case-inventory.json",
+    "/Users/shaun/projects/groundwork/.local-groundwork/receipts/public-case-inventory.json",
     JSON.stringify(
       {
         opportunityId,

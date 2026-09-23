@@ -12,7 +12,7 @@ Deployed with Shaun's approval using the existing Hobby plan and a $20 workspace
 
 Three opportunities, 21 report versions and 8 sources migrated with evidence/history/provenance intact. Live authenticated API checks compare every report payload and every original source download hash against the local originals. Owner/reviewer access, secure cookies, origin rejection and reviewer feedback tested over HTTPS. Actual reviewer navigation, source citation viewing and owner generation checked in the browser; Bobby still needs to assess the user journeys.
 
-Website keys are in the private local `Pilot access.md` under `/Users/shaun/projects/procint/.local-groundwork/railway/`. They are deliberately absent from this repository. Fresh owner and reviewer identities; no local sessions or Claude credentials copied. Dedicated registered SSH key: `/Users/shaun/.ssh/groundwork_railway`.
+Website keys are in the private local `Pilot access.md` under `/Users/shaun/projects/groundwork/.local-groundwork/railway/`. They are deliberately absent from this repository. Fresh owner and reviewer identities; no local sessions or Claude credentials copied. Dedicated registered SSH key: `/Users/shaun/.ssh/groundwork_railway`.
 
 **Hosted generation is enabled and tested.** Official Claude Code is signed in as shaunnesbittuk@gmail.com, using claude.ai / firstParty / Pro. Verified usage credits and auto-reload OFF before setting GROUNDWORK_SUBSCRIPTION_APPROVED=true. A real public pursuit reassessment succeeded with three fresh subscription calls and its saved report/citation were inspected in the browser. Three companion reports and two current collections compiled without additional model calls, bringing the saved report count to 25. No API-key fallback.
 

@@ -12,16 +12,16 @@ await page.getByRole("button", { name: "Open workspace" }).click();
 await page
   .getByRole("heading", { name: "Pursuit room", exact: true })
   .waitFor();
-await mkdir("/Users/shaun/projects/procint/.local-groundwork/browser", {
+await mkdir("/Users/shaun/projects/groundwork/.local-groundwork/browser", {
   recursive: true,
 });
 await page.screenshot({
-  path: "/Users/shaun/projects/procint/.local-groundwork/browser/desktop.png",
+  path: "/Users/shaun/projects/groundwork/.local-groundwork/browser/desktop.png",
   fullPage: true,
 });
 await page.setViewportSize({ width: 390, height: 844 });
 await page.screenshot({
-  path: "/Users/shaun/projects/procint/.local-groundwork/browser/mobile.png",
+  path: "/Users/shaun/projects/groundwork/.local-groundwork/browser/mobile.png",
   fullPage: true,
 });
 assert.equal(

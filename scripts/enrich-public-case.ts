@@ -19,7 +19,7 @@ try {
   } else {
     const receipt = JSON.parse(
       await readFile(
-        "/Users/shaun/projects/procint/.local-groundwork/receipts/ukri-related-award.json",
+        "/Users/shaun/projects/groundwork/.local-groundwork/receipts/ukri-related-award.json",
         "utf8",
       ),
     );

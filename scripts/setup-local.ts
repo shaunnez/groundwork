@@ -2,9 +2,10 @@ import pg from "pg";
 import { randomBytes } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 const root =
   process.env.GROUNDWORK_LOCAL_ROOT ??
-  "/Users/shaun/projects/procint/.local-groundwork";
+  fileURLToPath(new URL("../.local-groundwork", import.meta.url));
 const path = `${root}/config.json`;
 await mkdir(root, { recursive: true, mode: 0o700 });
 if (!existsSync(path)) {

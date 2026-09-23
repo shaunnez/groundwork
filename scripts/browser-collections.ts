@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 const browser = await chromium.launch({ headless: true }),
   context = await browser.newContext({
     storageState:
-      "/Users/shaun/projects/procint/.local-groundwork/browser/session.json",
+      "/Users/shaun/projects/groundwork/.local-groundwork/browser/session.json",
     viewport: { width: 1440, height: 1000 },
   }),
   page = await context.newPage();
@@ -33,7 +33,7 @@ assert.equal(
 );
 await page.locator(".local-report").scrollIntoViewIfNeeded();
 await page.screenshot({
-  path: "/Users/shaun/projects/procint/.local-groundwork/browser/account-weekly-desktop.png",
+  path: "/Users/shaun/projects/groundwork/.local-groundwork/browser/account-weekly-desktop.png",
 });
 await page
   .getByRole("combobox", { name: /^Collection/ })
@@ -48,7 +48,7 @@ await page
 await page.setViewportSize({ width: 390, height: 844 });
 await page.locator(".local-report").scrollIntoViewIfNeeded();
 await page.screenshot({
-  path: "/Users/shaun/projects/procint/.local-groundwork/browser/account-watchlist-mobile.png",
+  path: "/Users/shaun/projects/groundwork/.local-groundwork/browser/account-watchlist-mobile.png",
 });
 assert.equal(
   await page.evaluate(() => document.documentElement.scrollWidth > innerWidth),

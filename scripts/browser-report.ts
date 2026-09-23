@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext({
   storageState:
-    "/Users/shaun/projects/procint/.local-groundwork/browser/session.json",
+    "/Users/shaun/projects/groundwork/.local-groundwork/browser/session.json",
   viewport: { width: 1440, height: 1000 },
 });
 const page = await context.newPage();
@@ -31,14 +31,14 @@ for (const heading of [
   );
 await page.locator(".local-report").scrollIntoViewIfNeeded();
 await page.screenshot({
-  path: "/Users/shaun/projects/procint/.local-groundwork/browser/report-desktop.png",
+  path: "/Users/shaun/projects/groundwork/.local-groundwork/browser/report-desktop.png",
   fullPage: true,
 });
 await page.locator(".local-citations button:visible").first().click();
 await page.getByRole("region", { name: "Source evidence" }).waitFor();
 assert.equal(await page.locator(".cited-unit").count(), 1);
 await page.screenshot({
-  path: "/Users/shaun/projects/procint/.local-groundwork/browser/citation.png",
+  path: "/Users/shaun/projects/groundwork/.local-groundwork/browser/citation.png",
 });
 await page.getByRole("button", { name: "Close evidence" }).click();
 const decision = page
@@ -97,7 +97,7 @@ await page
   .getByRole("heading", { name: "Executive summary" })
   .scrollIntoViewIfNeeded();
 await page.screenshot({
-  path: "/Users/shaun/projects/procint/.local-groundwork/browser/report-mobile.png",
+  path: "/Users/shaun/projects/groundwork/.local-groundwork/browser/report-mobile.png",
 });
 assert.equal(
   await page.evaluate(() => document.documentElement.scrollWidth > innerWidth),

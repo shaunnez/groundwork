@@ -32,12 +32,12 @@ if (process.argv.includes("--start")) {
     .waitFor();
 }
 await page.screenshot({
-  path: "/Users/shaun/projects/procint/.local-groundwork/browser/live-desktop.png",
+  path: "/Users/shaun/projects/groundwork/.local-groundwork/browser/live-desktop.png",
   fullPage: true,
 });
 await page.setViewportSize({ width: 390, height: 844 });
 await page.screenshot({
-  path: "/Users/shaun/projects/procint/.local-groundwork/browser/live-mobile.png",
+  path: "/Users/shaun/projects/groundwork/.local-groundwork/browser/live-mobile.png",
   fullPage: true,
 });
 assert.equal(
@@ -46,7 +46,7 @@ assert.equal(
 );
 assert.deepEqual(errors, []);
 await context.storageState({
-  path: "/Users/shaun/projects/procint/.local-groundwork/browser/session.json",
+  path: "/Users/shaun/projects/groundwork/.local-groundwork/browser/session.json",
 });
 console.log(
   "Live source pack visible; desktop/mobile and start journey checked",

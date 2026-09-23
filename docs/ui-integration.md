@@ -42,7 +42,7 @@ Actual in-app browser checks, using the connected UI:
 - Verified reviewer separation, disabled delivery for an unapproved report, mismatched report/opportunity link handling, sign-out across reload, and sign-in with the existing private local key.
 - Inspected browser logs: no application warnings/errors returned at the final desktop check.
 
-Private screenshots are under `/Users/shaun/projects/procint/.local-groundwork/browser/connected-*.png`; backend test output is `receipts/ui-integration-tests.txt`. Synthetic browser records remain labelled and retained. Previous public/synthetic evaluation history is unchanged.
+Private screenshots are under `/Users/shaun/projects/groundwork/.local-groundwork/browser/connected-*.png`; backend test output is `receipts/ui-integration-tests.txt`. Synthetic browser records remain labelled and retained. Previous public/synthetic evaluation history is unchanged.
 
 ## Remaining boundaries
 

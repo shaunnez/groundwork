@@ -4,7 +4,7 @@ The functional application is React/Vite + TypeScript, a Node.js TypeScript API 
 
 ## Local operation
 
-The coordinator provisions the dedicated `groundwork_local` database through `npm run setup:local`. Private configuration lives outside Git at `/Users/shaun/projects/procint/.local-groundwork/config.json`. Set `GROUNDWORK_CONFIG` to that file for API, worker and integration tests. The setup command refuses to adopt an existing role/database if its matching private configuration is missing.
+The coordinator provisions the dedicated `groundwork_local` database through `npm run setup:local`. Private configuration and original local evidence live in the Git-ignored `.local-groundwork/` directory inside this checkout. On Shaun's Mac, set `GROUNDWORK_CONFIG=/Users/shaun/projects/groundwork/.local-groundwork/config.json` for the API, worker and integration tests. The setup command defaults to this checkout's `.local-groundwork/` directory and refuses to adopt an existing role/database if its matching private configuration is missing. The previous `/Users/shaun/projects/procint/.local-groundwork` path is a temporary compatibility link while older local services remain running; new work should use the checkout path.
 
 - Connected product UI: `npm run dev` → `http://127.0.0.1:5178/` (`/local` opens the same application)
 - API: `npm run dev:api` → loopback port 4318

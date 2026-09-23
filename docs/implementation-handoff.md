@@ -10,7 +10,7 @@ Worktree: `/Users/shaun/projects/procint/worktrees/groundwork-local-slice`, bran
 
 The stack is React/Vite/TypeScript, a Node.js TypeScript API and durable worker, PostgreSQL, and private local object storage. No Next.js, Python app, graph framework or managed cloud dependency was added. The local worker is deliberately an explicit staged pipeline; provider calls stay outside HTTP request handling.
 
-Runtime configuration and access key are in `/Users/shaun/projects/procint/.local-groundwork/config.json`, outside Git. Do not paste that file into a review or commit it. The frontend is on5178, API4318, and the dedicated database/role is `groundwork_local`. Runtime instructions are in `local-development.md`; current process sessions and resumable state are in `/Users/shaun/projects/procint/docs/build-progress.md`.
+Runtime configuration and access key are in `/Users/shaun/projects/groundwork/.local-groundwork/config.json`, inside the checkout but ignored by Git. Do not paste that file into a review or commit it. The frontend is on5178, API4318, and the dedicated database/role is `groundwork_local`. Runtime instructions are in `local-development.md`; current process sessions and resumable state are in `/Users/shaun/projects/procint/docs/build-progress.md`.
 
 ## Delivered scope
 
@@ -48,7 +48,7 @@ Claude used the official CLI2.1.278, native `claude.ai` Team/firstParty authenti
 
 Firecrawl used **6 of the50 authorised included credits**, three five-result searches; no outstanding research reservation. Initial provider balance676/1000. No purchases/top-ups/overages or paid fallback. No GETS/RealMe login. All evaluation schedules are paused and no runs remain queued/running at handoff.
 
-Private final audit: `/Users/shaun/projects/procint/.local-groundwork/receipts/final-verification.json` contains the manifest, input/source hashes, provider totals and report IDs. Screenshots are under `.local-groundwork/browser/`; provider receipts/stage outputs remain under private object storage. The uncertainty on the old timeout is intentionally unresolved; do not delete or blindly replay it.
+Private final audit: `/Users/shaun/projects/groundwork/.local-groundwork/receipts/final-verification.json` contains the manifest, input/source hashes, provider totals and report IDs. Screenshots are under `.local-groundwork/browser/`; provider receipts/stage outputs remain under private object storage. The uncertainty on the old timeout is intentionally unresolved; do not delete or blindly replay it.
 
 ## Remaining limitations and next gate
 
