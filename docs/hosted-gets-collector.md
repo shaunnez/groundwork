@@ -1,6 +1,6 @@
 # Hosted GETS document collection handoff
 
-The owner starts **Check GETS now**. Each new or changed **live** notice detail queues one authenticated collection job in the same transaction as its saved notice revision. An unchanged detail creates no job. Fixture replay does not contact RealMe. The notice-brief attempt limit does not limit collection. There is no schedule and collection does not start a pursuit report.
+The owner starts **Check GETS now**. A **single-notice** live check queues one authenticated collection job for the selected notice in the same transaction as its saved notice revision, including when a broad public check already imported that revision. Broad current/future checks import public notices and briefs without queuing attachment collection. Rechecking the same selected revision reuses its existing job. Fixture replay does not contact RealMe. The notice-brief attempt limit does not limit selected collection. There is no schedule and collection does not start a pursuit report.
 
 `gets_pack_jobs` is the durable queue. One row is keyed by account and notice revision. Its states are `discovered`, `access_needed`, `downloading`, `downloaded`, `admitted`, `unchanged`, `failed`, `blocked`, and `cancelled`. Leases permit a worker restart to resume. The owner can cancel an active job or explicitly continue a stopped job after fixing its cause. The GETS status panel shows queue size, current RFx, completed, failed and blocked counts, retry count, and actionable failures. A failed or blocked job is never shown as ready.
 

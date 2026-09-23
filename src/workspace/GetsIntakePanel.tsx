@@ -193,15 +193,21 @@ export function GetsIntakePanel({
               </select>
             </label>
             {scope === "single" && (
-              <label>
-                GETS notice URL
-                <input
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  placeholder="https://www.gets.govt.nz/…/ExternalTenderDetails.htm?id=…"
-                  disabled={!owner || busy || !!active}
-                />
-              </label>
+              <>
+                <label>
+                  GETS notice URL
+                  <input
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                    placeholder="https://www.gets.govt.nz/…/ExternalTenderDetails.htm?id=…"
+                    disabled={!owner || busy || !!active}
+                  />
+                </label>
+                <p className="small muted">
+                  A single-notice check also collects its attachment pack with
+                  the configured GETS account and may subscribe to that RFx.
+                </p>
+              </>
             )}
             <Button
               onClick={() =>

@@ -10,10 +10,7 @@ import {
   changeCollectionJob,
   getsCollectionDetail,
 } from "../../server/gets/collection-queue.ts";
-import {
-  GetsIntakeWorker,
-  startGetsRun,
-} from "../../server/gets/intake.ts";
+import { GetsIntakeWorker, startGetsRun } from "../../server/gets/intake.ts";
 import {
   GetsCollectionBlocked,
   RealMeLoginBudget,
@@ -252,6 +249,82 @@ test("manual live notice check queues changed details but not unchanged details"
     await intake.tick();
   }
   await changeCollectionJob(db, account, queued.rows[0].id, "cancel");
+});
+
+test("broad live notice checks leave attachment collection to a selected check", async () => {
+  const rfxId = "34995794";
+  const url = `https://www.gets.govt.nz/DCC/ExternalTenderDetails.htm?id=${rfxId}`;
+  const intake = new GetsIntakeWorker(config, db, {
+    async listing() {
+      return `<html><body><table><tr><td><a href="${url}">${rfxId}</a></td><td><a href="${url}">Fixture works</a></td></tr></table></body></html>`;
+    },
+    async detail() {
+      return `<html><body><h1>Fixture works</h1><table>
+        <tr><th>Purchaser</th><td>Fixture buyer</td></tr>
+        <tr><th>Department</th><td>Test procurement</td></tr>
+        <tr><th>Reference</th><td>FIX-${rfxId}</td></tr>
+        <tr><th>Tender Type</th><td>RFT</td></tr>
+        <tr><th>Status</th><td>Current</td></tr>
+        <tr><th>Open Date</th><td>12 June 2026 at 12:00 PM NZST</td></tr>
+        <tr><th>Close Date</th><td>1 October 2026 at 5:00 PM NZDT</td></tr>
+        <tr><th>Categories</th><td>Construction</td></tr>
+        <tr><th>Regions</th><td>Otago</td></tr>
+        <tr><th>Overview</th><td>Fictional works for a broad notice check.</td></tr>
+      </table></body></html>`;
+    },
+  });
+  const selected = await startGetsRun(db, account, actor, { scope: "current" });
+  for (let attempt = 0; attempt < 8; attempt++) {
+    await intake.tick();
+    const saved = await db.query(
+      "SELECT details_read FROM gets_intake_runs WHERE id=$1",
+      [selected.id],
+    );
+    if (saved.rows[0].details_read === 1) break;
+  }
+  const saved = await db.query(
+    "SELECT details_read,new_count FROM gets_intake_runs WHERE id=$1",
+    [selected.id],
+  );
+  assert.equal(saved.rows[0].details_read, 1);
+  assert.equal(saved.rows[0].new_count, 1);
+  const jobs = await db.query(
+    "SELECT id FROM gets_pack_jobs WHERE intake_run_id=$1",
+    [selected.id],
+  );
+  assert.equal(jobs.rowCount, 0);
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const status = await db.query(
+      "SELECT state FROM gets_intake_runs WHERE id=$1",
+      [selected.id],
+    );
+    if (!["queued", "running"].includes(status.rows[0].state)) break;
+    await intake.tick();
+  }
+  const single = await startGetsRun(db, account, actor, {
+    scope: "single",
+    url,
+  });
+  for (let attempt = 0; attempt < 8; attempt++) {
+    await intake.tick();
+    const saved = await db.query(
+      "SELECT details_read FROM gets_intake_runs WHERE id=$1",
+      [single.id],
+    );
+    if (saved.rows[0].details_read === 1) break;
+  }
+  const singleRun = await db.query(
+    "SELECT details_read,unchanged_count FROM gets_intake_runs WHERE id=$1",
+    [single.id],
+  );
+  assert.equal(singleRun.rows[0].details_read, 1);
+  assert.equal(singleRun.rows[0].unchanged_count, 1);
+  const selectedJobs = await db.query(
+    "SELECT id FROM gets_pack_jobs WHERE intake_run_id=$1",
+    [single.id],
+  );
+  assert.equal(selectedJobs.rowCount, 1);
+  await changeCollectionJob(db, account, selectedJobs.rows[0].id, "cancel");
 });
 
 test("failed file resumes after worker restart without duplicating admitted sources; withdrawn file leaves current pack", async () => {

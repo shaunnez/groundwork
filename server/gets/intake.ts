@@ -689,7 +689,7 @@ export class GetsIntakeWorker {
             "INSERT INTO gets_brief_items(run_id,account_id,rfx_id,revision_id,state) VALUES($1,$2,$3,$4,'pending') ON CONFLICT(run_id,rfx_id) DO UPDATE SET revision_id=EXCLUDED.revision_id,state='pending',error=null",
             [run.id, run.account_id, item.rfx_id, saved.revisionId],
           );
-        if (run.mode === "live" && saved.outcome !== "unchanged")
+        if (run.mode === "live" && run.scope === "single")
           await c.query(
             `INSERT INTO gets_pack_jobs(id,account_id,intake_run_id,notice_revision_id,opportunity_id,actor_id,rfx_id)
              VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(account_id,notice_revision_id) DO NOTHING`,
