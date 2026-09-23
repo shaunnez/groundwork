@@ -23,7 +23,6 @@ type Run = {
   started_at: string;
 };
 type Status = {
-  briefsPerAttempt: number;
   access: {
     enabled: boolean;
     reason: string;
@@ -222,8 +221,7 @@ export function GetsIntakePanel({
                 unread
               </span>
               <span>
-                Notice briefs (limit {status.briefsPerAttempt} per attempt):{" "}
-                {status.briefCounts.complete || 0} complete ·{" "}
+                Notice briefs: {status.briefCounts.complete || 0} complete ·{" "}
                 {status.briefCounts.pending || 0} pending ·{" "}
                 {status.briefCounts.failed || 0} failed
               </span>
