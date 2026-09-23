@@ -10,6 +10,7 @@ import {
   excludedUnitId,
   highLevelExclusionReason,
   validateBatchAnalysis,
+  type AnalysisSegment,
   type BatchAnalysis,
 } from "./analysis-pipeline.ts";
 
@@ -37,6 +38,7 @@ export async function validatedAnalysisBatch(
     name: string,
     input: unknown,
     prompt: string,
+    segments: AnalysisSegment[],
   ) => Promise<BatchAnalysis>,
   splitDepth = 0,
 ): Promise<ValidatedBatch> {
@@ -63,12 +65,16 @@ export async function validatedAnalysisBatch(
   try {
     candidate = discardUnknown(
       batch.segments,
-      await model(name, input, batch.prompt),
+      await model(name, input, batch.prompt, batch.segments),
     );
   } catch (error) {
     if (
       !(error instanceof ClaudeTerminalError) ||
-      error.subtype !== "error_max_turns" ||
+      ![
+        "error_max_turns",
+        "invalid_structured_output",
+        "output_token_limit",
+      ].includes(error.subtype) ||
       batch.segments.length < 2 ||
       splitDepth >= 2
     )
@@ -93,8 +99,14 @@ export async function validatedAnalysisBatch(
       ...validateBatchAnalysis(batch.segments, {
         outcomes: results.flatMap((result) => result.outcomes),
       }),
-      rejectedBySegment: Object.assign({}, ...results.map((result) => result.rejectedBySegment)),
-      recoveredCallIds: [error.callId, ...results.flatMap((result) => result.recoveredCallIds)],
+      rejectedBySegment: Object.assign(
+        {},
+        ...results.map((result) => result.rejectedBySegment),
+      ),
+      recoveredCallIds: [
+        error.callId,
+        ...results.flatMap((result) => result.recoveredCallIds),
+      ],
     };
   }
   for (let attempt = 0; attempt <= 2; attempt++) {
@@ -175,6 +187,7 @@ export async function validatedAnalysisBatch(
             previousOutputHash: hash(JSON.stringify(candidate)),
           },
           `${analysisPrompt(invalidSegments)}\nThe earlier response failed ${structural ? "segment ID reconciliation" : "exact quote validation"} for these segments. Regenerate only their outcomes, with exactly one outcome per listed segmentId copied without alteration. Use short, meaningful quotes of 4-16 consecutive words copied directly from the listed source text, including its spelling and punctuation. Omit an item if you cannot copy a supporting excerpt exactly; do not paraphrase or combine segments.`,
+          invalidSegments,
         ),
       );
       try {
@@ -235,6 +248,52 @@ export async function* streamSourceUnits(
   }
 }
 
+/** Keep a bounded window of independent batches and drain submitted work on failure. */
+export async function runBatchesBounded<T>(
+  batches: AsyncIterable<T>,
+  concurrency: number,
+  process: (batch: T, index: number) => Promise<void>,
+): Promise<number> {
+  if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 4)
+    throw new Error("Analysis concurrency must be between 1 and 4");
+  type Result =
+    { index: number; ok: true } | { index: number; ok: false; error: unknown };
+  const pending = new Map<number, Promise<Result>>();
+  let nextIndex = 0;
+  let failure: { error: unknown } | null = null;
+  try {
+    for await (const batch of batches) {
+      if (pending.size === concurrency) {
+        const finished = await Promise.race(pending.values());
+        pending.delete(finished.index);
+        if (!finished.ok) {
+          failure = { error: finished.error };
+          break;
+        }
+      }
+      const index = nextIndex++;
+      pending.set(
+        index,
+        Promise.resolve()
+          .then(() => process(batch, index))
+          .then(
+            (): Result => ({ index, ok: true }),
+            (error: unknown): Result => ({ index, ok: false, error }),
+          ),
+      );
+    }
+  } catch (error) {
+    failure = { error };
+  }
+  const remaining = await Promise.all(pending.values());
+  const failed = remaining.find(
+    (result): result is Extract<Result, { ok: false }> => !result.ok,
+  );
+  failure ??= failed ? { error: failed.error } : null;
+  if (failure) throw failure.error;
+  return nextIndex;
+}
+
 export async function analyseReadableUnits(
   db: Database,
   run: Run,
@@ -243,8 +302,11 @@ export async function analyseReadableUnits(
     name: string,
     input: unknown,
     prompt: string,
+    segments: AnalysisSegment[],
   ) => Promise<BatchAnalysis>,
   active: () => Promise<void>,
+  concurrency = 1,
+  promptForBatch = analysisPrompt,
 ) {
   let batchNumber = 0;
   let peakPromptBytes = 0;
@@ -272,10 +334,12 @@ export async function analyseReadableUnits(
       } else yield unit;
     }
   }
-  for await (const batch of analysisBatchesAsync(eligible())) {
+  const processBatch = async (
+    batch: { segments: AnalysisSegment[]; prompt: string; promptBytes: number },
+    index: number,
+  ) => {
     await active();
-    const name = `analyse-${String(batchNumber++).padStart(5, "0")}`;
-    peakPromptBytes = Math.max(peakPromptBytes, batch.promptBytes);
+    const name = `analyse-${String(index).padStart(5, "0")}`;
     await transaction(db, async (c) => {
       for (const segment of batch.segments)
         await c.query(
@@ -299,7 +363,7 @@ export async function analyseReadableUnits(
       "SELECT count(*)::int AS count FROM analysis_segments WHERE run_id=$1 AND segment_id=ANY($2::text[]) AND state='processed'",
       [run.id, batch.segments.map((s) => s.id)],
     );
-    if (done.rows[0].count === batch.segments.length) continue;
+    if (done.rows[0].count === batch.segments.length) return;
     try {
       const output = await validatedAnalysisBatch(
         name,
@@ -374,7 +438,8 @@ export async function analyseReadableUnits(
           const recovered = await c.query(
             `UPDATE provider_calls SET usage=coalesce(usage,'{}'::jsonb)||'{"recoveredBySplit":true}'::jsonb
              WHERE run_id=$1 AND id=ANY($2::uuid[]) AND status='failed'
-               AND usage->>'providerTerminal'='error_max_turns'`,
+               AND (usage->>'providerTerminal' IN ('error_max_turns','output_token_limit')
+                 OR usage->>'outputValidation'='invalid')`,
             [run.id, output.recoveredCallIds],
           );
           if (recovered.rowCount !== output.recoveredCallIds.length)
@@ -388,7 +453,15 @@ export async function analyseReadableUnits(
       );
       throw error;
     }
-  }
+  };
+  batchNumber = await runBatchesBounded(
+    analysisBatchesAsync(eligible(), promptForBatch),
+    concurrency,
+    (batch, index) => {
+      peakPromptBytes = Math.max(peakPromptBytes, batch.promptBytes);
+      return processBatch(batch, index);
+    },
+  );
   const status = await db.query(
     "SELECT state,count(*)::int AS count,coalesce(sum((outcome->>'rejectedQuoteCount')::int),0)::int AS rejected_quotes,coalesce(sum((outcome->>'rejectedMandatoryQuoteCount')::int),0)::int AS rejected_mandatory_quotes FROM analysis_segments WHERE run_id=$1 GROUP BY state",
     [run.id],
