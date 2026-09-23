@@ -487,8 +487,14 @@ export async function analyseReadableUnits(
 export async function analysisDigest(db: Database, runId: string) {
   const rows = await db.query(
     `WITH ranked AS (
-       SELECT i.*,row_number() OVER(PARTITION BY i.source_id ORDER BY i.mandatory DESC,i.kind DESC,i.item_id) AS source_rank
-       FROM analysis_items i WHERE i.run_id=$1
+       SELECT i.*,row_number() OVER(PARTITION BY i.source_id ORDER BY
+         CASE
+           WHEN s.media_type LIKE '%spreadsheet%' AND i.text_content ~* '(contract price|tendered price|dayworks|rate schedule|total price|price structure|standard columns)' THEN 0
+           WHEN s.media_type LIKE '%spreadsheet%' AND i.text_content ~* '(provisional sum|lump sum|rate|amount|price|gst)' THEN 1
+           ELSE 2
+         END,
+         i.mandatory DESC,i.kind DESC,i.item_id) AS source_rank
+       FROM analysis_items i JOIN sources s ON s.id=i.source_id WHERE i.run_id=$1
      )
      SELECT i.item_id,i.source_id,i.unit_id,i.location,i.kind,i.text_content,i.quote,i.mandatory,i.contradiction,
             s.purpose,s.name FROM ranked i JOIN sources s ON s.id=i.source_id

@@ -61,6 +61,62 @@ test("legacy DOCX revision text is rejected until the source is excluded", () =>
   );
 });
 
+test("spreadsheet synthesis leads with price structure before arbitrary line items", async () => {
+  const db = database(loadConfig());
+  const accountId = randomUUID();
+  const opportunityId = randomUUID();
+  const sourceId = randomUUID();
+  const unitId = randomUUID();
+  const runId = randomUUID();
+  try {
+    await db.query(
+      "INSERT INTO accounts(id,name) VALUES($1,'Pricing rank test')",
+      [accountId],
+    );
+    await db.query(
+      "INSERT INTO opportunities(id,account_id,title,buyer,notice_id,cutoff,metadata) VALUES($1,$2,'Pricing rank test','Test buyer','PRICING-RANK','2026-09-23','{}')",
+      [opportunityId, accountId],
+    );
+    await db.query(
+      "INSERT INTO sources(id,account_id,opportunity_id,name,media_type,purpose,required,hash,object_ref,reader,state,coverage,provenance) VALUES($1,$2,$3,'Prices.xlsx','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','rfp',true,'hash','ref','xlsx-cells-v1','partial',$4,'synthetic')",
+      [
+        sourceId,
+        accountId,
+        opportunityId,
+        { total: 1, read: 0, unread: 1, unit: "sheet", failures: [] },
+      ],
+    );
+    await db.query(
+      "INSERT INTO units(id,account_id,source_id,ordinal,location,text_content) VALUES($1,$2,$3,1,'Sheet Prices','Quoted cells')",
+      [unitId, accountId, sourceId],
+    );
+    await db.query(
+      "INSERT INTO runs(id,account_id,opportunity_id,input_hash,manifest,state) VALUES($1,$2,$3,$4,'{}','running')",
+      [runId, accountId, opportunityId, randomUUID()],
+    );
+    await db.query(
+      "INSERT INTO analysis_segments(run_id,account_id,segment_id,source_id,unit_id,location,start_offset,end_offset,text_hash,method,state,outcome) VALUES($1,$2,'segment',$3,$4,'Sheet Prices',0,12,'hash','test','processed','{}')",
+      [runId, accountId, sourceId, unitId],
+    );
+    for (const [itemId, value] of [
+      ["0".repeat(64), "Paint handrails white"],
+      [
+        "f".repeat(64),
+        "Contract price distinguishes base and provisional sums",
+      ],
+    ])
+      await db.query(
+        "INSERT INTO analysis_items(run_id,account_id,item_id,segment_id,source_id,unit_id,location,kind,text_content,quote,mandatory,revision_state) VALUES($1,$2,$3,'segment',$4,$5,'Sheet Prices','requirement',$6,'Quoted cells',true,'operative')",
+        [runId, accountId, itemId, sourceId, unitId, value],
+      );
+    const digest = await analysisDigest(db, runId);
+    assert.match(digest.items[0].text_content, /Contract price/);
+  } finally {
+    await db.query("DELETE FROM accounts WHERE id=$1", [accountId]);
+    await db.end();
+  }
+});
+
 test("segments retain every original character and keep locatable spreadsheet cells", () => {
   const rows = Array.from(
     { length: 1200 },
