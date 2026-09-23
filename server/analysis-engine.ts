@@ -489,6 +489,7 @@ export async function analysisDigest(db: Database, runId: string) {
     `WITH ranked AS (
        SELECT i.*,row_number() OVER(PARTITION BY i.source_id ORDER BY
          CASE
+           WHEN s.purpose='notice' AND i.text_content ~* '(close date|closing date|submission deadline|tender closes|works required to commence|commencement date)' THEN 0
            WHEN s.media_type LIKE '%spreadsheet%' AND i.text_content ~* '(contract price|tendered price|dayworks|rate schedule|total price|price structure|standard columns)' THEN 0
            WHEN s.media_type LIKE '%spreadsheet%' AND i.text_content ~* '(provisional sum|lump sum|rate|amount|price|gst)' THEN 1
            ELSE 2

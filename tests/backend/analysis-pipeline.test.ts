@@ -61,12 +61,14 @@ test("legacy DOCX revision text is rejected until the source is excluded", () =>
   );
 });
 
-test("spreadsheet synthesis leads with price structure before arbitrary line items", async () => {
+test("synthesis leads with price structure and notice timing dates", async () => {
   const db = database(loadConfig());
   const accountId = randomUUID();
   const opportunityId = randomUUID();
   const sourceId = randomUUID();
   const unitId = randomUUID();
+  const noticeSourceId = randomUUID();
+  const noticeUnitId = randomUUID();
   const runId = randomUUID();
   try {
     await db.query(
@@ -91,12 +93,29 @@ test("spreadsheet synthesis leads with price structure before arbitrary line ite
       [unitId, accountId, sourceId],
     );
     await db.query(
+      "INSERT INTO sources(id,account_id,opportunity_id,name,media_type,purpose,required,hash,object_ref,reader,state,coverage,provenance) VALUES($1,$2,$3,'Notice','text/html','notice',true,'hash','ref','html-v1','read',$4,'synthetic')",
+      [
+        noticeSourceId,
+        accountId,
+        opportunityId,
+        { total: 1, read: 1, unread: 0, unit: "page", failures: [] },
+      ],
+    );
+    await db.query(
+      "INSERT INTO units(id,account_id,source_id,ordinal,location,text_content) VALUES($1,$2,$3,1,'Notice','Open and close dates')",
+      [noticeUnitId, accountId, noticeSourceId],
+    );
+    await db.query(
       "INSERT INTO runs(id,account_id,opportunity_id,input_hash,manifest,state) VALUES($1,$2,$3,$4,'{}','running')",
       [runId, accountId, opportunityId, randomUUID()],
     );
     await db.query(
       "INSERT INTO analysis_segments(run_id,account_id,segment_id,source_id,unit_id,location,start_offset,end_offset,text_hash,method,state,outcome) VALUES($1,$2,'segment',$3,$4,'Sheet Prices',0,12,'hash','test','processed','{}')",
       [runId, accountId, sourceId, unitId],
+    );
+    await db.query(
+      "INSERT INTO analysis_segments(run_id,account_id,segment_id,source_id,unit_id,location,start_offset,end_offset,text_hash,method,state,outcome) VALUES($1,$2,'notice-segment',$3,$4,'Notice',0,20,'hash','test','processed','{}')",
+      [runId, accountId, noticeSourceId, noticeUnitId],
     );
     for (const [itemId, value] of [
       ["0".repeat(64), "Paint handrails white"],
@@ -109,8 +128,30 @@ test("spreadsheet synthesis leads with price structure before arbitrary line ite
         "INSERT INTO analysis_items(run_id,account_id,item_id,segment_id,source_id,unit_id,location,kind,text_content,quote,mandatory,revision_state) VALUES($1,$2,$3,'segment',$4,$5,'Sheet Prices','requirement',$6,'Quoted cells',true,'operative')",
         [runId, accountId, itemId, sourceId, unitId, value],
       );
+    for (const [itemId, value] of [
+      ["1".repeat(64), "Open date for tender"],
+      ["2".repeat(64), "Works required to commence 4 January 2026"],
+      ["e".repeat(64), "Close date for tender submission"],
+    ])
+      await db.query(
+        "INSERT INTO analysis_items(run_id,account_id,item_id,segment_id,source_id,unit_id,location,kind,text_content,quote,mandatory,revision_state) VALUES($1,$2,$3,'notice-segment',$4,$5,'Notice','fact',$6,'Open and close dates',false,'operative')",
+        [runId, accountId, itemId, noticeSourceId, noticeUnitId, value],
+      );
     const digest = await analysisDigest(db, runId);
-    assert.match(digest.items[0].text_content, /Contract price/);
+    assert.match(
+      digest.items.find((item) => item.source_id === sourceId)!.text_content,
+      /Contract price/,
+    );
+    const noticeItems = digest.items.filter(
+      (item) => item.source_id === noticeSourceId,
+    );
+    assert.deepEqual(
+      noticeItems.slice(0, 2).map((item) => item.text_content),
+      [
+        "Works required to commence 4 January 2026",
+        "Close date for tender submission",
+      ],
+    );
   } finally {
     await db.query("DELETE FROM accounts WHERE id=$1", [accountId]);
     await db.end();

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { AssessmentSchema, type Assessment } from "../../shared/contracts.ts";
 import {
   validateAssessment,
+  validateCommercialPricing,
   composeReport,
   assessmentCorrectionPrompt,
   alignAssessmentEvidence,
@@ -143,11 +144,34 @@ const checks = (a: Assessment) =>
   }));
 test("correction prompt carries cited evidence and verifier issues without the full pack", () => {
   const assessment = fixture();
+  const pricingUnit = {
+    ...unit,
+    id: "33333333-3333-4333-8333-333333333333",
+    text: "Dayworks rates must be entered in the pricing schedule.",
+  };
+  const timingUnit = {
+    ...unit,
+    id: "44444444-4444-4444-8444-444444444444",
+    text: "Close Date: 6 October 2026 at 4:00 PM.",
+  };
   const prompt = assessmentCorrectionPrompt(
     {
       opportunity: { title: "Synthetic test" },
-      units: [unit, { ...unit, id: "another-unit", text: "x".repeat(40_000) }],
+      units: [
+        unit,
+        pricingUnit,
+        timingUnit,
+        { ...unit, id: "another-unit", text: "x".repeat(40_000) },
+      ],
       analysisSelection: { selected: 2, omitted: 1 },
+      commercialPricingLeads: [
+        {
+          unitId: pricingUnit.id,
+          sourceName: "Prices.xlsx",
+          quote: pricingUnit.text,
+        },
+      ],
+      tenderTimingLeads: [{ unitId: timingUnit.id, quote: timingUnit.text }],
     },
     assessment,
     { checks: checks(assessment), sectionIssues: ["Correct the risk wording"] },
@@ -156,6 +180,8 @@ test("correction prompt carries cited evidence and verifier issues without the f
   );
   assert.ok(Buffer.byteLength(prompt, "utf8") < 48_000);
   assert.ok(prompt.includes(unit.text));
+  assert.ok(prompt.includes(pricingUnit.text));
+  assert.ok(prompt.includes(timingUnit.text));
   assert.ok(prompt.includes("Correct the risk wording"));
   assert.ok(!prompt.includes("x".repeat(100)));
   const finalPrompt = assessmentCorrectionPrompt(
@@ -179,6 +205,29 @@ test("correction prompt carries cited evidence and verifier issues without the f
   assert.match(
     finalPrompt,
     /"sourceInventory":\[\{"name":"Synthetic RFT","state":"read"\}\]/,
+  );
+});
+test("selected workbook leads require a substantive cited pricing claim", () => {
+  const a = fixture();
+  const leads = [{ unitId: unit.id }];
+  assert.throws(
+    () => validateCommercialPricing(a, leads),
+    /substantive workbook-cited commercial claim/,
+  );
+  a.claims[0].text = "The pricing schedule requires dayworks rates.";
+  validateCommercialPricing(a, leads);
+  a.claims[0].text = "The pricing reader coverage is partial.";
+  assert.throws(
+    () => validateCommercialPricing(a, leads),
+    /substantive workbook-cited commercial claim/,
+  );
+  a.claims[0].text = "The pricing schedule requires dayworks rates.";
+  a.evidence[0].kind = "value";
+  validateCommercialPricing(a, leads);
+  a.evidence[0].kind = "description";
+  assert.throws(
+    () => validateCommercialPricing(a, leads),
+    /substantive workbook-cited commercial claim/,
   );
 });
 test("assessment quote alignment uses only a verified excerpt from the same unit", () => {
@@ -277,6 +326,21 @@ test("support review receives trusted run metadata separately from tender units"
   assert.match(prompt, /"selected":3,"omitted":7/);
   assert.match(prompt, /"name":"Draft","state":"partial"/);
   assert.match(prompt, /Tender facts still require their cited source units/);
+  assert.match(prompt, /linked evidence excerpt, not only in another excerpt/);
+  assert.match(
+    prompt,
+    /compare its name and indicators with the linked outcomeClaimId text/,
+  );
+  assert.match(
+    prompt,
+    /centre-of-gravity factor, implication and action claim texts as a causal chain/,
+  );
+  assert.match(
+    prompt,
+    /pre-award amendment can coexist with eventual award or no award/,
+  );
+  assert.match(prompt, /Check each risk mitigation against its linked risk/);
+  assert.match(prompt, /Do not put successful checks, praise/);
 });
 test("scenario outcomes must be inference claims and model processing limits are replaced", () => {
   const a = fixture();
@@ -289,12 +353,65 @@ test("scenario outcomes must be inference claims and model processing limits are
   a.limitations.push(
     "Unsafe legacy DOCX extraction is outside this reader scope.",
     "XLSX Schedule of Prices cells were read at sheet level only; no cell-level pricing values were extracted.",
+    "This assessment covers only 36 of 1447 selected source-linked findings.",
+    "Findings are drawn from a bounded selection of 33 verified extraction leads out of 1,483 total enumerated units (1,450 omitted).",
+    "Requirements extraction covered 1,076 of a larger candidate set.",
   );
   const cleaned = removeModelProcessingLimitations(a);
-  assert.equal(cleaned.removed, 2);
+  assert.equal(cleaned.removed, 5);
   assert.equal(cleaned.assessment.limitations.length, 1);
-  assert.equal(a.limitations.length, 3);
+  assert.equal(a.limitations.length, 6);
   validateAssessment(cleaned.assessment, [unit]);
+});
+test("factual dates must be present in the linked quote", () => {
+  const datedUnit = {
+    ...unit,
+    text: `${unit.text} Work starts 4 January 2026.`,
+  };
+  const a = fixture();
+  a.claims[0].text = "Work starts 4 January 2026.";
+  assert.throws(
+    () => validateAssessment(a, [datedUnit]),
+    /date absent from its cited exact source excerpt/,
+  );
+  a.evidence[0].excerpt = "Work starts 4 January 2026.";
+  validateAssessment(a, [datedUnit]);
+  a.evidence[0].kind = "value";
+  validateAssessment(a, [datedUnit]);
+  a.evidence[0].excerpt = "Work starts 5 January 2026.";
+  assert.throws(
+    () => validateAssessment(a, [datedUnit]),
+    /date absent from its cited exact source excerpt/,
+  );
+});
+test("a risk cannot reuse its own finding as the mitigation", () => {
+  const a = fixture();
+  a.risks[0].mitigationClaimId = a.risks[0].claimId;
+  assert.throws(
+    () => validateAssessment(a, [unit]),
+    /cannot use its own claim as mitigation/,
+  );
+});
+test("a cutoff snapshot cannot compete with later award outcomes", () => {
+  const a = fixture();
+  a.claims[3].text = "A contract could be awarded after the tender close.";
+  a.claims.push({
+    ...a.claims[3],
+    id: "c5",
+    key: "pending",
+    text: "No award decision is visible at the assessment cutoff.",
+  });
+  a.scenarios[0].outcomeClaimId = "c5";
+  assert.throws(
+    () => validateAssessment(a, [unit]),
+    /Pending at the assessment snapshot cannot be an alternative/,
+  );
+  a.claims[4].text =
+    "The tender remains pending with no decision at time of reassessment.";
+  assert.throws(
+    () => validateAssessment(a, [unit]),
+    /Pending at the assessment snapshot cannot be an alternative/,
+  );
 });
 test("A17 summary cannot introduce unaccepted prose", () => {
   const a = fixture();

@@ -341,7 +341,7 @@ export function AssessmentBody({
                 ? ` · ${source.coverage.read}/${source.coverage.total ?? "?"} ${source.coverage.unit}s read`
                 : ""}
               {source.coverage?.failures?.length
-                ? " · partial text coverage; unread content outside analysis"
+                ? ` · ${source.coverage.failures.join("; ")}`
                 : ""}
             </p>
           ))}

@@ -49,6 +49,7 @@ import {
 } from "./analysis-pipeline.ts";
 import {
   validateAssessment,
+  validateCommercialPricing,
   composeReport,
   assessmentPrompt,
   assessmentCorrectionPrompt,
@@ -692,6 +693,8 @@ export class Worker {
       if (analysisSelection) {
         const chosen = [...analysisSelection.items] as Array<{
           unit_id: string;
+          name: string;
+          purpose: string;
           kind: "fact" | "requirement";
           text_content: string;
           quote: string;
@@ -730,7 +733,34 @@ export class Worker {
               chosen.length,
             note: "Selected source-linked findings for bounded synthesis; all readable outcomes and requirements remain in the durable ledger.",
           };
-          if (Buffer.byteLength(assessmentPrompt(context), "utf8") <= 40_000) {
+          context.commercialPricingLeads = chosen
+            .filter(
+              (item) =>
+                /\.xlsx$/i.test(item.name) &&
+                /contract price|tendered price|dayworks|rate schedule|total price|price structure|standard columns/i.test(
+                  item.text_content,
+                ),
+            )
+            .slice(0, 3)
+            .map((item) => ({
+              unitId: item.unit_id,
+              sourceName: item.name,
+              quote: item.quote,
+            }));
+          context.tenderTimingLeads = chosen
+            .filter(
+              (item) =>
+                item.purpose === "notice" &&
+                /close date|closing date|submission deadline|tender closes|works required to commence|commencement date/i.test(
+                  item.text_content,
+                ),
+            )
+            .slice(0, 3)
+            .map((item) => ({
+              unitId: item.unit_id,
+              quote: item.quote,
+            }));
+          if (Buffer.byteLength(assessmentPrompt(context), "utf8") <= 36_000) {
             analysisSelection.units = context.units as SourceUnit[];
             analysisSelection.omitted = (
               context.analysisSelection as { omitted: number }
@@ -739,12 +769,15 @@ export class Worker {
           }
           if (!chosen.length)
             throw new Error(
-              "Frozen report context exceeds the 40,000-byte synthesis budget before source findings; reduce non-evidence context explicitly",
+              "Frozen report context exceeds the 36,000-byte synthesis budget before source findings; reduce non-evidence context explicitly",
             );
           chosen.pop();
         }
       }
       const supportSystemMetadata = {
+        assessmentCutoff: cutoff,
+        commercialPricingLeads: context.commercialPricingLeads ?? [],
+        tenderTimingLeads: context.tenderTimingLeads ?? [],
         analysisSelection: context.analysisSelection ?? null,
         sourceReaders: sourceInventory.map((source) => ({
           name: source.name,
@@ -815,6 +848,10 @@ export class Worker {
               `Assessment excerpt is outside the verified-finding selection for unit ${evidence.unitId}`,
             );
         }
+        validateCommercialPricing(
+          value,
+          (context.commercialPricingLeads as Array<{ unitId: string }>) ?? [],
+        );
       };
       let assessment: z.infer<typeof AssessmentSchema>;
       try {
@@ -1041,6 +1078,17 @@ export class Worker {
       if (hasOcr)
         payload.limitations.push(
           "Some PDF pages were read using OCR. Quote verification checks extracted text; inspect the original page for transcription errors.",
+        );
+      if (
+        segmented &&
+        src.rows.some(
+          (source) =>
+            source.media_type === "application/pdf" &&
+            /\bdrawings?\b/i.test(source.name),
+        )
+      )
+        payload.limitations.push(
+          "Original PDF drawings are retained, but engineering interpretation of their visual content is outside this text-based assessment.",
         );
       if (rejectedAnalysisQuotes)
         payload.limitations.push(
