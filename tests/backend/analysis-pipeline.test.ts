@@ -286,6 +286,35 @@ test("unknown model segment ID is discarded and only the missing segment is reru
   assert.deepEqual(result.rejectedBySegment, {});
 });
 
+test("an extra unknown outcome cannot invalidate complete saved segment coverage", async () => {
+  const first = unit("The site meeting is optional.");
+  const second = unit("Submit the pricing schedule.");
+  const batch = [...analysisBatches([first, second])][0];
+  let calls = 0;
+  const result = await validatedAnalysisBatch(
+    "analyse-00030",
+    { method: "test" },
+    batch,
+    async () => {
+      calls++;
+      return {
+        outcomes: [
+          ...batch.segments.map((segment) => ({
+            segmentId: segment.id,
+            items: [],
+          })),
+          { segmentId: "unknown-extra", items: [] },
+        ],
+      };
+    },
+  );
+  assert.equal(calls, 1);
+  assert.deepEqual(
+    result.outcomes.map((outcome) => outcome.segmentId),
+    batch.segments.map((segment) => segment.id),
+  );
+});
+
 test("a terminal turn-limit result splits only its batch and preserves exact segment IDs", async () => {
   const sources = Array.from({ length: 4 }, (_, index) =>
     unit(`Clause ${index + 1}: supplier must provide the stated document.`),

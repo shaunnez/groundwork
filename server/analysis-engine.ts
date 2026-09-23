@@ -41,6 +41,17 @@ export async function validatedAnalysisBatch(
   splitDepth = 0,
 ): Promise<ValidatedBatch> {
   const byId = new Map(batch.segments.map((segment) => [segment.id, segment]));
+  const discardUnknown = (
+    segments: typeof batch.segments,
+    value: BatchAnalysis,
+  ): BatchAnalysis => {
+    const expected = new Set(segments.map((segment) => segment.id));
+    return {
+      outcomes: value.outcomes.filter((outcome) =>
+        expected.has(outcome.segmentId),
+      ),
+    };
+  };
   const reconciles = (segments: typeof batch.segments, value: BatchAnalysis) =>
     value.outcomes.length === segments.length &&
     new Set(value.outcomes.map((outcome) => outcome.segmentId)).size ===
@@ -50,7 +61,10 @@ export async function validatedAnalysisBatch(
     );
   let candidate: BatchAnalysis;
   try {
-    candidate = await model(name, input, batch.prompt);
+    candidate = discardUnknown(
+      batch.segments,
+      await model(name, input, batch.prompt),
+    );
   } catch (error) {
     if (
       !(error instanceof ClaudeTerminalError) ||
@@ -150,15 +164,18 @@ export async function validatedAnalysisBatch(
       );
       const structural = !reconciles(batch.segments, candidate);
       const repairKind = structural ? "segment-repair" : "quote-repair";
-      const corrected = await model(
-        `${name}-${repairKind}-${attempt + 1}`,
-        {
-          input,
-          repairAttempt: attempt + 1,
-          repairSegmentIds: [...invalidIds],
-          previousOutputHash: hash(JSON.stringify(candidate)),
-        },
-        `${analysisPrompt(invalidSegments)}\nThe earlier response failed ${structural ? "segment ID reconciliation" : "exact quote validation"} for these segments. Regenerate only their outcomes, with exactly one outcome per listed segmentId copied without alteration. Use short, meaningful quotes of 4-16 consecutive words copied directly from the listed source text, including its spelling and punctuation. Omit an item if you cannot copy a supporting excerpt exactly; do not paraphrase or combine segments.`,
+      const corrected = discardUnknown(
+        invalidSegments,
+        await model(
+          `${name}-${repairKind}-${attempt + 1}`,
+          {
+            input,
+            repairAttempt: attempt + 1,
+            repairSegmentIds: [...invalidIds],
+            previousOutputHash: hash(JSON.stringify(candidate)),
+          },
+          `${analysisPrompt(invalidSegments)}\nThe earlier response failed ${structural ? "segment ID reconciliation" : "exact quote validation"} for these segments. Regenerate only their outcomes, with exactly one outcome per listed segmentId copied without alteration. Use short, meaningful quotes of 4-16 consecutive words copied directly from the listed source text, including its spelling and punctuation. Omit an item if you cannot copy a supporting excerpt exactly; do not paraphrase or combine segments.`,
+        ),
       );
       try {
         validateBatchAnalysis(invalidSegments, corrected);
