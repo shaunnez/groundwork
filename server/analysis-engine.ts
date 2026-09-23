@@ -19,6 +19,10 @@ type Run = {
   account_id: string;
   manifest: { sourceIds: string[]; sourceHashes: string[] };
 };
+type RejectedQuotes = { total: number; mandatory: number };
+type ValidatedBatch = BatchAnalysis & {
+  rejectedBySegment: Record<string, RejectedQuotes>;
+};
 
 export async function validatedAnalysisBatch(
   name: string,
@@ -32,18 +36,48 @@ export async function validatedAnalysisBatch(
     input: unknown,
     prompt: string,
   ) => Promise<BatchAnalysis>,
-): Promise<BatchAnalysis> {
+): Promise<ValidatedBatch> {
   let candidate = await model(name, input, batch.prompt);
   for (let attempt = 0; attempt <= 2; attempt++) {
     try {
-      return validateBatchAnalysis(batch.segments, candidate);
+      return {
+        ...validateBatchAnalysis(batch.segments, candidate),
+        rejectedBySegment: {},
+      };
     } catch (error) {
       if (
-        attempt === 2 ||
         !(error instanceof Error) ||
         !error.message.startsWith("Quote does not match saved segment ")
       )
         throw error;
+      if (attempt === 2) {
+        const byId = new Map(
+          batch.segments.map((segment) => [segment.id, segment]),
+        );
+        const rejectedBySegment: Record<string, RejectedQuotes> = {};
+        const grounded = {
+          outcomes: candidate.outcomes.map((outcome) => {
+            const segment = byId.get(outcome.segmentId);
+            if (!segment) throw error;
+            const items = outcome.items.filter((item) => {
+              if (quoteState(item.quote, segment.text) !== "NOT_FOUND")
+                return true;
+              const count = (rejectedBySegment[outcome.segmentId] ??= {
+                total: 0,
+                mandatory: 0,
+              });
+              count.total++;
+              if (item.mandatory) count.mandatory++;
+              return false;
+            });
+            return { ...outcome, items };
+          }),
+        };
+        return {
+          ...validateBatchAnalysis(batch.segments, grounded),
+          rejectedBySegment,
+        };
+      }
       const invalidIds = new Set(
         candidate.outcomes
           .filter((outcome) => {
@@ -81,7 +115,6 @@ export async function validatedAnalysisBatch(
           !repairError.message.startsWith("Quote does not match saved segment ")
         )
           throw repairError;
-        continue;
       }
       const replacements = new Map(
         corrected.outcomes.map((outcome) => [outcome.segmentId, outcome]),
@@ -210,9 +243,25 @@ export async function analyseReadableUnits(
           const segment = batch.segments.find(
             (s) => s.id === outcome.segmentId,
           )!;
+          const rejected = output.rejectedBySegment[segment.id] ?? {
+            total: 0,
+            mandatory: 0,
+          };
           await c.query(
-            "UPDATE analysis_segments SET state='processed',outcome=$3,reason=null,prompt_bytes=$4,updated_at=now() WHERE run_id=$1 AND segment_id=$2",
-            [run.id, segment.id, outcome, batch.promptBytes],
+            "UPDATE analysis_segments SET state='processed',outcome=$3,reason=$4,prompt_bytes=$5,updated_at=now() WHERE run_id=$1 AND segment_id=$2",
+            [
+              run.id,
+              segment.id,
+              {
+                ...outcome,
+                rejectedQuoteCount: rejected.total,
+                rejectedMandatoryQuoteCount: rejected.mandatory,
+              },
+              rejected.total
+                ? `${rejected.total} ungrounded quote item(s) quarantined after bounded correction`
+                : null,
+              batch.promptBytes,
+            ],
           );
           for (const item of outcome.items) {
             const itemId = hash(
@@ -249,7 +298,7 @@ export async function analyseReadableUnits(
     }
   }
   const status = await db.query(
-    "SELECT state,count(*)::int AS count FROM analysis_segments WHERE run_id=$1 GROUP BY state",
+    "SELECT state,count(*)::int AS count,coalesce(sum((outcome->>'rejectedQuoteCount')::int),0)::int AS rejected_quotes,coalesce(sum((outcome->>'rejectedMandatoryQuoteCount')::int),0)::int AS rejected_mandatory_quotes FROM analysis_segments WHERE run_id=$1 GROUP BY state",
     [run.id],
   );
   const counts = Object.fromEntries(status.rows.map((r) => [r.state, r.count]));
@@ -261,6 +310,12 @@ export async function analyseReadableUnits(
     peakPromptBytes,
     segmentsProcessed: counts.processed ?? 0,
     unitsExcluded: counts.excluded ?? 0,
+    rejectedQuotes:
+      status.rows.find((row) => row.state === "processed")?.rejected_quotes ??
+      0,
+    rejectedMandatoryQuotes:
+      status.rows.find((row) => row.state === "processed")
+        ?.rejected_mandatory_quotes ?? 0,
   };
 }
 

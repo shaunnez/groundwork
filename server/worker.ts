@@ -433,6 +433,8 @@ export class Worker {
         },
       );
       let requirements: unknown = { status: "not_requested" };
+      let rejectedAnalysisQuotes = 0;
+      let rejectedMandatoryQuotes = 0;
       let analysisSelection: {
         items: unknown[];
         omitted: number;
@@ -456,6 +458,8 @@ export class Worker {
             () => this.assertActive(run.id),
           );
           const digest = await analysisDigest(this.db, run.id);
+          rejectedAnalysisQuotes = ledger.rejectedQuotes;
+          rejectedMandatoryQuotes = ledger.rejectedMandatoryQuotes;
           if (
             ledger.segmentsProcessed !==
               run.manifest.analysisPreflight?.segments ||
@@ -467,6 +471,7 @@ export class Worker {
             );
           const complete =
             ledger.unitsExcluded === 0 &&
+            ledger.rejectedQuotes === 0 &&
             src.rows.every((s) => completeCoverage(s.coverage));
           requirements = {
             status: hasTender
@@ -492,7 +497,7 @@ export class Worker {
               ],
             })),
             ledgerRunId: run.id,
-            limitation: `Every included readable segment has a recorded outcome; ${ledger.unitsExcluded} paragraphs with content outside scope were excluded from high-level analysis. The report shows at most 100 distinct requirement examples; the durable analysis ledger retains every verified extraction. ${!hasTender ? "No RFP or addendum was selected, so tender requirements were not requested." : complete ? "Reader coverage is complete." : "Reader coverage is partial; the RFP reassessment is not complete."} Full unit accounting does not prove perfect model recall.`,
+            limitation: `Every included readable segment has a recorded outcome; ${ledger.unitsExcluded} paragraphs with content outside scope were excluded from high-level analysis, and ${ledger.rejectedQuotes} model items with ungrounded quotes were quarantined after correction attempts (${ledger.rejectedMandatoryQuotes} marked mandatory). The report shows at most 100 distinct requirement examples; the durable analysis ledger retains every verified extraction. ${!hasTender ? "No RFP or addendum was selected, so tender requirements were not requested." : complete ? "Reader coverage is complete." : "Reader coverage is partial; the RFP reassessment is not complete."} Full unit accounting does not prove perfect model recall.`,
           };
           const selected = digest.items;
           const selectedIds = [
@@ -881,6 +886,10 @@ export class Worker {
       if (hasOcr)
         payload.limitations.push(
           "Some PDF pages were read using OCR. Quote verification checks extracted text; inspect the original page for transcription errors.",
+        );
+      if (rejectedAnalysisQuotes)
+        payload.limitations.push(
+          `${rejectedAnalysisQuotes} extracted model items had quotes absent from their saved source segment after bounded correction and were quarantined (${rejectedMandatoryQuotes} marked mandatory). They are not report evidence; inspect the saved provider stages for the rejected outputs.`,
         );
       if (analysisSelection)
         payload.limitations.push(

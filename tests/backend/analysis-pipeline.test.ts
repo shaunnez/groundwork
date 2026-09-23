@@ -415,42 +415,52 @@ test("durable outcomes survive restart, suppress duplicates and expose partial p
       [rejectedRunId, accountId, opportunityId, randomUUID(), run.manifest],
     );
     let rejectedCalls = 0;
-    await assert.rejects(
-      analyseReadableUnits(
-        db,
-        { ...run, id: rejectedRunId },
-        [source],
-        async () => {
-          rejectedCalls++;
-          return {
-            outcomes: [
-              {
-                segmentId: segment.id,
-                items: [
-                  {
-                    text: "Unverified",
-                    quote: "A phrase absent from every saved segment.",
-                    kind: "fact" as const,
-                    mandatory: false,
-                    contradiction: null,
-                  },
-                ],
-              },
-            ],
-          };
-        },
-        async () => {},
-      ),
-      /Quote does not match saved segment/,
+    const quarantined = await analyseReadableUnits(
+      db,
+      { ...run, id: rejectedRunId },
+      [source],
+      async () => {
+        rejectedCalls++;
+        return {
+          outcomes: [
+            {
+              segmentId: segment.id,
+              items: [
+                {
+                  text: "Unverified",
+                  quote: "A phrase absent from every saved segment.",
+                  kind: "fact" as const,
+                  mandatory: false,
+                  contradiction: null,
+                },
+              ],
+            },
+          ],
+        };
+      },
+      async () => {},
     );
     assert.equal(rejectedCalls, 3);
+    assert.equal(quarantined.rejectedQuotes, 1);
+    assert.equal(quarantined.rejectedMandatoryQuotes, 0);
     const rejectedLedger = await db.query(
-      "SELECT state FROM analysis_segments WHERE run_id=$1",
+      "SELECT state,outcome,reason FROM analysis_segments WHERE run_id=$1",
       [rejectedRunId],
     );
     assert.deepEqual(
       rejectedLedger.rows.map((item) => item.state),
-      ["failed"],
+      ["processed"],
+    );
+    assert.equal(rejectedLedger.rows[0].outcome.rejectedQuoteCount, 1);
+    assert.match(rejectedLedger.rows[0].reason, /quarantined/);
+    assert.equal(
+      (
+        await db.query(
+          "SELECT count(*)::int AS n FROM analysis_items WHERE run_id=$1",
+          [rejectedRunId],
+        )
+      ).rows[0].n,
+      0,
     );
     const digest = await analysisDigest(db, runId);
     assert.equal(digest.totals.requirement_occurrences, 1);
