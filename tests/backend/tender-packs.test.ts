@@ -224,6 +224,7 @@ test("selected tender pack verifies originals and keeps missing files named", as
   assert.equal(manifest.method, "groundwork-segmented-v1");
   assert.equal(manifest.excludedSources.length, 0);
   assert.match(manifest.scopeNote, /High-level text-based/);
+  assert.doesNotMatch(manifest.scopeNote, /unsafe legacy DOCX/);
 });
 
 test.after(async () => {

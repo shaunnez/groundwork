@@ -288,11 +288,12 @@ test("scenario outcomes must be inference claims and model processing limits are
   a.scenarios[0].outcomeClaimId = "c4";
   a.limitations.push(
     "Unsafe legacy DOCX extraction is outside this reader scope.",
+    "XLSX Schedule of Prices cells were read at sheet level only; no cell-level pricing values were extracted.",
   );
   const cleaned = removeModelProcessingLimitations(a);
-  assert.equal(cleaned.removed, 1);
+  assert.equal(cleaned.removed, 2);
   assert.equal(cleaned.assessment.limitations.length, 1);
-  assert.equal(a.limitations.length, 2);
+  assert.equal(a.limitations.length, 3);
   validateAssessment(cleaned.assessment, [unit]);
 });
 test("A17 summary cannot introduce unaccepted prose", () => {

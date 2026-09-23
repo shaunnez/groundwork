@@ -986,7 +986,7 @@ export async function createApi(config: Config, db: Database) {
       const scopeNote =
         input.scopeNote.trim() ||
         (textOnlyPartial || legacyExcludedIds.length
-          ? "High-level text-based assessment of readable saved content; unread visual material and unsafe legacy DOCX extraction are outside scope."
+          ? `High-level text-based assessment of readable saved content; material without verified reader coverage is outside scope${legacyExcludedIds.length ? ", including sources with unsafe legacy DOCX revision extraction" : ""}`
           : "");
       const sources = {
         rows: allSources.rows.filter((s) => !excludedSourceIds.includes(s.id)),

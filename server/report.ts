@@ -279,7 +279,7 @@ export function removeModelProcessingLimitations(assessment: Assessment): {
   removed: number;
 } {
   const processingFact =
-    /\b(?:reader (?:coverage|state)|source (?:reader|coverage|inventory)|unread (?:visual|material)|legacy DOCX|analysis selection|candidate findings|omitted findings|exclud(?:ed|ing) (?:source|material|paragraph))\b/i;
+    /\b(?:reader (?:coverage|state)|source (?:reader|coverage|inventory)|unread (?:visual|material)|legacy DOCX|analysis selection|candidate findings|omitted findings|exclud(?:ed|ing) (?:source|material|paragraph)|(?:XLSX|spreadsheet)\b.*\b(?:reader|read|extract(?:ed|ion)?|cell.level|sheet.level))\b/i;
   const limitations = assessment.limitations.filter(
     (item) => !processingFact.test(item),
   );
