@@ -41,11 +41,13 @@ export function WorkspaceHeader({
   go,
   onSignOut,
   opportunityId,
+  showSourceTool = true,
 }: {
   page: Page;
   go: Navigate;
   onSignOut: () => void;
   opportunityId?: string;
+  showSourceTool?: boolean;
 }) {
   const menu = useRef<HTMLDetailsElement>(null);
   const operator = ["ops", "delivery", "mapping", "sectors"].includes(page);
@@ -132,7 +134,7 @@ export function WorkspaceHeader({
           </div>
         </details>
       </header>
-      {!operator && opportunityId && (
+      {!operator && opportunityId && showSourceTool && (
         <nav className="opportunity-tools" aria-label="Opportunity tools">
           <span>Opportunity workspace</span>
           <button

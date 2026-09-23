@@ -355,14 +355,29 @@ export function WatchlistView({
                         {brief &&
                           citation(brief.summary.unitId, brief.summary.quote)}
                       </p>
-                      <p className="watch-framing">
-                        {brief?.whyItMayMatter.text || preview.framing}{" "}
-                        {brief &&
-                          citation(
-                            brief.whyItMayMatter.unitId,
-                            brief.whyItMayMatter.quote,
-                          )}
-                      </p>
+                      <div className="watch-framing">
+                        <h3>Decisive factor</h3>
+                        {r ? (
+                          <p>
+                            <strong>{preview.framing}</strong>
+                          </p>
+                        ) : (
+                          <p>Not established from the notice alone.</p>
+                        )}
+                      </div>
+                      {!r && (
+                        <div className="watch-framing">
+                          <h3>Why the scope may matter</h3>
+                          <p>
+                            {brief?.whyItMayMatter.text || preview.framing}{" "}
+                            {brief &&
+                              citation(
+                                brief.whyItMayMatter.unitId,
+                                brief.whyItMayMatter.quote,
+                              )}
+                          </p>
+                        </div>
+                      )}
                     </div>
                     <div className="watch-flags">
                       <h3>Red flags &amp; unknowns</h3>
