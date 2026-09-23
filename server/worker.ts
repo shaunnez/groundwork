@@ -31,6 +31,7 @@ import {
 } from "../shared/contracts.ts";
 import { callClaude } from "./claude.ts";
 import { GetsIntakeWorker } from "./gets/intake.ts";
+import { GetsPackWorker } from "./gets/collection-queue.ts";
 import { runReadinessIssues } from "./run-readiness.ts";
 import {
   validateAssessment,
@@ -703,7 +704,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const config = loadConfig();
   const db = database(config),
     worker = new Worker(config, db),
-    gets = new GetsIntakeWorker(config, db);
+    gets = new GetsIntakeWorker(config, db),
+    packs = new GetsPackWorker(config, db);
   let stopping = false;
   const selectedRun = process.argv
     .find((arg) => arg.startsWith("--run-id="))
@@ -724,9 +726,11 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     if (
       !(await worker.tick()) &&
       !(await gets.tick()) &&
+      !(await packs.tick()) &&
       !(await scheduleTick(db, config))
     )
       await new Promise((r) => setTimeout(r, 1000));
   }
+  await packs.close();
   await db.end();
 }

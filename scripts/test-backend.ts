@@ -49,7 +49,7 @@ try {
   const code = await new Promise<number>((resolve, reject) => {
     const child = spawn(
       process.execPath,
-      ["--import", "tsx", "--test", ...files],
+      ["--import", "tsx", "--test", "--test-concurrency=1", ...files],
       {
         stdio: "inherit",
         env: {

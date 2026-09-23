@@ -54,6 +54,11 @@ import {
   retryGetsRun,
 } from "./gets/intake.ts";
 import {
+  changeCollectionJob,
+  getsCollectionDetail,
+  getsCollectionStatus,
+} from "./gets/collection-queue.ts";
+import {
   backfillMappings,
   correctMapping,
   mappingQueue,
@@ -256,6 +261,18 @@ export async function createApi(config: Config, db: Database) {
   );
   app.post("/api/gets/runs/:id/retry", async (req) =>
     retryGetsRun(db, req.accountId, asId(req.params)),
+  );
+  app.get("/api/gets/collections", async (req) =>
+    getsCollectionStatus(db, req.accountId),
+  );
+  app.get("/api/gets/collections/:id", async (req) =>
+    getsCollectionDetail(db, req.accountId, asId(req.params)),
+  );
+  app.post("/api/gets/collections/:id/cancel", async (req) =>
+    changeCollectionJob(db, req.accountId, asId(req.params), "cancel"),
+  );
+  app.post("/api/gets/collections/:id/continue", async (req) =>
+    changeCollectionJob(db, req.accountId, asId(req.params), "continue"),
   );
   app.get("/api/gets/mappings", async (req) => {
     const { filter, page } = z

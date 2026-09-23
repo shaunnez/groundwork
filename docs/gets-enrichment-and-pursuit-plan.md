@@ -2,6 +2,8 @@
 
 23 September 2026. Planning document; none of the changes below is implemented by this document.
 
+The later owner-authorised hosted collector work in [hosted-gets-collector.md](hosted-gets-collector.md) supersedes this plan's deferral of server-side RealMe collection for manually changed live notices. Its queue and pack-ready contract remain separate from report analysis and production deployment.
+
 ## Local delivery status · 23 September 2026
 
 - The selected RFx pack is admitted in the private local mirror: 13 current originals, including the drawings PDF and pricing XLSX, with checksums and reader outcomes. The withdrawn file is excluded. Nine files report complete reader coverage; four Office files report partial coverage, including unresolved draft-contract revision state. The original public-notice report remains saved.

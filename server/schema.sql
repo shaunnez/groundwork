@@ -165,6 +165,24 @@ CREATE TABLE IF NOT EXISTS tender_pack_attempts (
  created_at timestamptz NOT NULL DEFAULT now(),
  FOREIGN KEY(pack_id,account_id) REFERENCES tender_packs(id,account_id) ON DELETE CASCADE
 );
+-- Authenticated collection is driven only by a manual public GETS check.
+-- A revision is queued once; the pack and each admitted file survive worker restarts.
+CREATE TABLE IF NOT EXISTS gets_pack_jobs (
+ id uuid PRIMARY KEY, account_id uuid NOT NULL, intake_run_id uuid NOT NULL,
+ notice_revision_id uuid NOT NULL, opportunity_id uuid NOT NULL, actor_id uuid NOT NULL,
+ rfx_id text NOT NULL, state text NOT NULL DEFAULT 'discovered'
+   CHECK(state IN ('discovered','access_needed','downloading','downloaded','admitted','unchanged','failed','blocked','cancelled')),
+ pack_id uuid, inventory jsonb, error text, attempts integer NOT NULL DEFAULT 0,
+ login_retries integer NOT NULL DEFAULT 0, lease_owner uuid, lease_until timestamptz,
+ created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now(),
+ finished_at timestamptz, UNIQUE(account_id,notice_revision_id),
+ FOREIGN KEY(intake_run_id,account_id) REFERENCES gets_intake_runs(id,account_id),
+ FOREIGN KEY(notice_revision_id,account_id) REFERENCES gets_notice_revisions(id,account_id),
+ FOREIGN KEY(opportunity_id,account_id) REFERENCES opportunities(id,account_id),
+ FOREIGN KEY(pack_id,account_id) REFERENCES tender_packs(id,account_id)
+);
+CREATE INDEX IF NOT EXISTS gets_pack_jobs_pending ON gets_pack_jobs(created_at)
+ WHERE state IN ('discovered','access_needed','downloading','downloaded');
 DROP TRIGGER IF EXISTS tender_packs_immutable ON tender_packs;
 CREATE TRIGGER tender_packs_immutable BEFORE UPDATE ON tender_packs FOR EACH ROW EXECUTE FUNCTION prevent_snapshot_update();
 DROP TRIGGER IF EXISTS tender_pack_files_immutable ON tender_pack_files;
