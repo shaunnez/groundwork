@@ -216,6 +216,57 @@ test("quote correction reruns only the invalid segment and retains valid outcome
   assert.equal(result.outcomes[1].items[0].quote, second.text);
 });
 
+test("unknown model segment ID is discarded and only the missing segment is rerun", async () => {
+  const first = unit("The site meeting is optional.");
+  const second = unit("Submit the pricing schedule.");
+  const batch = [...analysisBatches([first, second])][0];
+  const calls: string[] = [];
+  const result = await validatedAnalysisBatch(
+    "analyse-00008",
+    { method: "test" },
+    batch,
+    async (name, input, prompt) => {
+      calls.push(name);
+      if (calls.length === 2) {
+        assert.deepEqual(
+          (input as { repairSegmentIds: string[] }).repairSegmentIds,
+          [batch.segments[1].id],
+        );
+        assert.ok(prompt.includes(second.text));
+        assert.ok(!prompt.includes(first.text));
+      }
+      return {
+        outcomes:
+          calls.length === 1
+            ? [
+                { segmentId: batch.segments[0].id, items: [] },
+                { segmentId: "f".repeat(64), items: [] },
+              ]
+            : [
+                {
+                  segmentId: batch.segments[1].id,
+                  items: [
+                    {
+                      text: "Submit pricing schedule",
+                      quote: second.text,
+                      kind: "requirement",
+                      mandatory: true,
+                      contradiction: null,
+                    },
+                  ],
+                },
+              ],
+      };
+    },
+  );
+  assert.deepEqual(calls, ["analyse-00008", "analyse-00008-segment-repair-1"]);
+  assert.deepEqual(
+    result.outcomes.map((outcome) => outcome.segmentId),
+    batch.segments.map((segment) => segment.id),
+  );
+  assert.deepEqual(result.rejectedBySegment, {});
+});
+
 test("tenfold synthetic multi-document pack is fully planned with bounded prompts", () => {
   const sources = Array.from({ length: 80 }, (_, n) =>
     unit(

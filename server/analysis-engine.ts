@@ -37,6 +37,14 @@ export async function validatedAnalysisBatch(
     prompt: string,
   ) => Promise<BatchAnalysis>,
 ): Promise<ValidatedBatch> {
+  const byId = new Map(batch.segments.map((segment) => [segment.id, segment]));
+  const reconciles = (segments: typeof batch.segments, value: BatchAnalysis) =>
+    value.outcomes.length === segments.length &&
+    new Set(value.outcomes.map((outcome) => outcome.segmentId)).size ===
+      segments.length &&
+    value.outcomes.every((outcome) =>
+      segments.some((segment) => segment.id === outcome.segmentId),
+    );
   let candidate = await model(name, input, batch.prompt);
   for (let attempt = 0; attempt <= 2; attempt++) {
     try {
@@ -47,13 +55,15 @@ export async function validatedAnalysisBatch(
     } catch (error) {
       if (
         !(error instanceof Error) ||
-        !error.message.startsWith("Quote does not match saved segment ")
+        !(
+          error.message.startsWith("Quote does not match saved segment ") ||
+          error.message === "Unknown analysis segment" ||
+          error.message === "Batch outcomes do not reconcile with inputs"
+        )
       )
         throw error;
       if (attempt === 2) {
-        const byId = new Map(
-          batch.segments.map((segment) => [segment.id, segment]),
-        );
+        if (!reconciles(batch.segments, candidate)) throw error;
         const rejectedBySegment: Record<string, RejectedQuotes> = {};
         const grounded = {
           outcomes: candidate.outcomes.map((outcome) => {
@@ -78,50 +88,66 @@ export async function validatedAnalysisBatch(
           rejectedBySegment,
         };
       }
+      const counts = new Map<string, number>();
+      for (const outcome of candidate.outcomes)
+        counts.set(outcome.segmentId, (counts.get(outcome.segmentId) ?? 0) + 1);
       const invalidIds = new Set(
-        candidate.outcomes
-          .filter((outcome) => {
-            const segment = batch.segments.find(
-              (item) => item.id === outcome.segmentId,
-            );
-            return (
-              segment &&
-              outcome.items.some(
-                (item) => quoteState(item.quote, segment.text) === "NOT_FOUND",
-              )
-            );
-          })
-          .map((outcome) => outcome.segmentId),
+        batch.segments
+          .filter(
+            (segment) =>
+              counts.get(segment.id) !== 1 ||
+              candidate.outcomes
+                .find((outcome) => outcome.segmentId === segment.id)
+                ?.items.some(
+                  (item) =>
+                    quoteState(item.quote, segment.text) === "NOT_FOUND",
+                ),
+          )
+          .map((segment) => segment.id),
       );
       if (!invalidIds.size) throw error;
       const invalidSegments = batch.segments.filter((segment) =>
         invalidIds.has(segment.id),
       );
+      const structural = !reconciles(batch.segments, candidate);
+      const repairKind = structural ? "segment-repair" : "quote-repair";
       const corrected = await model(
-        `${name}-quote-repair-${attempt + 1}`,
+        `${name}-${repairKind}-${attempt + 1}`,
         {
           input,
           repairAttempt: attempt + 1,
           repairSegmentIds: [...invalidIds],
           previousOutputHash: hash(JSON.stringify(candidate)),
         },
-        `${analysisPrompt(invalidSegments)}\nThe earlier response failed exact quote validation for these segments. Regenerate only their outcomes. Use short, meaningful quotes of 4-16 consecutive words copied directly from the listed source text, including its spelling and punctuation. Omit an item if you cannot copy a supporting excerpt exactly; do not paraphrase or combine segments.`,
+        `${analysisPrompt(invalidSegments)}\nThe earlier response failed ${structural ? "segment ID reconciliation" : "exact quote validation"} for these segments. Regenerate only their outcomes, with exactly one outcome per listed segmentId copied without alteration. Use short, meaningful quotes of 4-16 consecutive words copied directly from the listed source text, including its spelling and punctuation. Omit an item if you cannot copy a supporting excerpt exactly; do not paraphrase or combine segments.`,
       );
       try {
         validateBatchAnalysis(invalidSegments, corrected);
       } catch (repairError) {
         if (
           !(repairError instanceof Error) ||
-          !repairError.message.startsWith("Quote does not match saved segment ")
+          !(
+            repairError.message.startsWith(
+              "Quote does not match saved segment ",
+            ) ||
+            repairError.message === "Unknown analysis segment" ||
+            repairError.message ===
+              "Batch outcomes do not reconcile with inputs"
+          )
         )
           throw repairError;
       }
+      if (!reconciles(invalidSegments, corrected)) continue;
       const replacements = new Map(
         corrected.outcomes.map((outcome) => [outcome.segmentId, outcome]),
       );
       candidate = {
-        outcomes: candidate.outcomes.map(
-          (outcome) => replacements.get(outcome.segmentId) ?? outcome,
+        outcomes: batch.segments.map(
+          (segment) =>
+            replacements.get(segment.id) ??
+            candidate.outcomes.find(
+              (outcome) => outcome.segmentId === segment.id,
+            )!,
         ),
       };
     }
