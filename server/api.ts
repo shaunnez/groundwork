@@ -575,8 +575,11 @@ export async function createApi(config: Config, db: Database) {
         resumable:
           ["failed", "budget-blocked"].includes(latestRun.state) &&
           config.claudeSubscriptionApproved &&
-          !callRows.rows.some((row) =>
-            ["failed", "reserved", "uncertain"].includes(row.status),
+          !callRows.rows.some(
+            (row) =>
+              ["reserved", "uncertain"].includes(row.status) ||
+              (row.status === "failed" &&
+                row.usage?.recoveredBySplit !== true),
           ),
       };
     }
