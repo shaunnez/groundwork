@@ -14,6 +14,31 @@ CREATE UNIQUE INDEX IF NOT EXISTS active_run ON runs(account_id,opportunity_id,i
 CREATE TABLE IF NOT EXISTS dispatch (run_id uuid PRIMARY KEY REFERENCES runs(id) ON DELETE CASCADE, lease_owner uuid, lease_until timestamptz, attempts integer NOT NULL DEFAULT 0);
 CREATE TABLE IF NOT EXISTS stages (id uuid PRIMARY KEY, account_id uuid NOT NULL REFERENCES accounts(id) ON DELETE CASCADE, run_id uuid NOT NULL REFERENCES runs(id) ON DELETE CASCADE, name text NOT NULL, input_hash text NOT NULL, version text NOT NULL, state text NOT NULL CHECK(state IN ('running','succeeded','failed','uncertain')), output_ref text, error text, started_at timestamptz NOT NULL DEFAULT now(), finished_at timestamptz, UNIQUE(run_id,name));
 CREATE INDEX IF NOT EXISTS stage_cache ON stages(account_id,name,input_hash,version) WHERE state='succeeded';
+-- Derived analysis state is mutable; original sources, units and reports remain immutable.
+CREATE TABLE IF NOT EXISTS analysis_segments (
+ run_id uuid NOT NULL, account_id uuid NOT NULL, segment_id text NOT NULL,
+ source_id uuid NOT NULL, unit_id uuid NOT NULL, location text NOT NULL,
+ start_offset integer NOT NULL, end_offset integer NOT NULL, text_hash text NOT NULL,
+ method text NOT NULL, state text NOT NULL CHECK(state IN ('pending','processed','failed','excluded')),
+ outcome jsonb, reason text, prompt_bytes integer,
+ updated_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY(run_id,segment_id),
+ FOREIGN KEY(run_id,account_id) REFERENCES runs(id,account_id) ON DELETE CASCADE,
+ FOREIGN KEY(source_id,account_id) REFERENCES sources(id,account_id) ON DELETE CASCADE,
+ FOREIGN KEY(unit_id) REFERENCES units(id),
+ CHECK(start_offset>=0 AND end_offset>start_offset)
+);
+CREATE INDEX IF NOT EXISTS analysis_segments_by_source ON analysis_segments(run_id,source_id,state);
+CREATE TABLE IF NOT EXISTS analysis_items (
+ run_id uuid NOT NULL, account_id uuid NOT NULL, item_id text NOT NULL,
+ segment_id text NOT NULL, source_id uuid NOT NULL, unit_id uuid NOT NULL,
+ location text NOT NULL, kind text NOT NULL CHECK(kind IN ('fact','requirement')),
+ text_content text NOT NULL, quote text NOT NULL, mandatory boolean NOT NULL,
+ revision_state text NOT NULL, contradiction text,
+ created_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY(run_id,item_id),
+ FOREIGN KEY(run_id,segment_id) REFERENCES analysis_segments(run_id,segment_id) ON DELETE CASCADE,
+ FOREIGN KEY(run_id,account_id) REFERENCES runs(id,account_id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS analysis_items_by_kind ON analysis_items(run_id,kind,source_id);
 CREATE TABLE IF NOT EXISTS intelligence (id uuid PRIMARY KEY, account_id uuid NOT NULL REFERENCES accounts(id) ON DELETE CASCADE, opportunity_id uuid NOT NULL, run_id uuid NOT NULL REFERENCES runs(id) ON DELETE CASCADE, cutoff date NOT NULL, payload jsonb NOT NULL, created_at timestamptz NOT NULL DEFAULT now(), UNIQUE(id,account_id), FOREIGN KEY(opportunity_id,account_id) REFERENCES opportunities(id,account_id) ON DELETE CASCADE);
 CREATE TABLE IF NOT EXISTS reports (id uuid PRIMARY KEY, account_id uuid NOT NULL, opportunity_id uuid NOT NULL, run_id uuid NOT NULL REFERENCES runs(id) ON DELETE CASCADE, intelligence_id uuid NOT NULL, kind text NOT NULL CHECK(kind IN ('pursuit','watchlist','competitor','weekly')), parent_report_id uuid, payload jsonb NOT NULL, created_at timestamptz NOT NULL DEFAULT now(), UNIQUE(id,account_id), UNIQUE(run_id,kind), FOREIGN KEY(opportunity_id,account_id) REFERENCES opportunities(id,account_id) ON DELETE CASCADE, FOREIGN KEY(intelligence_id,account_id) REFERENCES intelligence(id,account_id));
 CREATE OR REPLACE FUNCTION prevent_report_update() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'Reports are immutable; create a new version'; END $$;

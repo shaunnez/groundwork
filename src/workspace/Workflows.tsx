@@ -1052,6 +1052,13 @@ export function RequestView({
     [excluded, setExcluded] = useState<string[]>([]),
     [narrowPack, setNarrowPack] = useState(false);
   const pack = detail.tenderPacks?.[0];
+  const currentPackFiles =
+    pack?.files.filter((file) => file.status === "current") ?? [];
+  const allPackOriginalsReadableInPart =
+    currentPackFiles.length > 0 &&
+    currentPackFiles.every(
+      (file) => file.sourceId && ["read", "partial"].includes(file.state),
+    );
   return (
     <>
       <Heading
@@ -1108,11 +1115,19 @@ export function RequestView({
             )}
             <h3>{detail.sources.length} saved sources</h3>
             {pack && !pack.complete && (
-              <Notice title="Tender pack is incomplete" tone="warning">
+              <Notice
+                title={
+                  allPackOriginalsReadableInPart
+                    ? "Text-based assessment"
+                    : "Tender pack is incomplete"
+                }
+                tone="warning"
+              >
                 {pack.counts.received} of {pack.counts.expected} originals
-                admitted; {pack.counts.readable} readable. Complete the named
-                files before an exhaustive RFP reassessment. A narrower run must
-                state its limits.
+                admitted; {pack.counts.readable} fully readable.{" "}
+                {allPackOriginalsReadableInPart
+                  ? "You can assess the readable text now. Unread objects remain outside the report. Any legacy DOCX with unsafe extracted text is excluded automatically. This is not an exhaustive RFP or contract review."
+                  : "Admit the missing originals before an exhaustive RFP reassessment. A narrower run must state its limits."}
                 <Button
                   kind="text"
                   type="button"
@@ -1159,7 +1174,7 @@ export function RequestView({
                   Exclude {s.name}
                 </label>
               ))}
-              {pack && !pack.complete && (
+              {pack && !pack.complete && !allPackOriginalsReadableInPart && (
                 <label className="connected-check">
                   <input
                     type="checkbox"
@@ -1188,7 +1203,10 @@ export function RequestView({
                 busy ||
                 !!run ||
                 !detail.sources.length ||
-                (!!pack && !pack.complete && !narrowPack)
+                (!!pack &&
+                  !pack.complete &&
+                  !allPackOriginalsReadableInPart &&
+                  !narrowPack)
               }
               type="submit"
             >
@@ -1215,8 +1233,8 @@ export function RequestView({
             context, scenarios, risks and gaps.
           </p>
           <p>
-            RFPs and addenda are reviewed across every admitted section. Analyst
-            review remains separate from generation.
+            The report uses readable saved text and shows excluded sources and
+            reader gaps. Analyst review remains separate from generation.
           </p>
           <Button
             kind="text"
@@ -1490,20 +1508,64 @@ export function RequirementsView({
   onEvidence: (id: string, quote?: string) => void;
 }) {
   const r = report?.payload.requirements;
-  const rows =
+  const ledgerId = report?.payload.analysis?.ledgerRunId;
+  const [loaded, setLoaded] = useState<{
+    runId: string;
+    items: {
+      itemId: string;
+      unitId: string;
+      text: string;
+      quote: string;
+      mandatory: boolean;
+      location: string;
+      contradiction: string | null;
+    }[];
+    next: string | null;
+  } | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const current = loaded?.runId === ledgerId ? loaded : null;
+  const preview =
     r?.judgments?.flatMap((j) =>
       j.requirements.map((v) => ({
         ...v,
         unitId: j.candidateId.replace(/^candidate-/, ""),
       })),
     ) || [];
+  const rows = current
+    ? current.items.map((item) => ({
+        ...item,
+        rationale: `${item.location}${item.contradiction ? `; contradiction: ${item.contradiction}` : ""}`,
+      }))
+    : preview;
+  const loadLedger = async () => {
+    if (!ledgerId || loading) return;
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const after = current?.next ? `&after=${current.next}` : "";
+      const page = await request<{
+        items: NonNullable<typeof loaded>["items"];
+        next: string | null;
+      }>(`/runs/${ledgerId}/analysis-items?kind=requirement${after}`);
+      setLoaded({
+        runId: ledgerId,
+        items: [...(current?.items ?? []), ...page.items],
+        next: page.next,
+      });
+    } catch (error) {
+      setLoadError((error as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <>
       <Heading
         go={go}
-        title="Requirements, in full."
+        title="Requirements and coverage."
         eyebrow="REQUIREMENTS"
-        description="Every identified condition, its source and the limits of the review."
+        description="Identified conditions, their sources and the limits of the review."
         actions={
           <Button
             kind="secondary"
@@ -1513,7 +1575,9 @@ export function RequirementsView({
           </Button>
         }
       />
-      {r?.status !== "complete" ? (
+      {!r ||
+      r.status === "not_requested" ||
+      (r.status !== "complete" && !ledgerId) ? (
         <Empty
           title="Tender requirements have not been fully assessed"
           description="Add the RFP and request reassessment. An empty inventory does not establish eligibility."
@@ -1529,9 +1593,19 @@ export function RequirementsView({
             title={`${r.candidatesJudged} of ${r.candidatesProduced} source sections reviewed`}
             tone="info"
           >
-            Every admitted section was judged. This does not prove perfect
-            semantic recall or your firm’s compliance.
+            {r.limitation ||
+              "Every admitted section was judged. This does not prove perfect semantic recall or your firm’s compliance."}
           </Notice>
+          {ledgerId && (
+            <p className="small muted">
+              {current
+                ? `${current.items.length} recorded requirement occurrences loaded`
+                : `Showing up to ${r.previewLimit ?? 100} examples of ${r.distinctRequirements ?? 0} distinct requirements (${r.occurrences ?? 0} recorded occurrences).`}{" "}
+              {r.status === "partial"
+                ? "Reader gaps remain; this is not a complete RFP review."
+                : ""}
+            </p>
+          )}
           {rows.length ? (
             rows.map((v, i) => (
               <article className="requirement-row" key={i}>
@@ -1563,6 +1637,16 @@ export function RequirementsView({
               source scope before interpreting this result.
             </p>
           )}
+          {ledgerId && (!current || current.next) && (
+            <Button kind="secondary" onClick={loadLedger} disabled={loading}>
+              {loading
+                ? "Loading requirements…"
+                : current
+                  ? "Load more requirements"
+                  : "Open full requirement ledger"}
+            </Button>
+          )}
+          {loadError && <p role="alert">{loadError}</p>}
         </>
       )}
     </>

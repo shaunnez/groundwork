@@ -8,10 +8,7 @@ import { createApi } from "../server/api.ts";
 import { loadConfig } from "../server/config.ts";
 import { database } from "../server/db.ts";
 import { PackDeclaration } from "../server/tender-packs.ts";
-import {
-  MAX_ANALYSIS_CHARACTERS,
-  runReadinessIssues,
-} from "../server/run-readiness.ts";
+import { runReadinessIssues } from "../server/run-readiness.ts";
 import { Worker } from "../server/worker.ts";
 
 const args = Object.fromEntries(
@@ -177,7 +174,7 @@ try {
   const issues = runReadinessIssues(selected, cutoff, characters);
   if (issues.length) throw new Error(issues.join(" | "));
   console.log(
-    `Core report scope: ${selected.length} sources, ${characters}/${MAX_ANALYSIS_CHARACTERS} characters. ${excluded.length} other sources remain explicit exclusions.`,
+    `Core report scope: ${selected.length} sources, ${characters} characters. ${excluded.length} other sources remain explicit exclusions.`,
   );
 
   api = await createApi(config, db);
