@@ -14,6 +14,7 @@ import {
   analyseReadableUnits,
   analysisDigest,
   streamSourceUnits,
+  validatedAnalysisBatch,
 } from "../../server/analysis-engine.ts";
 import { loadConfig } from "../../server/config.ts";
 import { database } from "../../server/db.ts";
@@ -148,6 +149,71 @@ test("high-level batches skip revised paragraphs and validate readable quotes", 
       }),
     /Only requirements/,
   );
+});
+
+test("quote correction reruns only the invalid segment and retains valid outcomes", async () => {
+  const first = unit("Supplier must return the signed form.");
+  const second = unit("The tender closes at 5pm.");
+  const batch = [...analysisBatches([first, second])][0];
+  assert.equal(batch.segments.length, 2);
+  const names: string[] = [];
+  const result = await validatedAnalysisBatch(
+    "analyse-00000",
+    { method: "test" },
+    batch,
+    async (name, input, prompt) => {
+      names.push(name);
+      if (names.length === 2) {
+        assert.deepEqual(
+          (input as { repairSegmentIds: string[] }).repairSegmentIds,
+          [batch.segments[0].id],
+        );
+        assert.ok(prompt.includes(first.text));
+        assert.ok(!prompt.includes(second.text));
+      }
+      return {
+        outcomes: [
+          {
+            segmentId: batch.segments[0].id,
+            items: [
+              {
+                text: "Return signed form",
+                quote:
+                  names.length === 1
+                    ? "Supplier must submit a signed form."
+                    : first.text,
+                kind: "requirement",
+                mandatory: true,
+                contradiction: null,
+              },
+            ],
+          },
+          ...(names.length === 1
+            ? [
+                {
+                  segmentId: batch.segments[1].id,
+                  items: [
+                    {
+                      text: "Tender closes at 5pm",
+                      quote: second.text,
+                      kind: "fact" as const,
+                      mandatory: false,
+                      contradiction: null,
+                    },
+                  ],
+                },
+              ]
+            : []),
+        ],
+      };
+    },
+  );
+  assert.deepEqual(names, ["analyse-00000", "analyse-00000-quote-repair-1"]);
+  assert.deepEqual(
+    result.outcomes.map((outcome) => outcome.segmentId),
+    [batch.segments[0].id, batch.segments[1].id],
+  );
+  assert.equal(result.outcomes[1].items[0].quote, second.text);
 });
 
 test("tenfold synthetic multi-document pack is fully planned with bounded prompts", () => {
@@ -299,13 +365,15 @@ test("durable outcomes survive restart, suppress duplicates and expose partial p
       db,
       { ...run, id: repairRunId },
       [source],
-      async (name, _input, prompt) => {
+      async (name, input, prompt) => {
         repairNames.push(name);
-        if (repairNames.length === 2)
-          assert.match(
-            prompt,
-            /prior response failed deterministic quote validation/,
+        if (repairNames.length === 2) {
+          assert.deepEqual(
+            (input as { repairSegmentIds: string[] }).repairSegmentIds,
+            [segment.id],
           );
+          assert.ok(prompt.includes(source.text.slice(0, 30)));
+        }
         return {
           outcomes: [
             {

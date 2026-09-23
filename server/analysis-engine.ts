@@ -1,10 +1,11 @@
 import { createHash } from "node:crypto";
 import type { Database } from "./db.ts";
 import { transaction } from "./db.ts";
-import type { SourceUnit } from "./domain/evidence.ts";
+import { quoteState, type SourceUnit } from "./domain/evidence.ts";
 import {
   ANALYSIS_METHOD,
   analysisBatchesAsync,
+  analysisPrompt,
   excludedUnitId,
   highLevelExclusionReason,
   validateBatchAnalysis,
@@ -19,7 +20,7 @@ type Run = {
   manifest: { sourceIds: string[]; sourceHashes: string[] };
 };
 
-async function validatedAnalysisBatch(
+export async function validatedAnalysisBatch(
   name: string,
   input: unknown,
   batch: {
@@ -32,17 +33,10 @@ async function validatedAnalysisBatch(
     prompt: string,
   ) => Promise<BatchAnalysis>,
 ): Promise<BatchAnalysis> {
-  let validationError = "";
+  let candidate = await model(name, input, batch.prompt);
   for (let attempt = 0; attempt <= 2; attempt++) {
-    const raw = await model(
-      attempt ? `${name}-quote-repair-${attempt}` : name,
-      attempt ? { input, validationError, repairAttempt: attempt } : input,
-      attempt
-        ? `${batch.prompt}\nThe prior response failed deterministic quote validation: ${validationError}. Regenerate every outcome. Copy each quote directly from its own segment as a contiguous substring; omit any item you cannot quote exactly. Do not paraphrase or combine segments.`
-        : batch.prompt,
-    );
     try {
-      return validateBatchAnalysis(batch.segments, raw);
+      return validateBatchAnalysis(batch.segments, candidate);
     } catch (error) {
       if (
         attempt === 2 ||
@@ -50,7 +44,53 @@ async function validatedAnalysisBatch(
         !error.message.startsWith("Quote does not match saved segment ")
       )
         throw error;
-      validationError = error.message;
+      const invalidIds = new Set(
+        candidate.outcomes
+          .filter((outcome) => {
+            const segment = batch.segments.find(
+              (item) => item.id === outcome.segmentId,
+            );
+            return (
+              segment &&
+              outcome.items.some(
+                (item) => quoteState(item.quote, segment.text) === "NOT_FOUND",
+              )
+            );
+          })
+          .map((outcome) => outcome.segmentId),
+      );
+      if (!invalidIds.size) throw error;
+      const invalidSegments = batch.segments.filter((segment) =>
+        invalidIds.has(segment.id),
+      );
+      const corrected = await model(
+        `${name}-quote-repair-${attempt + 1}`,
+        {
+          input,
+          repairAttempt: attempt + 1,
+          repairSegmentIds: [...invalidIds],
+          previousOutputHash: hash(JSON.stringify(candidate)),
+        },
+        `${analysisPrompt(invalidSegments)}\nThe earlier response failed exact quote validation for these segments. Regenerate only their outcomes. Use short, meaningful quotes of 4-16 consecutive words copied directly from the listed source text, including its spelling and punctuation. Omit an item if you cannot copy a supporting excerpt exactly; do not paraphrase or combine segments.`,
+      );
+      try {
+        validateBatchAnalysis(invalidSegments, corrected);
+      } catch (repairError) {
+        if (
+          !(repairError instanceof Error) ||
+          !repairError.message.startsWith("Quote does not match saved segment ")
+        )
+          throw repairError;
+        continue;
+      }
+      const replacements = new Map(
+        corrected.outcomes.map((outcome) => [outcome.segmentId, outcome]),
+      );
+      candidate = {
+        outcomes: candidate.outcomes.map(
+          (outcome) => replacements.get(outcome.segmentId) ?? outcome,
+        ),
+      };
     }
   }
   throw new Error("Quote repair attempts exhausted");
