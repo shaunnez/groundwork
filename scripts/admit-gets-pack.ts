@@ -160,6 +160,24 @@ try {
   } catch {
     /* first admission */
   }
+  if (!receipt?.packId) {
+    const existing = await db.query(
+      "SELECT id,manifest FROM tender_packs WHERE account_id=$1 AND opportunity_id=$2 AND rfx_id=$3 ORDER BY created_at DESC LIMIT 1",
+      [args.account, opportunityId, manifest.rfxId],
+    );
+    const currentFiles = (files: PackDeclaration["files"]) =>
+      files
+        .filter((f) => f.status === "current")
+        .map((f) => `${f.fileId}:${f.bytes}:${f.sha256.toLowerCase()}`)
+        .sort()
+        .join("|");
+    if (
+      existing.rowCount &&
+      currentFiles(PackDeclaration.parse(existing.rows[0].manifest).files) ===
+        currentFiles(manifest.files)
+    )
+      receipt = { packId: existing.rows[0].id };
+  }
   const packId =
     receipt?.packId ??
     (await declareTenderPack(db, args.account, opportunityId, actor, manifest))

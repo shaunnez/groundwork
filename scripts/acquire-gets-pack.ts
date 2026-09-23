@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-import { createReadStream, createWriteStream } from "node:fs";
+import { createReadStream, createWriteStream, existsSync } from "node:fs";
 import { mkdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import { resolve, join } from "node:path";
 import { pipeline } from "node:stream/promises";
@@ -30,11 +30,23 @@ if (!output.startsWith(privateRoot + "/"))
   );
 if (!!args.notice !== !!args.archive)
   throw new Error("--notice and --archive must be supplied together");
+const privateEnvPath = join(privateRoot, "realme.env");
+if (existsSync(privateEnvPath)) {
+  if ((await stat(privateEnvPath)).mode & 0o077)
+    throw new Error(".local-groundwork/realme.env must have file mode 0600");
+  process.loadEnvFile(privateEnvPath);
+}
 const scratch = join(output, "temporary");
 const originals = join(output, "originals");
 await mkdir(scratch, { recursive: true, mode: 0o700 });
 await mkdir(originals, { recursive: true, mode: 0o700 });
 const detailUrl = `https://www.gets.govt.nz/DCC/ExternalTenderDetails.htm?id=${rfx}`;
+const realmeUsername = process.env.GROUNDWORK_REALME_USERNAME;
+const realmePassword = process.env.GROUNDWORK_REALME_PASSWORD;
+if (!!realmeUsername !== !!realmePassword)
+  throw new Error(
+    "Set both GROUNDWORK_REALME_USERNAME and GROUNDWORK_REALME_PASSWORD, or neither",
+  );
 
 async function verifyFile(
   path: string,
@@ -199,32 +211,69 @@ if (args.notice && args.archive) {
     try {
       parseSubscribedPack(html, rfx!);
     } catch (error) {
-      if (args.headless === "true") throw error;
       const supplierLogin = page
         .locator('a.realme_login[href*="TendererLogin.auth"]')
         .first();
-      if (await supplierLogin.count()) {
-        await supplierLogin.click();
-        await page
-          .waitForLoadState("domcontentloaded", { timeout: 45000 })
-          .catch(() => undefined);
+      if (!(await supplierLogin.count())) throw error;
+      await supplierLogin.click();
+      if (realmeUsername && realmePassword) {
+        const usernameField = page.locator("#signInName");
+        await usernameField.waitFor({ timeout: 45000 });
+        if (new URL(page.url()).hostname !== "login.realme.govt.nz")
+          throw new Error("RealMe login redirected to an unexpected host");
+        await usernameField.fill(realmeUsername);
+        await page.locator("#password").fill(realmePassword);
+        await page.getByRole("button", { name: "Log in", exact: true }).click();
+        try {
+          await page.waitForURL((url) => url.hostname === "www.gets.govt.nz", {
+            timeout: 120000,
+          });
+        } catch {
+          if (args.headless === "true")
+            throw new Error(
+              "RealMe did not return to GETS after sign-in; rerun visibly to complete any challenge",
+            );
+        }
       }
-      console.log(
-        `Complete RealMe sign-in and, if needed, this notice's subscription in the opened browser: ${detailUrl}`,
-      );
-      const terminal = createInterface({
-        input: process.stdin,
-        output: process.stdout,
-      });
-      await terminal.question(
-        "Press Enter after the files are visible in the browser. ",
-      );
-      terminal.close();
+      if (new URL(page.url()).hostname !== "www.gets.govt.nz") {
+        if (args.headless === "true")
+          throw new Error(
+            "GETS session expired and interactive RealMe sign-in is required",
+          );
+        console.log(
+          "Complete any RealMe challenge in the opened browser; credentials and challenges stay local.",
+        );
+        const terminal = createInterface({
+          input: process.stdin,
+          output: process.stdout,
+        });
+        await terminal.question("Press Enter after GETS opens. ");
+        terminal.close();
+      }
       await page.goto(detailUrl, {
         waitUntil: "domcontentloaded",
         timeout: 45000,
       });
       html = await page.content();
+      try {
+        parseSubscribedPack(html, rfx!);
+      } catch (cause) {
+        if (args.headless === "true") throw cause;
+        console.log(
+          `Subscribe to this notice in the opened browser if the file table is not yet visible: ${detailUrl}`,
+        );
+        const terminal = createInterface({
+          input: process.stdin,
+          output: process.stdout,
+        });
+        await terminal.question("Press Enter after the files are visible. ");
+        terminal.close();
+        await page.goto(detailUrl, {
+          waitUntil: "domcontentloaded",
+          timeout: 45000,
+        });
+        html = await page.content();
+      }
     }
     const manifest = parseSubscribedPack(html, rfx!);
     const getsCookies = (

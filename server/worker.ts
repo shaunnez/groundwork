@@ -49,10 +49,11 @@ export class Worker {
   ) {
     this.store = new ObjectStore(config.storageRoot);
   }
-  async claim() {
+  async claim(runId?: string) {
     return transaction(this.db, async (c) => {
       const result = await c.query(
-        "SELECT r.* FROM dispatch d JOIN runs r ON r.id=d.run_id WHERE r.state IN ('queued','running') AND (d.lease_until IS NULL OR d.lease_until<now()) ORDER BY r.created_at FOR UPDATE OF d,r SKIP LOCKED LIMIT 1",
+        "SELECT r.* FROM dispatch d JOIN runs r ON r.id=d.run_id WHERE r.state IN ('queued','running') AND ($1::uuid IS NULL OR r.id=$1) AND (d.lease_until IS NULL OR d.lease_until<now()) ORDER BY r.created_at FOR UPDATE OF d,r SKIP LOCKED LIMIT 1",
+        [runId ?? null],
       );
       if (!result.rowCount) return null;
       const run = result.rows[0];
@@ -456,11 +457,31 @@ export class Worker {
         assessmentPrompt(context),
         AssessmentSchema,
       );
-      let assessment = validateAssessment(
-        raw,
-        units,
-        src.rows.map((s) => ({ id: s.id, purpose: s.purpose })),
-      );
+      const sourcePurposes = src.rows.map((s) => ({
+        id: s.id,
+        purpose: s.purpose,
+      }));
+      let assessment: z.infer<typeof AssessmentSchema>;
+      try {
+        assessment = validateAssessment(raw, units, sourcePurposes);
+      } catch (error) {
+        const failure = (error as Error).message;
+        const revised = await this.model(
+          run,
+          "correct-invalid-assessment",
+          { context, raw, failure },
+          assessmentPrompt(context) +
+            "\nThe previous structured assessment failed deterministic evidence validation. Correct only that defect and dependent wording. An unsupported factual claim must gain an exact quote from a saved unit or be removed; do not fabricate a citation. Reworded claims need new IDs. Return the full assessment schema. Previous assessment and failure: " +
+            JSON.stringify({ raw, failure }),
+          AssessmentSchema,
+        );
+        assessment = validateAssessment(revised, units, sourcePurposes);
+        for (const claim of assessment.claims) {
+          const old = raw.claims.find((c) => c.id === claim.id);
+          if (old && old.text !== claim.text)
+            throw new Error("A reworded claim needs a new revision ID");
+        }
+      }
       let support = await this.model(
         run,
         "verify",
@@ -505,32 +526,70 @@ export class Worker {
             JSON.stringify(correctionInput),
           AssessmentSchema,
         );
-        assessment = validateAssessment(
-          revised,
-          units,
-          src.rows.map((s) => ({ id: s.id, purpose: s.purpose })),
-        );
-        for (const claim of assessment.claims) {
-          const old = previous.claims.find((c) => c.id === claim.id);
-          if (old && old.text !== claim.text)
-            throw new Error("A reworded claim needs a new revision ID");
+        try {
+          assessment = validateAssessment(revised, units, sourcePurposes);
+          for (const claim of assessment.claims) {
+            const old = previous.claims.find((c) => c.id === claim.id);
+            if (old && old.text !== claim.text)
+              throw new Error("A reworded claim needs a new revision ID");
+          }
+          support = await this.model(
+            run,
+            "verify-correction",
+            { assessment, units },
+            supportPrompt(assessment, units),
+            SupportSchema,
+          );
+          if (support.sectionIssues.length)
+            throw new Error(support.sectionIssues.join("; "));
+          checkPosture();
+          payload = composeReport(
+            assessment,
+            support.checks,
+            units,
+            requirements,
+          );
+        } catch (secondError) {
+          const previousRevision = assessment;
+          const secondInput = {
+            context,
+            previous: previousRevision,
+            failedRevision: revised,
+            support,
+            failure: (secondError as Error).message,
+          };
+          const revisedAgain = await this.model(
+            run,
+            "correct-assessment-2",
+            secondInput,
+            assessmentPrompt(context) +
+              "\nThis is the final permitted correction. The prior revision failed deterministic quote validation or independent support review. Fix each exact quote against its cited source unit; remove unsupported wording when no unit supports it. Keep unrelated supported findings intact. Give reworded claims new IDs (suffix -r3). Do not introduce new factual claims. Return the full assessment schema. Prior revision and failure: " +
+              JSON.stringify(secondInput),
+            AssessmentSchema,
+          );
+          assessment = validateAssessment(revisedAgain, units, sourcePurposes);
+          for (const claim of assessment.claims) {
+            const old = previousRevision.claims.find((c) => c.id === claim.id);
+            if (old && old.text !== claim.text)
+              throw new Error("A reworded claim needs a new revision ID");
+          }
+          support = await this.model(
+            run,
+            "verify-correction-2",
+            { assessment, units },
+            supportPrompt(assessment, units),
+            SupportSchema,
+          );
+          if (support.sectionIssues.length)
+            throw new Error(support.sectionIssues.join("; "));
+          checkPosture();
+          payload = composeReport(
+            assessment,
+            support.checks,
+            units,
+            requirements,
+          );
         }
-        support = await this.model(
-          run,
-          "verify-correction",
-          { assessment, units },
-          supportPrompt(assessment, units),
-          SupportSchema,
-        );
-        if (support.sectionIssues.length)
-          throw new Error(support.sectionIssues.join("; "));
-        checkPosture();
-        payload = composeReport(
-          assessment,
-          support.checks,
-          units,
-          requirements,
-        );
       }
       if (units.some((u) => u.location.includes(" · OCR")))
         payload.limitations.push(
@@ -633,8 +692,8 @@ export class Worker {
       );
     }
   }
-  async tick() {
-    const run = await this.claim();
+  async tick(runId?: string) {
+    const run = await this.claim(runId);
     if (!run) return false;
     await this.process(run);
     return true;
@@ -646,12 +705,22 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     worker = new Worker(config, db),
     gets = new GetsIntakeWorker(config, db);
   let stopping = false;
+  const selectedRun = process.argv
+    .find((arg) => arg.startsWith("--run-id="))
+    ?.slice(9);
+  if (selectedRun && !/^[a-f0-9-]{36}$/i.test(selectedRun))
+    throw new Error("Invalid selected report run ID");
   for (const s of ["SIGINT", "SIGTERM"] as const)
     process.on(s, () => {
       stopping = true;
     });
   console.log("Groundwork durable worker started");
   while (!stopping) {
+    if (selectedRun) {
+      if (!(await worker.tick(selectedRun)))
+        await new Promise((r) => setTimeout(r, 1000));
+      continue;
+    }
     if (
       !(await worker.tick()) &&
       !(await gets.tick()) &&

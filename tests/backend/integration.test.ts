@@ -210,6 +210,27 @@ test("A18 SQL calendar cutoff survives API and manifest serialization without ti
   });
   assert.equal(r.json().opportunity.cutoff, "2026-09-22");
 });
+test("A selected local worker claims only its requested report", async () => {
+  const first = randomUUID();
+  const selected = randomUUID();
+  for (const id of [first, selected]) {
+    await db.query(
+      "INSERT INTO runs(id,account_id,opportunity_id,input_hash,manifest,state) VALUES($1,$2,$3,$4,'{}','queued')",
+      [id, accountId, opportunityId, randomUUID()],
+    );
+    await db.query("INSERT INTO dispatch(run_id) VALUES($1)", [id]);
+  }
+  const worker = new Worker(config, db);
+  assert.equal((await worker.claim(selected))?.id, selected);
+  assert.equal(
+    (await db.query("SELECT state FROM runs WHERE id=$1", [first])).rows[0]
+      .state,
+    "queued",
+  );
+  await db.query("UPDATE runs SET state='cancelled' WHERE id=ANY($1::uuid[])", [
+    [first, selected],
+  ]);
+});
 test("A12 completed stage is reused and a stale worker loses write authority", async () => {
   const runId = randomUUID(),
     worker = new Worker(config, db);
@@ -445,6 +466,52 @@ test("Explicitly narrower manifests preserve excluded failures and require a rea
     ])
   ).rows[0];
   assert.equal(run.manifest.excludedSources.length, excluded.length);
+  assert.equal(run.manifest.metadata.title, "Synthetic integration notice");
+  assert.equal(run.manifest.metadata.buyer, "Test buyer");
+  const localWorkerOwner = randomUUID();
+  const locallyClaimed = await post(
+    `/api/opportunities/${opportunityId}/runs`,
+    {
+      excludedSourceIds: excluded,
+      scopeNote:
+        "Only assess the public notice; pricing analysis explicitly excluded.",
+      localWorkerOwner,
+    },
+  );
+  assert.equal(locallyClaimed.statusCode, 200, locallyClaimed.body);
+  const owned = await db.query(
+    "SELECT r.state,d.lease_owner,d.lease_until FROM runs r JOIN dispatch d ON d.run_id=r.id WHERE r.id=$1",
+    [locallyClaimed.json().id],
+  );
+  assert.equal(owned.rows[0].state, "running");
+  assert.equal(owned.rows[0].lease_owner, localWorkerOwner);
+  assert.ok(owned.rows[0].lease_until);
+  await post(`/api/runs/${locallyClaimed.json().id}/cancel`, {});
+  await db.query("UPDATE runs SET state='failed' WHERE id=$1", [
+    locallyClaimed.json().id,
+  ]);
+  const resumedOwner = randomUUID();
+  const subscriptionApi = await createApi(
+    { ...config, claudeSubscriptionApproved: true },
+    db,
+  );
+  const resumed = await subscriptionApi.inject({
+    method: "POST",
+    url: `/api/runs/${locallyClaimed.json().id}/resume`,
+    payload: { localWorkerOwner: resumedOwner },
+    headers,
+  });
+  await subscriptionApi.close();
+  assert.equal(resumed.statusCode, 200, resumed.body);
+  assert.equal(
+    (
+      await db.query("SELECT lease_owner FROM dispatch WHERE run_id=$1", [
+        locallyClaimed.json().id,
+      ])
+    ).rows[0].lease_owner,
+    resumedOwner,
+  );
+  await post(`/api/runs/${locallyClaimed.json().id}/cancel`, {});
   assert.equal(
     run.manifest.sourceIds.length + excluded.length,
     run.manifest.allSourceIds.length,

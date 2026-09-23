@@ -774,9 +774,19 @@ export async function createApi(config: Config, db: Database) {
         excludedSourceIds: z.array(id).max(20).default([]),
         scopeNote: z.string().max(2000).default(""),
         allowIncompleteTenderPack: z.boolean().default(false),
+        localWorkerOwner: id.optional(),
       })
       .strict()
       .parse(req.body ?? {});
+    if (input.localWorkerOwner && config.publicOrigin)
+      throw Object.assign(
+        new Error(
+          "Local worker ownership is unavailable on the hosted service",
+        ),
+        {
+          statusCode: 403,
+        },
+      );
     return transaction(db, async (c) => {
       const opp = await c.query(
         "SELECT * FROM opportunities WHERE id=$1 AND account_id=$2 FOR UPDATE",
@@ -897,6 +907,8 @@ export async function createApi(config: Config, db: Database) {
         cutoff: input.cutoff ?? opp.rows[0].cutoff,
         metadata: {
           ...opp.rows[0].metadata,
+          title: opp.rows[0].title,
+          buyer: opp.rows[0].buyer,
           cutoff: input.cutoff ?? opp.rows[0].cutoff,
         },
         clientId: opp.rows[0].client_id,
@@ -911,17 +923,22 @@ export async function createApi(config: Config, db: Database) {
       if (active.rowCount) return { id: active.rows[0].id, reused: true };
       const runId = randomUUID();
       await c.query(
-        "INSERT INTO runs(id,account_id,opportunity_id,input_hash,manifest,state,parent_report_id) VALUES($1,$2,$3,$4,$5,'queued',$6)",
+        "INSERT INTO runs(id,account_id,opportunity_id,input_hash,manifest,state,parent_report_id,started_at) VALUES($1,$2,$3,$4,$5,$6,$7,CASE WHEN $8::uuid IS NULL THEN NULL ELSE now() END)",
         [
           runId,
           req.accountId,
           opportunityId,
           inputHash,
           manifest,
+          input.localWorkerOwner ? "running" : "queued",
           input.parentReportId,
+          input.localWorkerOwner ?? null,
         ],
       );
-      await c.query("INSERT INTO dispatch(run_id) VALUES($1)", [runId]);
+      await c.query(
+        "INSERT INTO dispatch(run_id,lease_owner,lease_until,attempts) VALUES($1,$2,CASE WHEN $2::uuid IS NULL THEN NULL ELSE now()+interval '45 seconds' END,CASE WHEN $2::uuid IS NULL THEN 0 ELSE 1 END)",
+        [runId, input.localWorkerOwner ?? null],
+      );
       return { id: runId, reused: false };
     });
   });
@@ -934,6 +951,19 @@ export async function createApi(config: Config, db: Database) {
   });
   app.post("/api/runs/:id/resume", async (req) => {
     const runId = asId(req.params);
+    const input = z
+      .object({ localWorkerOwner: id.optional() })
+      .strict()
+      .parse(req.body ?? {});
+    if (input.localWorkerOwner && config.publicOrigin)
+      throw Object.assign(
+        new Error(
+          "Local worker ownership is unavailable on the hosted service",
+        ),
+        {
+          statusCode: 403,
+        },
+      );
     return transaction(db, async (c) => {
       const r = await c.query(
         "SELECT * FROM runs WHERE id=$1 AND account_id=$2 FOR UPDATE",
@@ -984,12 +1014,12 @@ export async function createApi(config: Config, db: Database) {
           statusCode: 409,
         });
       await c.query(
-        "UPDATE runs SET state='queued',started_at=now(),error=null,updated_at=now() WHERE id=$1",
-        [runId],
+        "UPDATE runs SET state=$2,started_at=now(),error=null,updated_at=now() WHERE id=$1",
+        [runId, input.localWorkerOwner ? "running" : "queued"],
       );
       await c.query(
-        "UPDATE dispatch SET lease_owner=null,lease_until=null WHERE run_id=$1",
-        [runId],
+        "UPDATE dispatch SET lease_owner=$2,lease_until=CASE WHEN $2::uuid IS NULL THEN NULL ELSE now()+interval '45 seconds' END,attempts=attempts+CASE WHEN $2::uuid IS NULL THEN 0 ELSE 1 END WHERE run_id=$1",
+        [runId, input.localWorkerOwner ?? null],
       );
       return { ok: true };
     });
