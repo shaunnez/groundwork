@@ -315,6 +315,57 @@ test("saved report keeps the full analysis and version metadata", () => {
   assert.match($("#assessment-gaps").text(), /Known limitations/);
 });
 
+test("saved report renders a frozen GETS pack without derived counts", () => {
+  const report = reportFixture();
+  report.payload.tenderPack = {
+    id: "pack-1",
+    rfxId: "12345678",
+    noticeRevisionId: "revision-1",
+    observedAt: "2026-09-23T00:00:00Z",
+    complete: false,
+    files: [
+      {
+        fileId: "file-1",
+        name: "Tender.docx",
+        bytes: 128,
+        sha256: "abc",
+        kind: "attachment",
+        status: "current",
+        sourceId: "source-1",
+        actualBytes: 128,
+        actualSha256: "abc",
+        reader: "docx",
+        coverage: {
+          total: 1,
+          read: 1,
+          unread: 0,
+          unit: "section",
+          failures: ["Embedded visual content not read"],
+        },
+        state: "partial",
+        problem: null,
+        technicalReviewRequired: false,
+        technicalReview: null,
+      },
+    ],
+  };
+  const render = () =>
+    load(
+      renderToStaticMarkup(
+        createElement(AssessmentBody, { report, onEvidence: () => {} }),
+      ),
+    );
+  assert.match(
+    render()("#assessment-summary").text(),
+    /all declared originals admitted; analytical coverage incomplete/,
+  );
+  report.payload.tenderPack.files[0].sourceId = null;
+  assert.match(
+    render()("#assessment-summary").text(),
+    /incomplete pack; see named file states/,
+  );
+});
+
 test("citation preview softens decorative source banners without changing the exact quote", () => {
   const report = reportFixture();
   const exact =
