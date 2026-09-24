@@ -22,6 +22,8 @@ const Config = z.object({
   claudeExecutable: z.string().optional(),
   claudeHome: z.string().optional(),
   reviewerSecret: z.string().min(32).optional(),
+  analysisMaxModelCalls: z.number().int().min(1).max(500).default(96),
+  analysisRunMinutes: z.number().int().min(10).max(720).default(180),
 });
 export type Config = z.infer<typeof Config>;
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
@@ -46,6 +48,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       firecrawlIncludedConfirmed:
         env.GROUNDWORK_FIRECRAWL_INCLUDED_CONFIRMED === "true",
       firecrawlCredentialFile: env.GROUNDWORK_FIRECRAWL_CREDENTIAL_FILE,
+      analysisMaxModelCalls: Number(
+        env.GROUNDWORK_ANALYSIS_MAX_MODEL_CALLS || 96,
+      ),
+      analysisRunMinutes: Number(env.GROUNDWORK_ANALYSIS_RUN_MINUTES || 180),
       port: Number(env.PORT || 4318),
     });
     if (!c.publicOrigin)

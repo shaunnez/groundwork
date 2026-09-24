@@ -52,6 +52,8 @@ Keep local private configuration, evidence objects, receipts and browser capture
 
 For the current Groundwork pilot, analyse procurement wording and structured pricing; engineering interpretation of bridge drawings is outside scope. Keep original drawings and embedded Office images available, and identify visual material excluded from analytical coverage. Decorative logos need no model interpretation. Preserve both sides of DOCX tracked changes with their attribution; do not treat proposed wording as accepted contract text without evidence of its revision state.
 
+For a high-level pursuit assessment, use readable body text and structured pricing, including tables and spreadsheet cells the reader can read. Unread images, objects and table content may be left out with a concise, visible scope limitation; they do not have to block a limited text-based report. Do not pass deleted or proposed DOCX wording or revision metadata to that analysis. Keep original bytes and prior extraction versions intact. A legacy extraction that mixed proposed wording into ordinary text must be excluded until a safe text-only extraction exists. Do not describe this limited assessment as exhaustive contract, pricing or RFP coverage.
+
 ## Analysis progress · 23 September 2026
 
 Separate a queued request from a worker that has actually started. Show recorded stages, elapsed time, model calls and API-equivalent usage as an estimate, while distinguishing that figure from actual subscription billing. Show exact evidence or model blockers and avoid a promised completion time when the run cannot be estimated. A stopped request must not appear to be processing or offer a resume action that would immediately fail for the same unchanged cause.

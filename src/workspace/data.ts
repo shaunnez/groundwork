@@ -190,6 +190,11 @@ export interface Intelligence {
 }
 export interface Requirements {
   status: string;
+  distinctRequirements?: number;
+  occurrences?: number;
+  previewLimit?: number;
+  ledgerRunId?: string;
+  limitation?: string;
   unitsEnumerated?: number;
   candidatesProduced?: number;
   candidatesJudged?: number;
@@ -224,6 +229,12 @@ export interface SavedReport {
     intelligence: Intelligence;
     sourceInventory: Source[];
     requirements: Requirements;
+    analysis?: {
+      ledgerRunId: string;
+      selectedFindings: number;
+      omittedFindings: number;
+      readerGaps: { sourceId: string; name: string; failures: string[] }[];
+    } | null;
     tenderPack?: TenderPack | null;
     frozenClient?: Client | null;
     deliverable?: Deliverable;

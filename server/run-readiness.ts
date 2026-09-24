@@ -1,7 +1,5 @@
 import { completeCoverage, type Coverage } from "./domain/evidence.ts";
 
-export const MAX_ANALYSIS_CHARACTERS = 160_000;
-
 export type ReadinessSource = {
   name: string;
   reader: string;
@@ -10,14 +8,30 @@ export type ReadinessSource = {
   published_at: string | Date | null;
 };
 
+export function hasUnmarkedLegacyRevisions(source: ReadinessSource): boolean {
+  return (
+    source.reader === "docx-structure-v1" &&
+    source.coverage.failures.some((failure) => /: (?:ins|del) /.test(failure))
+  );
+}
+
 export function runReadinessIssues(
   sources: ReadinessSource[],
   cutoff: string,
-  characters: number,
+  _characters: number,
+  options: { allowPartial?: boolean } = {},
 ): string[] {
   const issues: string[] = [];
   for (const source of sources) {
-    if (source.required && !completeCoverage(source.coverage))
+    if (hasUnmarkedLegacyRevisions(source))
+      issues.push(
+        `${source.name}: legacy DOCX extraction mixed proposed wording into ordinary text; exclude this source from a high-level assessment`,
+      );
+    if (
+      source.required &&
+      !completeCoverage(source.coverage) &&
+      !options.allowPartial
+    )
       issues.push(
         `${source.name}: ${source.reader}: ${source.coverage.failures.join("; ") || "Incomplete source coverage"}`,
       );
@@ -27,9 +41,5 @@ export function runReadinessIssues(
     )
       issues.push(`${source.name}: published after assessment cutoff`);
   }
-  if (characters > MAX_ANALYSIS_CHARACTERS)
-    issues.push(
-      `Selected evidence has ${characters.toLocaleString("en-NZ")} characters; this analysis path supports at most ${MAX_ANALYSIS_CHARACTERS.toLocaleString("en-NZ")}. Select a narrower source scope.`,
-    );
   return issues;
 }
