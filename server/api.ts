@@ -68,6 +68,14 @@ import {
   sectorSettings,
 } from "./sectors.ts";
 import { runReadinessIssues } from "./run-readiness.ts";
+import {
+  claudeLoginCommand,
+  claudeLogout,
+  claudeStatus,
+  firecrawlSettings,
+  hasFirecrawlKey,
+  saveFirecrawlKey,
+} from "./settings.ts";
 declare module "fastify" {
   interface FastifyRequest {
     accountId: string;
@@ -212,7 +220,14 @@ export async function createApi(config: Config, db: Database) {
     },
   );
   app.get("/api/bootstrap", async (req) => {
-    const [opportunities, clients, reviews, budget] = await Promise.all([
+    const [
+      opportunities,
+      clients,
+      reviews,
+      budget,
+      researchConfig,
+      keyConfigured,
+    ] = await Promise.all([
       db.query(
         `SELECT o.*,a.sector_id AS groundwork_sector_id,coalesce(g.name,'Unknown') AS groundwork_sector_name,
                 coalesce(a.method,'unrecorded') AS groundwork_sector_method,
@@ -232,6 +247,8 @@ export async function createApi(config: Config, db: Database) {
       db.query(
         "SELECT allowance,reserved,spent FROM budgets WHERE id='goal-firecrawl'",
       ),
+      firecrawlSettings(db, config),
+      hasFirecrawlKey(config),
     ]);
     return {
       opportunities: opportunities.rows,
@@ -241,9 +258,130 @@ export async function createApi(config: Config, db: Database) {
       mode: "local-internal",
       role: req.role,
       modelEnabled: config.claudeSubscriptionApproved,
-      researchEnabled:
-        config.firecrawlIncludedConfirmed && !!config.firecrawlCredentialFile,
+      researchEnabled: researchConfig.includedConfirmed && keyConfigured,
     };
+  });
+  app.get("/api/settings", async (req, reply) => {
+    if (req.role !== "owner")
+      return reply.code(403).send({ error: "Owner access required" });
+    const [budget, researchConfig, keyConfigured, claude] = await Promise.all([
+      db.query(
+        "SELECT allowance,reserved,spent FROM budgets WHERE id='goal-firecrawl'",
+      ),
+      firecrawlSettings(db, config),
+      hasFirecrawlKey(config),
+      claudeStatus(config),
+    ]);
+    return {
+      firecrawl: {
+        enabled: researchConfig.includedConfirmed,
+        keyConfigured,
+        budget: budget.rows[0],
+      },
+      claude: {
+        ...claude,
+        generationApproved: config.claudeSubscriptionApproved,
+        loginCommand: claudeLoginCommand(config),
+      },
+      hosted: Boolean(config.publicOrigin),
+    };
+  });
+  app.post("/api/settings/firecrawl", async (req) => {
+    const { enabled, confirmedIncludedCredits } = z
+      .object({
+        enabled: z.boolean(),
+        confirmedIncludedCredits: z.boolean().optional(),
+      })
+      .strict()
+      .parse(req.body);
+    if (enabled && !confirmedIncludedCredits)
+      throw Object.assign(
+        new Error(
+          "Confirm included credits and disabled extra usage before enabling research",
+        ),
+        { statusCode: 409 },
+      );
+    if (enabled && !(await hasFirecrawlKey(config)))
+      throw Object.assign(
+        new Error("Save a Firecrawl API key before enabling research"),
+        { statusCode: 409 },
+      );
+    await db.query(
+      "INSERT INTO app_settings(id,firecrawl_enabled) VALUES('workspace',$1) ON CONFLICT(id) DO UPDATE SET firecrawl_enabled=$1,updated_at=now()",
+      [enabled],
+    );
+    return { enabled };
+  });
+  app.post("/api/settings/firecrawl/budget", async (req) => {
+    const { allowance } = z
+      .object({ allowance: z.number().int().min(0).max(50) })
+      .strict()
+      .parse(req.body);
+    const result = await db.query(
+      "UPDATE budgets SET allowance=$1 WHERE id='goal-firecrawl' AND spent+reserved<=$1 RETURNING allowance,reserved,spent",
+      [allowance],
+    );
+    if (!result.rowCount)
+      throw Object.assign(
+        new Error(
+          "Allowance cannot be below credits already spent or reserved",
+        ),
+        { statusCode: 409 },
+      );
+    return result.rows[0];
+  });
+  app.post("/api/settings/firecrawl/key", async (req) => {
+    const { key } = z
+      .object({
+        key: z
+          .string()
+          .trim()
+          .min(10)
+          .max(512)
+          .regex(/^[A-Za-z0-9_-]+$/),
+      })
+      .strict()
+      .parse(req.body);
+    try {
+      await saveFirecrawlKey(config, key);
+    } catch {
+      throw Object.assign(
+        new Error("Could not save the research credential on this server"),
+        { statusCode: 500 },
+      );
+    }
+    return { keyConfigured: true };
+  });
+  app.post("/api/settings/claude/logout", async (_req) => {
+    const [runs, gets] = await Promise.all([
+      db.query(
+        "SELECT 1 FROM runs WHERE state IN ('queued','running') LIMIT 1",
+      ),
+      db.query(
+        "SELECT 1 FROM gets_intake_runs WHERE state IN ('queued','running') LIMIT 1",
+      ),
+    ]);
+    if (runs.rowCount || gets.rowCount)
+      throw Object.assign(
+        new Error(
+          "Wait for active analysis and GETS checks to finish before signing out",
+        ),
+        { statusCode: 409 },
+      );
+    try {
+      await claudeLogout(config);
+    } catch {
+      throw Object.assign(
+        new Error("Claude CLI sign-out failed; check the worker account"),
+        { statusCode: 502 },
+      );
+    }
+    const status = await claudeStatus(config);
+    if (status.issue !== "The CLI is signed out.")
+      throw Object.assign(new Error("Claude sign-out could not be verified"), {
+        statusCode: 502,
+      });
+    return { claude: status };
   });
   app.get("/api/gets/status", async (req) =>
     getsStatus(db, config, req.accountId),
@@ -739,10 +877,13 @@ export async function createApi(config: Config, db: Database) {
       .object({ query: z.string().min(3).max(300) })
       .strict()
       .parse(req.body);
-    const result = await research(db, store, req.accountId, x.query, {
-      includedConfirmed: config.firecrawlIncludedConfirmed,
-      credentialFile: config.firecrawlCredentialFile,
-    });
+    const result = await research(
+      db,
+      store,
+      req.accountId,
+      x.query,
+      await firecrawlSettings(db, config),
+    );
     await db.query(
       "INSERT INTO searches(id,account_id,opportunity_id,query,result) VALUES($1,$2,$3,$4,$5)",
       [

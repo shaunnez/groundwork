@@ -4,6 +4,7 @@ import type { Database } from "./db.ts";
 import { transaction } from "./db.ts";
 import { compileDeliverable } from "./deliverables.ts";
 import { research } from "./research.ts";
+import { firecrawlSettings } from "./settings.ts";
 import { ObjectStore } from "./storage.ts";
 import type { Config } from "./config.ts";
 export const DeliverableKind = z.enum(["watchlist", "competitor", "weekly"]);
@@ -249,10 +250,7 @@ export async function scheduleTick(
         new ObjectStore(config.storageRoot),
         claimed.account_id,
         claimed.research_query,
-        {
-          includedConfirmed: config.firecrawlIncludedConfirmed,
-          credentialFile: config.firecrawlCredentialFile,
-        },
+        await firecrawlSettings(db, config),
       );
       await db.query(
         "INSERT INTO searches(id,account_id,opportunity_id,query,result) VALUES($1,$2,$3,$4,$5)",

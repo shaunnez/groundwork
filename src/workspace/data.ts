@@ -20,7 +20,8 @@ export type Page =
   | "ops"
   | "delivery"
   | "mapping"
-  | "sectors";
+  | "sectors"
+  | "settings";
 export type Navigate = (
   page: Page,
   opportunityId?: string,
