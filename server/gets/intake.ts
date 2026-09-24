@@ -155,7 +155,6 @@ export async function getsStatus(
     : { rows: [] };
   return {
     access: getsAccess(),
-    briefsPerAttempt: config.getsBriefsPerAttempt,
     runs: runs.rows,
     notices: notices.rows,
     items: items.rows,
@@ -496,17 +495,6 @@ export class GetsIntakeWorker {
         .catch(() => {});
     }, 10000);
     try {
-      if (
-        Date.now() - new Date(run.started_at).getTime() > 15 * 60 * 1000 ||
-        run.attempts >= 650
-      ) {
-        await this.terminal(
-          run,
-          "partial",
-          "GETS check reached its time or request bound",
-        );
-        return true;
-      }
       if (!run.listings_done) await this.listPage(run);
       else {
         const pending = await this.db.query(
@@ -729,14 +717,6 @@ export class GetsIntakeWorker {
     run: Run,
     item: { rfx_id: string; revision_id: string; attempts: number },
   ) {
-    if (run.brief_attempts >= this.config.getsBriefsPerAttempt) {
-      await this.terminal(
-        run,
-        "partial",
-        `Notice brief limit reached (${this.config.getsBriefsPerAttempt} per manual attempt); continue this check to resume pending briefs`,
-      );
-      return;
-    }
     await this.db.query(
       "UPDATE gets_intake_runs SET brief_attempts=brief_attempts+1,updated_at=now() WHERE id=$1 AND lease_owner=$2 AND state='running'",
       [run.id, this.owner],

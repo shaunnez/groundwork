@@ -20,7 +20,8 @@ export type Page =
   | "ops"
   | "delivery"
   | "mapping"
-  | "sectors";
+  | "sectors"
+  | "settings";
 export type Navigate = (
   page: Page,
   opportunityId?: string,
@@ -375,9 +376,9 @@ export async function uploadTenderFile(
 }
 export const kindLabel: Record<Kind, string> = {
   pursuit: "Pursuit package",
-  watchlist: "Daily watchlist",
-  competitor: "Competitor profile",
-  weekly: "Weekly brief",
+  watchlist: "Opportunity watchlist entry",
+  competitor: "Notice-linked supplier profile",
+  weekly: "Opportunity weekly update",
 };
 export const date = (s: string) =>
   new Date(s.length === 10 ? s + "T12:00:00" : s).toLocaleDateString("en-NZ", {
@@ -389,6 +390,24 @@ export const provenance = (o: Opportunity) =>
   o.metadata.provenance === "synthetic"
     ? "Synthetic evaluation"
     : "Public evidence";
+export function reportMaturity(report: SavedReport): string {
+  if (
+    report.payload.tenderPack?.complete &&
+    report.payload.requirements.status === "complete"
+  )
+    return "RFP reassessment";
+  if (
+    report.payload.sourceInventory.some(
+      (source) => source.purpose === "rfp" || source.purpose === "addendum",
+    )
+  )
+    return "Tender evidence partly assessed";
+  return report.payload.sourceInventory.every(
+    (source) => source.purpose === "notice",
+  )
+    ? "Notice-only pursuit"
+    : "Enriched public pursuit";
+}
 export const activeRun = (d: Detail) =>
   d.runs.find((r) => ["queued", "running"].includes(r.state));
 export const latestPursuit = (d: Detail) =>

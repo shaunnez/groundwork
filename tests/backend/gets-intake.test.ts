@@ -577,12 +577,12 @@ test("an explicit retry resumes a partial fixture run with a fresh bounded attem
     [1, 1, 1, 0],
   );
 });
-test("notice briefs stop at five per manual attempt and resume without regenerating completed work", async () => {
+test("notice briefs continue past five in one manual check", async () => {
   const url = "https://www.gets.govt.nz/ExternalIndex.htm";
   const ids = Array.from({ length: 6 }, (_, index) => String(90001001 + index));
   const runId = await queueFixture(url);
   const worker = new GetsIntakeWorker(
-    { ...config, getsBriefsPerAttempt: 5 },
+    config,
     db,
     fixtureTransport(
       {
@@ -599,21 +599,19 @@ test("notice briefs stop at five per manual attempt and resume without regenerat
     const state = (
       await db.query("SELECT state FROM gets_intake_runs WHERE id=$1", [runId])
     ).rows[0].state;
-    if (state === "partial") break;
+    if (state === "complete") break;
     await worker.tick();
   }
-  const before = (
+  const run = (
     await db.query(
       "SELECT state,brief_attempts FROM gets_intake_runs WHERE id=$1",
       [runId],
     )
   ).rows[0];
-  assert.deepEqual([before.state, before.brief_attempts], ["partial", 5]);
+  assert.deepEqual([run.state, run.brief_attempts], ["complete", 6]);
   const counts = (await getsStatus(db, config, account)).briefCounts;
-  assert.equal(counts.complete, 5);
-  assert.equal(counts.pending, 1);
-  await retryGetsRun(db, account, runId);
-  assert.equal(await drain(worker, runId), "complete");
+  assert.equal(counts.complete, 6);
+  assert.equal(counts.pending || 0, 0);
   assert.equal(
     (
       await db.query(
@@ -622,15 +620,6 @@ test("notice briefs stop at five per manual attempt and resume without regenerat
       )
     ).rows[0].n,
     6,
-  );
-  assert.equal(
-    (
-      await db.query(
-        "SELECT brief_attempts FROM gets_intake_runs WHERE id=$1",
-        [runId],
-      )
-    ).rows[0].brief_attempts,
-    1,
   );
 });
 test("two owner clicks attach to one queued run without making a network call", async () => {

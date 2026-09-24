@@ -101,7 +101,10 @@ const SourceInventoryItemSchema = z
     provenance: z.string(),
     publishedAt: z.string().nullable(),
   })
-  .strict();
+  // The saved report also carries reader, coverage, hash and state metadata.
+  // This compiler only needs the fields above; retain their validation while
+  // allowing the writer to add source metadata without breaking companions.
+  .strip();
 
 export type SourceInventoryItem = z.infer<typeof SourceInventoryItemSchema>;
 

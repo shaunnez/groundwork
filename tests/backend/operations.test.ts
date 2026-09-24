@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { loadConfig } from "../../server/config.ts";
 import { database } from "../../server/db.ts";
-import { baseInput } from "./fixtures.ts";
+import { baseInput, sourceInventoryFixture } from "./fixtures.ts";
 import {
   materialise,
   recordReview,
@@ -34,6 +34,13 @@ await db.query(
   [runId, accountId, opportunityId, { sourceIds: [], sourceHashes: [] }],
 );
 const payload = baseInput().payload;
+payload.sourceInventory = sourceInventoryFixture().map((source) => ({
+  ...source,
+  hash: "saved-source-hash",
+  state: "read",
+  reader: "native",
+  coverage: { pagesRead: 1 },
+}));
 await db.query(
   "INSERT INTO intelligence(id,account_id,opportunity_id,run_id,cutoff,payload) VALUES($1,$2,$3,$4,$5,$6)",
   [

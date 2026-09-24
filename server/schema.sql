@@ -46,6 +46,11 @@ DROP TRIGGER IF EXISTS reports_immutable ON reports;
 CREATE TRIGGER reports_immutable BEFORE UPDATE ON reports FOR EACH ROW EXECUTE FUNCTION prevent_report_update();
 CREATE TABLE IF NOT EXISTS budgets (id text PRIMARY KEY, allowance numeric NOT NULL CHECK(allowance>=0), reserved numeric NOT NULL DEFAULT 0 CHECK(reserved>=0), spent numeric NOT NULL DEFAULT 0 CHECK(spent>=0), CHECK(reserved+spent<=allowance));
 INSERT INTO budgets(id,allowance) VALUES ('goal-firecrawl',50) ON CONFLICT DO NOTHING;
+CREATE TABLE IF NOT EXISTS app_settings (
+ id text PRIMARY KEY CHECK (id='workspace'),
+ firecrawl_enabled boolean NOT NULL,
+ updated_at timestamptz NOT NULL DEFAULT now()
+);
 CREATE TABLE IF NOT EXISTS provider_calls (id uuid PRIMARY KEY, account_id uuid REFERENCES accounts(id) ON DELETE CASCADE, run_id uuid REFERENCES runs(id) ON DELETE CASCADE, logical_key text NOT NULL UNIQUE, provider text NOT NULL, status text NOT NULL CHECK(status IN ('reserved','succeeded','failed','uncertain')), budget_id text REFERENCES budgets(id), reserved numeric NOT NULL DEFAULT 0, settled numeric, usage jsonb, receipt_ref text, created_at timestamptz NOT NULL DEFAULT now(), finished_at timestamptz);
 CREATE TABLE IF NOT EXISTS searches (id uuid PRIMARY KEY, account_id uuid NOT NULL REFERENCES accounts(id) ON DELETE CASCADE, opportunity_id uuid NOT NULL, query text NOT NULL, result jsonb NOT NULL, created_at timestamptz NOT NULL DEFAULT now(), FOREIGN KEY(opportunity_id,account_id) REFERENCES opportunities(id,account_id) ON DELETE CASCADE);
 CREATE TABLE IF NOT EXISTS reviews (id uuid PRIMARY KEY, account_id uuid NOT NULL, report_id uuid NOT NULL, state text NOT NULL CHECK(state IN ('pending','approved','changes-requested')), reasons jsonb NOT NULL, reviewer text NOT NULL DEFAULT 'Bobby', created_at timestamptz NOT NULL DEFAULT now(), FOREIGN KEY(report_id,account_id) REFERENCES reports(id,account_id) ON DELETE CASCADE);
