@@ -297,6 +297,39 @@ test("a malformed saved source inventory entry is rejected", () => {
   assert.throws(() => compileDeliverable("weekly", bad), /source inventory/);
 });
 
+test("saved source reader metadata does not block companion reports", () => {
+  const input = baseInput();
+  const source = (
+    input.payload.sourceInventory as Record<string, unknown>[]
+  )[0];
+  const enriched: DeliverableInput = {
+    ...input,
+    payload: {
+      ...input.payload,
+      sourceInventory: [
+        {
+          ...source,
+          hash: "saved-hash",
+          state: "partial",
+          reader: "docx-structure-v2",
+          coverage: {
+            read: 1,
+            unread: 0,
+            total: 1,
+            unit: "section",
+            failures: ["Visual content outside analytical coverage"],
+          },
+        },
+      ],
+    },
+  };
+  for (const kind of ["watchlist", "competitor", "weekly"] as const) {
+    const result = compileDeliverable(kind, enriched);
+    assert.equal(result.sourceInventory[0].id, source.id);
+    assert.equal(result.sourceInventory[0].name, source.name);
+  }
+});
+
 test("an assessment that fails the shared AssessmentSchema is rejected at the boundary", () => {
   const input = baseInput();
   const bad = {

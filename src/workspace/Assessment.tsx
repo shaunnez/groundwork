@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { Badge, Button, Empty, I, KeyFacts, Notice } from "../ui";
 import { EnrichedSections } from "../LocalDeliverables";
 import { Heading } from "./Chrome";
@@ -29,6 +29,27 @@ const sections = [
   ["Gaps & next steps", "gaps"],
   ["Version comparison", "changes"],
 ];
+const weeklySections = [
+  ["Overview", "deliverable-overview"],
+  ["What changed", "deliverable-changes"],
+  ["Priorities and actions", "deliverable-priorities"],
+  ["Competitive picture", "deliverable-competition"],
+  ["Collection agenda", "deliverable-collection"],
+  ["Enrichment coverage", "deliverable-coverage"],
+];
+const watchlistSections = [
+  ["Overview", "deliverable-overview"],
+  ["Intelligence summary", "deliverable-intelligence"],
+  ["Recommended actions", "deliverable-actions"],
+  ["Competitive context", "deliverable-competition"],
+  ["Enrichment coverage", "deliverable-coverage"],
+];
+const competitorSections = [
+  ["Overview", "deliverable-overview"],
+  ["Supplier observations", "deliverable-suppliers"],
+  ["Enrichment coverage", "deliverable-coverage"],
+];
+const ValidationContext = createContext(true);
 function getsNoticeUrl(value: string | null): string | null {
   try {
     const url = new URL(value || "");
@@ -76,6 +97,8 @@ export function Citation({
   id: string;
   onEvidence: (id: string, quote?: string) => void;
 }) {
+  const showValidation = useContext(ValidationContext);
+  if (!showValidation) return null;
   const e = report.payload.assessment.evidence.find((e) => e.id === id);
   if (!e) return null;
   const s = report.payload.quoteStates[id];
@@ -124,6 +147,7 @@ export function Claim({
   onEvidence: (id: string, quote?: string) => void;
   anchor?: string;
 }) {
+  const showValidation = useContext(ValidationContext);
   const a = report.payload.assessment,
     c = a.claims.find((c) => c.id === id);
   if (!c) return null;
@@ -135,22 +159,24 @@ export function Claim({
       tabIndex={anchor ? -1 : undefined}
     >
       <p>{c.text}</p>
-      <div className="connected-citations">
-        <Badge>
-          {
+      {showValidation && (
+        <div className="connected-citations">
+          <Badge>
             {
-              sourced: "Sourced",
-              derived: "Derived",
-              assessed: "Assessment",
-              gap: "Evidence gap",
-            }[c.provenance]
-          }
-        </Badge>
-        {citations.slice(0, 2).map((e) => (
-          <Citation key={e} report={report} id={e} onEvidence={onEvidence} />
-        ))}
-      </div>
-      {citations.length > 2 && (
+              {
+                sourced: "Sourced",
+                derived: "Derived",
+                assessed: "Assessment",
+                gap: "Evidence gap",
+              }[c.provenance]
+            }
+          </Badge>
+          {citations.slice(0, 2).map((e) => (
+            <Citation key={e} report={report} id={e} onEvidence={onEvidence} />
+          ))}
+        </div>
+      )}
+      {showValidation && citations.length > 2 && (
         <details className="small source-references">
           <summary>{citations.length - 2} more source references</summary>
           <div className="connected-citations">
@@ -165,7 +191,7 @@ export function Claim({
           </div>
         </details>
       )}
-      {c.assumptions.length > 0 && (
+      {showValidation && c.assumptions.length > 0 && (
         <details className="small">
           <summary>Assumptions behind this assessment</summary>
           <ul>
@@ -175,7 +201,7 @@ export function Claim({
           </ul>
         </details>
       )}
-      {c.duplicateOf && (
+      {showValidation && c.duplicateOf && (
         <p className="small muted">
           Related duplicate retained in the findings.
         </p>
@@ -233,6 +259,36 @@ export function Changes({ report }: { report: SavedReport }) {
     </section>
   );
 }
+function renderFinding(
+  report: SavedReport,
+  onEvidence: (id: string, quote?: string) => void,
+  id: string,
+  first?: string,
+) {
+  const anchor = `finding-${report.id}-${id}`;
+  if (first)
+    return (
+      <a
+        className="finding-reference"
+        href={"#" + anchor}
+        onClick={(event) => {
+          event.preventDefault();
+          jumpTo(anchor);
+        }}
+      >
+        <I.ArrowRight size={16} />
+        <span>
+          {report.payload.assessment.claims.find((claim) => claim.id === id)
+            ?.text || "Finding"}{" "}
+          <small>Read full finding in {first}</small>
+        </span>
+      </a>
+    );
+  return (
+    <Claim report={report} id={id} onEvidence={onEvidence} anchor={anchor} />
+  );
+}
+
 function createClaimRenderer(
   report: SavedReport,
   onEvidence: (id: string, quote?: string) => void,
@@ -240,29 +296,8 @@ function createClaimRenderer(
 ) {
   return (id: string, section: string) => {
     const first = shown.get(id);
-    const anchor = `finding-${report.id}-${id}`;
-    if (first)
-      return (
-        <a
-          className="finding-reference"
-          href={"#" + anchor}
-          onClick={(e) => {
-            e.preventDefault();
-            jumpTo(anchor);
-          }}
-        >
-          <I.ArrowRight size={16} />
-          <span>
-            {report.payload.assessment.claims.find((c) => c.id === id)?.text ||
-              "Finding"}{" "}
-            <small>Read full finding in {first}</small>
-          </span>
-        </a>
-      );
-    shown.set(id, section);
-    return (
-      <Claim report={report} id={id} onEvidence={onEvidence} anchor={anchor} />
-    );
+    if (!first) shown.set(id, section);
+    return renderFinding(report, onEvidence, id, first);
   };
 }
 
@@ -277,6 +312,7 @@ export function AssessmentBody({
   onEvidence: (id: string, quote?: string) => void;
   noticeUrl?: string | null;
 }) {
+  const showValidation = useContext(ValidationContext);
   const p = report.payload,
     a = p.assessment,
     intel = p.intelligence;
@@ -333,45 +369,47 @@ export function AssessmentBody({
             ? "Model-generated; analyst review required"
             : "Fixture output"}
         </small>
-        <details className="assessment-basis">
-          <summary>Assessment basis and frozen source coverage</summary>
-          {noticeUrl && (
-            <p>
-              <a href={noticeUrl} target="_blank" rel="noopener noreferrer">
-                Open original GETS notice
-              </a>
-            </p>
-          )}
-          {p.sourceInventory.map((source) => (
-            <p key={source.id} className="small">
-              {source.name} · {source.purpose}
-              {source.reader ? ` · ${source.reader}` : ""}
-              {source.state ? ` · ${source.state}` : ""}
-              {source.coverage
-                ? ` · ${source.coverage.read}/${source.coverage.total ?? "?"} ${source.coverage.unit}s read`
-                : ""}
-              {source.coverage?.failures?.length
-                ? ` · ${source.coverage.failures.join("; ")}`
-                : ""}
-            </p>
-          ))}
-          {p.tenderPack && (
-            <p className="small">
-              GETS pack {p.tenderPack.rfxId} ·{" "}
-              {p.tenderPack.complete
-                ? "all declared originals reconciled"
-                : packOriginalsAdmitted
-                  ? "all declared originals admitted; analytical coverage incomplete"
-                  : "incomplete pack; see named file states"}
-            </p>
-          )}
-          {reportMaturity(report) === "Notice-only pursuit" && (
-            <p className="small">
-              Protected tender attachments were not examined in this version.
-              Missing evidence is not a negative finding.
-            </p>
-          )}
-        </details>
+        {showValidation && (
+          <details className="assessment-basis">
+            <summary>Assessment basis and frozen source coverage</summary>
+            {noticeUrl && (
+              <p>
+                <a href={noticeUrl} target="_blank" rel="noopener noreferrer">
+                  Open original GETS notice
+                </a>
+              </p>
+            )}
+            {p.sourceInventory.map((source) => (
+              <p key={source.id} className="small">
+                {source.name} · {source.purpose}
+                {source.reader ? ` · ${source.reader}` : ""}
+                {source.state ? ` · ${source.state}` : ""}
+                {source.coverage
+                  ? ` · ${source.coverage.read}/${source.coverage.total ?? "?"} ${source.coverage.unit}s read`
+                  : ""}
+                {source.coverage?.failures?.length
+                  ? ` · partial text coverage; ${source.coverage.failures.join("; ")}`
+                  : ""}
+              </p>
+            ))}
+            {p.tenderPack && (
+              <p className="small">
+                GETS pack {p.tenderPack.rfxId} ·{" "}
+                {p.tenderPack.complete
+                  ? "all declared originals reconciled"
+                  : packOriginalsAdmitted
+                    ? "all declared originals admitted; analytical coverage incomplete"
+                    : "incomplete pack; see named file states"}
+              </p>
+            )}
+            {reportMaturity(report) === "Notice-only pursuit" && (
+              <p className="small">
+                Protected tender attachments were not examined in this version.
+                Missing evidence is not a negative finding.
+              </p>
+            )}
+          </details>
+        )}
       </section>
       <section id="assessment-competition" tabIndex={-1}>
         <h2>The opportunity and competitive structure</h2>
@@ -532,15 +570,19 @@ export function AssessmentBody({
                   <li key={j}>{x}</li>
                 ))}
               </ul>
-              <h4>Assumptions</h4>
-              {s.assumptions.length ? (
-                <ul>
-                  {s.assumptions.map((x, j) => (
-                    <li key={j}>{x}</li>
-                  ))}
-                </ul>
-              ) : (
-                <p>None separately recorded.</p>
+              {showValidation && (
+                <>
+                  <h4>Assumptions</h4>
+                  {s.assumptions.length ? (
+                    <ul>
+                      {s.assumptions.map((x, j) => (
+                        <li key={j}>{x}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p>None separately recorded.</p>
+                  )}
+                </>
               )}
             </article>
           ))}
@@ -559,41 +601,43 @@ export function AssessmentBody({
           {a.hypotheses.alternatives.map((h) => (
             <article key={h.id}>
               <h3>{h.statement}</h3>
-              <div className="hypothesis-evidence">
-                <div>
-                  <h4>Evidence for</h4>
-                  {h.supportingEvidenceIds.length ? (
-                    h.supportingEvidenceIds.map((id) => (
-                      <Citation
-                        key={id}
-                        id={id}
-                        report={report}
-                        onEvidence={onEvidence}
-                      />
-                    ))
-                  ) : (
-                    <p>No supporting evidence cited.</p>
-                  )}
+              {showValidation && (
+                <div className="hypothesis-evidence">
+                  <div>
+                    <h4>Evidence for</h4>
+                    {h.supportingEvidenceIds.length ? (
+                      h.supportingEvidenceIds.map((id) => (
+                        <Citation
+                          key={id}
+                          id={id}
+                          report={report}
+                          onEvidence={onEvidence}
+                        />
+                      ))
+                    ) : (
+                      <p>No supporting evidence cited.</p>
+                    )}
+                  </div>
+                  <div>
+                    <h4>Evidence against</h4>
+                    {h.contradictingEvidenceIds.length ? (
+                      h.contradictingEvidenceIds.map((id) => (
+                        <Citation
+                          key={id}
+                          id={id}
+                          report={report}
+                          onEvidence={onEvidence}
+                        />
+                      ))
+                    ) : (
+                      <p>
+                        No contradictory evidence cited; this does not confirm
+                        the hypothesis.
+                      </p>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <h4>Evidence against</h4>
-                  {h.contradictingEvidenceIds.length ? (
-                    h.contradictingEvidenceIds.map((id) => (
-                      <Citation
-                        key={id}
-                        id={id}
-                        report={report}
-                        onEvidence={onEvidence}
-                      />
-                    ))
-                  ) : (
-                    <p>
-                      No contradictory evidence cited; this does not confirm the
-                      hypothesis.
-                    </p>
-                  )}
-                </div>
-              </div>
+              )}
               <p className="hypothesis-test">{h.diagnosticRationale}</p>
             </article>
           ))}
@@ -602,14 +646,16 @@ export function AssessmentBody({
           <strong>Next evidence to collect:</strong>{" "}
           {a.hypotheses.nextCollection}
         </p>
-        <details>
-          <summary>Conditions and alternative coverage</summary>
-          {a.hypotheses.conditions.map((c, i) => (
-            <p key={i}>{c}</p>
-          ))}
-          <p>{a.hypotheses.exclusivityRationale}</p>
-          <p>{a.hypotheses.exhaustivenessRationale}</p>
-        </details>
+        {showValidation && (
+          <details>
+            <summary>Conditions and alternative coverage</summary>
+            {a.hypotheses.conditions.map((c, i) => (
+              <p key={i}>{c}</p>
+            ))}
+            <p>{a.hypotheses.exclusivityRationale}</p>
+            <p>{a.hypotheses.exhaustivenessRationale}</p>
+          </details>
+        )}
       </section>
       <section id="assessment-risks" tabIndex={-1} className="section-gap">
         <span className="eyebrow">DELIVERY & COMMERCIAL EXPOSURE</span>
@@ -622,7 +668,7 @@ export function AssessmentBody({
           {a.risks.map((r, i) => (
             <article key={r.id}>
               <div className="section-heading">
-                <span className="eyebrow">RISK {i + 1}</span>
+                <h3 className="risk-title">Risk {i + 1}</h3>
                 <Badge tone="warning">{r.likelihood}</Badge>
               </div>
               {claim(r.claimId, "Risk register")}
@@ -663,14 +709,16 @@ export function AssessmentBody({
             </ul>
           </div>
         )}
-        <details>
-          <summary>Additional findings and source checks</summary>
-          {a.claims
-            .filter((c) => !shown.has(c.id))
-            .map((c) => (
-              <div key={c.id}>{claim(c.id, "Additional findings")}</div>
-            ))}
-        </details>
+        {showValidation && (
+          <details>
+            <summary>Additional findings and source checks</summary>
+            {a.claims
+              .filter((c) => !shown.has(c.id))
+              .map((c) => (
+                <div key={c.id}>{claim(c.id, "Additional findings")}</div>
+              ))}
+          </details>
+        )}
       </section>
       <Changes report={report} />
     </>
@@ -688,6 +736,9 @@ export function PursuitView({
   busy,
   onDerive,
   fixed = false,
+  mode = "reader",
+  onModeChange,
+  sectorName,
 }: {
   detail: Detail;
   report: SavedReport | null;
@@ -700,22 +751,39 @@ export function PursuitView({
   busy: boolean;
   onDerive: (kind: "watchlist" | "competitor" | "weekly") => void;
   fixed?: boolean;
+  mode?: "reader" | "validate";
+  onModeChange?: (mode: "reader" | "validate") => void;
+  sectorName?: string;
 }) {
   const opportunity = detail.opportunity;
   const noticeUrl = getsNoticeUrl(opportunity.metadata.noticeUrl);
+  const showValidation = !fixed || mode === "validate";
   const [selectedFirm, setSelectedFirm] = useState(opportunity.client_id ?? "");
   const [firmError, setFirmError] = useState("");
   const [savingFirm, setSavingFirm] = useState(false);
   const [activeSection, setActiveSection] = useState("summary");
+  const deliverableKind = report?.payload.deliverable?.kind;
+  const outlineSections =
+    deliverableKind === "weekly"
+      ? weeklySections
+      : deliverableKind === "watchlist"
+        ? watchlistSections
+        : deliverableKind === "competitor"
+          ? competitorSections
+          : sections;
+  const selectedSection = outlineSections.some(([, id]) => id === activeSection)
+    ? activeSection
+    : outlineSections[0][1];
+  const sectionId = (id: string) => (deliverableKind ? id : `assessment-${id}`);
   useEffect(() => {
-    if (!fixed || !report || report.payload.deliverable) return;
+    if (!fixed || !report) return;
     let frame = 0;
     const update = () => {
       frame = 0;
       const marker = Math.min(window.innerHeight * 0.28, 220);
-      let visible = sections[0][1];
-      for (const [, id] of sections) {
-        const section = document.getElementById(`assessment-${id}`);
+      let visible = outlineSections[0][1];
+      for (const [, id] of outlineSections) {
+        const section = document.getElementById(sectionId(id));
         if (section && section.getBoundingClientRect().top <= marker)
           visible = id;
       }
@@ -723,7 +791,7 @@ export function PursuitView({
         Math.ceil(window.scrollY + window.innerHeight) >=
         document.documentElement.scrollHeight - 8
       )
-        visible = sections[sections.length - 1][1];
+        visible = outlineSections[outlineSections.length - 1][1];
       setActiveSection(visible);
     };
     const schedule = () => {
@@ -737,10 +805,7 @@ export function PursuitView({
       window.removeEventListener("resize", schedule);
       window.cancelAnimationFrame(frame);
     };
-  }, [fixed, report?.id, report?.payload.deliverable]);
-  const companionClaim = report
-    ? createClaimRenderer(report, onEvidence)
-    : null;
+  }, [fixed, report?.id, deliverableKind]);
   return (
     <>
       <Heading
@@ -749,17 +814,19 @@ export function PursuitView({
           label: fixed ? "Reports" : "Watchlist",
           page: fixed ? "reports" : "watchlist",
         }}
-        eyebrow={fixed ? "SAVED REPORT" : "PURSUIT ROOM"}
+        eyebrow={fixed ? "SAVED REPORT" : opportunity.buyer}
         title={opportunity.title}
         description={
           fixed
             ? `${report ? kindLabel[report.kind] : "Report"} · ${opportunity.buyer}`
-            : opportunity.buyer
+            : "Pursuit opportunity"
         }
         actions={
           <>
-            <Badge tone="info">{provenance(opportunity)}</Badge>
-            {noticeUrl && (
+            {showValidation && (
+              <Badge tone="info">{provenance(opportunity)}</Badge>
+            )}
+            {noticeUrl && showValidation && (
               <a
                 className="button secondary"
                 href={noticeUrl}
@@ -775,7 +842,9 @@ export function PursuitView({
       <p className="small muted">
         RFx {opportunity.notice_id} ·{" "}
         {nzClosing(opportunity.metadata.closingAt)}
-        {report ? ` · ${reportMaturity(report)}` : " · No saved assessment"}
+        {` · Groundwork sector: ${sectorName || opportunity.groundwork_sector_name || "Unknown"}`}
+        {showValidation &&
+          (report ? ` · ${reportMaturity(report)}` : " · No saved assessment")}
         {fixed && report
           ? ` · Assessment cutoff ${date(report.payload.cutoff)}`
           : ""}
@@ -804,47 +873,45 @@ export function PursuitView({
             <div className="report-layout connected-report-layout">
               <aside className="report-outline">
                 <span className="eyebrow">IN THIS REPORT</span>
-                {!report.payload.deliverable && (
-                  <>
-                    <label className="mobile-report-contents">
-                      Jump to section
-                      <select
-                        value={activeSection}
-                        onChange={(event) => {
-                          setActiveSection(event.target.value);
-                          jumpTo("assessment-" + event.target.value);
+                <>
+                  <label className="mobile-report-contents">
+                    Jump to section
+                    <select
+                      value={selectedSection}
+                      onChange={(event) => {
+                        setActiveSection(event.target.value);
+                        jumpTo(sectionId(event.target.value));
+                      }}
+                    >
+                      {outlineSections.map(([label, id]) => (
+                        <option key={id} value={id}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <nav
+                    className="package-navigation"
+                    aria-label="Report sections"
+                  >
+                    {outlineSections.map(([label, id]) => (
+                      <a
+                        key={id}
+                        href={"#" + sectionId(id)}
+                        aria-current={
+                          selectedSection === id ? "location" : undefined
+                        }
+                        onClick={(event) => {
+                          event.preventDefault();
+                          setActiveSection(id);
+                          jumpTo(sectionId(id));
                         }}
                       >
-                        {sections.map(([label, id]) => (
-                          <option key={id} value={id}>
-                            {label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <nav
-                      className="package-navigation"
-                      aria-label="Report sections"
-                    >
-                      {sections.map(([label, id]) => (
-                        <a
-                          key={id}
-                          href={"#assessment-" + id}
-                          aria-current={
-                            activeSection === id ? "location" : undefined
-                          }
-                          onClick={(event) => {
-                            event.preventDefault();
-                            setActiveSection(id);
-                            jumpTo("assessment-" + id);
-                          }}
-                        >
-                          {label}
-                        </a>
-                      ))}
-                    </nav>
-                  </>
-                )}
+                        {label}
+                      </a>
+                    ))}
+                  </nav>
+                </>
                 <label>
                   Saved version
                   <select
@@ -862,75 +929,121 @@ export function PursuitView({
                     ))}
                   </select>
                 </label>
-                <dl className="report-version-facts">
-                  <div>
-                    <dt>Assessment basis</dt>
-                    <dd>{reportMaturity(report)}</dd>
-                  </div>
-                  <div>
-                    <dt>Cutoff</dt>
-                    <dd>{date(report.payload.cutoff)}</dd>
-                  </div>
-                  <div>
-                    <dt>Frozen sources</dt>
-                    <dd>{report.payload.sourceInventory.length}</dd>
-                  </div>
-                </dl>
-                <Badge
-                  tone={
-                    report.review?.state === "approved" ? "success" : "info"
-                  }
-                >
-                  {report.review?.state === "approved"
-                    ? "Internally reviewed"
-                    : report.review?.state === "changes-requested"
-                      ? "Corrections requested"
-                      : "Analyst review required"}
-                </Badge>
+                {showValidation && (
+                  <dl className="report-version-facts">
+                    <div>
+                      <dt>Assessment basis</dt>
+                      <dd>{reportMaturity(report)}</dd>
+                    </div>
+                    <div>
+                      <dt>Cutoff</dt>
+                      <dd>{date(report.payload.cutoff)}</dd>
+                    </div>
+                    <div>
+                      <dt>Frozen sources</dt>
+                      <dd>{report.payload.sourceInventory.length}</dd>
+                    </div>
+                  </dl>
+                )}
+                {showValidation && (
+                  <Badge
+                    tone={
+                      report.review?.state === "approved" ? "success" : "info"
+                    }
+                  >
+                    {report.review?.state === "approved"
+                      ? "Internally reviewed"
+                      : report.review?.state === "changes-requested"
+                        ? "Corrections requested"
+                        : "Analyst review required"}
+                  </Badge>
+                )}
                 <Button
                   kind="text"
                   onClick={() => go("pursuit", opportunity.id)}
                 >
                   Return to pursuit <I.ArrowRight size={16} />
                 </Button>
-                <Button
-                  kind="text"
-                  onClick={() => go("sources", opportunity.id)}
-                >
-                  Inspect source library
-                </Button>
+                {showValidation && (
+                  <Button
+                    kind="text"
+                    onClick={() => go("sources", opportunity.id)}
+                  >
+                    Inspect source library
+                  </Button>
+                )}
               </aside>
               <article className="connected-assessment report-body">
-                {report.payload.deliverable ? (
-                  <div className="connected-deliverable">
-                    <EnrichedSections
-                      data={report.payload.deliverable}
-                      comparison={report.comparison || undefined}
-                      renderClaim={(id) => companionClaim!(id, "this report")}
-                    />
-                    {report.payload.sourcePursuitId && (
-                      <Button
-                        kind="secondary"
-                        onClick={() =>
-                          go(
-                            "report",
-                            opportunity.id,
-                            report.payload.sourcePursuitId,
+                <div className="report-mode-bar">
+                  <div
+                    className="report-mode-toggle"
+                    role="group"
+                    aria-label="Report mode"
+                  >
+                    {(["reader", "validate"] as const).map((choice) => (
+                      <span className="report-mode-option" key={choice}>
+                        <button
+                          type="button"
+                          className={mode === choice ? "active" : ""}
+                          aria-pressed={mode === choice}
+                          aria-describedby={`report-mode-${choice}-tip`}
+                          onClick={() => onModeChange?.(choice)}
+                        >
+                          {choice === "reader" ? "Reader" : "Validate"}
+                        </button>
+                        <span
+                          className="report-mode-tip"
+                          id={`report-mode-${choice}-tip`}
+                          role="tooltip"
+                        >
+                          {choice === "reader"
+                            ? "Read the saved findings and next steps."
+                            : "Show sources, assessment labels, source references and assumptions."}
+                        </span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <ValidationContext.Provider value={showValidation}>
+                  {report.payload.deliverable ? (
+                    <div className="connected-deliverable">
+                      <EnrichedSections
+                        data={report.payload.deliverable}
+                        comparison={report.comparison || undefined}
+                        renderClaim={(id, repeated) =>
+                          renderFinding(
+                            report,
+                            onEvidence,
+                            id,
+                            repeated ? "this report" : undefined,
                           )
                         }
-                      >
-                        Read the underlying pursuit <I.ArrowRight size={16} />
-                      </Button>
-                    )}
-                  </div>
-                ) : (
-                  <AssessmentBody
-                    report={report}
-                    client={client}
-                    onEvidence={onEvidence}
-                    noticeUrl={noticeUrl}
-                  />
-                )}
+                        showValidation={showValidation}
+                      />
+                      {report.payload.sourcePursuitId && (
+                        <Button
+                          kind="secondary"
+                          onClick={() =>
+                            go(
+                              "report",
+                              opportunity.id,
+                              report.payload.sourcePursuitId,
+                            )
+                          }
+                        >
+                          Read the underlying pursuit <I.ArrowRight size={16} />
+                        </Button>
+                      )}
+                    </div>
+                  ) : (
+                    <AssessmentBody
+                      report={report}
+                      client={client}
+                      onEvidence={onEvidence}
+                      noticeUrl={noticeUrl}
+                    />
+                  )}
+                </ValidationContext.Provider>
               </article>
             </div>
           ) : (

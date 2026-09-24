@@ -20,7 +20,8 @@ export type Page =
   | "ops"
   | "delivery"
   | "mapping"
-  | "sectors";
+  | "sectors"
+  | "settings";
 export type Navigate = (
   page: Page,
   opportunityId?: string,
@@ -375,9 +376,9 @@ export async function uploadTenderFile(
 }
 export const kindLabel: Record<Kind, string> = {
   pursuit: "Pursuit package",
-  watchlist: "Daily watchlist",
-  competitor: "Competitor profile",
-  weekly: "Weekly brief",
+  watchlist: "Opportunity watchlist entry",
+  competitor: "Notice-linked supplier profile",
+  weekly: "Opportunity weekly update",
 };
 export const date = (s: string) =>
   new Date(s.length === 10 ? s + "T12:00:00" : s).toLocaleDateString("en-NZ", {
@@ -400,7 +401,7 @@ export function reportMaturity(report: SavedReport): string {
       (source) => source.purpose === "rfp" || source.purpose === "addendum",
     )
   )
-    return "Limited tender assessment";
+    return "Tender evidence partly assessed";
   return report.payload.sourceInventory.every(
     (source) => source.purpose === "notice",
   )

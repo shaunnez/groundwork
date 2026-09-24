@@ -12,6 +12,8 @@ import { PursuitOverview } from "../../src/workspace/PursuitOverview.tsx";
 import { SourceContent } from "../../src/workspace/SourceContent.tsx";
 import type { Detail, SavedReport } from "../../src/workspace/data.ts";
 import { assessmentFixture, payloadFixture } from "../backend/fixtures.ts";
+import { baseInput } from "../backend/fixtures.ts";
+import { compileDeliverable } from "../../server/deliverables.ts";
 
 function reportFixture(): SavedReport {
   return {
@@ -297,6 +299,7 @@ test("saved report keeps the full analysis and version metadata", () => {
         busy: false,
         onDerive: () => {},
         fixed: true,
+        mode: "validate",
       }),
     ),
   );
@@ -364,6 +367,44 @@ test("saved report renders a frozen GETS pack without derived counts", () => {
     render()("#assessment-summary").text(),
     /incomplete pack; see named file states/,
   );
+});
+
+test("companion reports have matching outlines and full first findings", () => {
+  for (const [kind, expectedSection] of [
+    ["watchlist", "deliverable-intelligence"],
+    ["competitor", "deliverable-suppliers"],
+    ["weekly", "deliverable-changes"],
+  ] as const) {
+    const report = reportFixture();
+    report.kind = kind;
+    report.payload.deliverable = compileDeliverable(kind, baseInput());
+    const $ = load(
+      renderToStaticMarkup(
+        createElement(PursuitView, {
+          detail: detailFixture(report),
+          report,
+          owner: true,
+          go: () => {},
+          onEvidence: () => {},
+          busy: false,
+          onDerive: () => {},
+          fixed: true,
+        }),
+      ),
+    );
+    assert.equal(
+      $(".report-outline a[href='#" + expectedSection + "']").length,
+      1,
+    );
+    assert.equal($("#" + expectedSection).length, 1);
+    assert.ok($(".connected-deliverable .connected-claim[id]").length > 0);
+    for (const reference of $(
+      ".connected-deliverable .finding-reference",
+    ).toArray()) {
+      const target = $(reference).attr("href");
+      assert.equal($(target!).length, 1);
+    }
+  }
 });
 
 test("citation preview softens decorative source banners without changing the exact quote", () => {

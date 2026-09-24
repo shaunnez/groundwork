@@ -19,6 +19,7 @@ import { DecisionsView, ReviewQueue } from "./Decisions";
 import { BriefView } from "./Brief";
 import { GetsMappingReview } from "./GetsMappingReview";
 import { SectorSettings } from "./SectorSettings";
+import { ReviewerSettings } from "./ReviewerSettings";
 import { Heading, WorkspaceHeader, WorkspaceFooter } from "./Chrome";
 import {
   request,
@@ -52,6 +53,7 @@ const pages: Page[] = [
   "delivery",
   "mapping",
   "sectors",
+  "settings",
 ];
 const subscribe = (fn: () => void) => {
   window.addEventListener("hashchange", fn);
@@ -87,6 +89,7 @@ export function WorkspaceApp() {
     [adding, setAdding] = useState(false);
   const [detail, setDetail] = useState<Detail | null>(null),
     [report, setReport] = useState<SavedReport | null>(null),
+    [reportMode, setReportMode] = useState<"reader" | "validate">("reader"),
     [source, setSource] = useState<EvidenceSource | null>(null),
     [evidenceOpen, setEvidenceOpen] = useState(false),
     [unitId, setUnitId] = useState<string | undefined>(),
@@ -250,6 +253,7 @@ export function WorkspaceApp() {
         delivery: "Refresh & delivery",
         mapping: "GETS mapping review",
         sectors: "Groundwork sectors",
+        settings: "Settings",
       }[page];
     document.getElementById("main-content")?.focus({ preventScroll: true });
   }, [route, page]);
@@ -427,7 +431,7 @@ export function WorkspaceApp() {
     );
   else if (
     boot.role === "reviewer" &&
-    ["upload", "request", "delivery", "firm"].includes(page)
+    ["upload", "request", "delivery", "firm", "settings"].includes(page)
   )
     content = (
       <Empty
@@ -638,6 +642,9 @@ export function WorkspaceApp() {
           />
         );
         break;
+      case "settings":
+        content = <ReviewerSettings go={go} onSaved={refresh} />;
+        break;
       default:
         content = (
           <PursuitView
@@ -652,6 +659,12 @@ export function WorkspaceApp() {
             busy={busy}
             onDerive={(k) => void derive(k)}
             fixed={page === "report"}
+            mode={reportMode}
+            onModeChange={setReportMode}
+            sectorName={
+              boot!.opportunities.find((item) => item.id === opportunityId)
+                ?.groundwork_sector_name
+            }
           />
         );
     }
@@ -660,7 +673,9 @@ export function WorkspaceApp() {
       <WorkspaceHeader
         page={page}
         go={go}
+        owner={boot.role === "owner"}
         opportunityId={contextPages.includes(page) ? opportunityId : undefined}
+        showSourceTool={page !== "report" || reportMode === "validate"}
         onSignOut={() =>
           void action(async () => {
             await request("/sign-out", {});

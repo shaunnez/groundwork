@@ -83,7 +83,7 @@ function nzClosingDate(value: string): string {
 
 export function watchlistPreview(
   opportunity: Opportunity,
-  report?: ReportSummary,
+  report?: Pick<ReportSummary, "verdict" | "summary" | "entities">,
   now = new Date(),
 ): WatchlistPreview {
   const planning = isPlanningNotice(opportunity);

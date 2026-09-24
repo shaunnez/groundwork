@@ -355,14 +355,29 @@ export function WatchlistView({
                         {brief &&
                           citation(brief.summary.unitId, brief.summary.quote)}
                       </p>
-                      <p className="watch-framing">
-                        {brief?.whyItMayMatter.text || preview.framing}{" "}
-                        {brief &&
-                          citation(
-                            brief.whyItMayMatter.unitId,
-                            brief.whyItMayMatter.quote,
-                          )}
-                      </p>
+                      <div className="watch-framing">
+                        <h3>Decisive factor</h3>
+                        {r ? (
+                          <p>
+                            <strong>{preview.framing}</strong>
+                          </p>
+                        ) : (
+                          <p>Not established from the notice alone.</p>
+                        )}
+                      </div>
+                      {!r && (
+                        <div className="watch-framing">
+                          <h3>Why the scope may matter</h3>
+                          <p>
+                            {brief?.whyItMayMatter.text || preview.framing}{" "}
+                            {brief &&
+                              citation(
+                                brief.whyItMayMatter.unitId,
+                                brief.whyItMayMatter.quote,
+                              )}
+                          </p>
+                        </div>
+                      )}
                     </div>
                     <div className="watch-flags">
                       <h3>Red flags &amp; unknowns</h3>
@@ -655,9 +670,10 @@ export function MarketView({
         <button onClick={() => go("brief")}>Weekly watch brief</button>
       </nav>
       <p className="muted">
-        This view covers your saved assessments. Supplier names are source
-        observations, not independently verified legal identities or confirmed
-        bidders.
+        A saved assessment is a stored pursuit report for one opportunity. This
+        view uses its latest saved version; analyst review may still be pending.
+        Supplier names are source observations, not independently verified legal
+        identities or confirmed bidders.
       </p>
       {!latest.some((x) => x.r) && (
         <Empty
@@ -690,28 +706,28 @@ export function MarketView({
                     <h3>{e.name}</h3>
                     <Badge>Identity needs verification</Badge>
                   </div>
-                  <div>
-                    <p>
-                      Named in the saved intelligence for this opportunity.
-                      Inspect its evidence, relationship and limitations before
-                      drawing a competitive conclusion.
-                    </p>
-                    <Button
-                      kind="text"
-                      disabled={busy}
-                      onClick={() => onProfile(r!)}
-                    >
-                      Open notice-linked profile <I.ArrowRight size={16} />
-                    </Button>
-                  </div>
+                  <p>
+                    Named in the saved intelligence for this opportunity.
+                    Inspect its evidence, relationship and limitations before
+                    drawing a competitive conclusion.
+                  </p>
                 </article>
               ))
             ) : (
               <p>No supplier identities established in this assessment.</p>
             )}
-            <Button kind="text" onClick={() => go("pursuit", o.id)}>
-              Open pursuit and award context
-            </Button>
+            <p className="small muted">
+              The notice-linked supplier profile covers this opportunity's saved
+              observations and evidence gaps.
+            </p>
+            <div className="market-actions">
+              <Button kind="text" disabled={busy} onClick={() => onProfile(r!)}>
+                Open or prepare supplier profile <I.ArrowRight size={16} />
+              </Button>
+              <Button kind="text" onClick={() => go("pursuit", o.id)}>
+                Open pursuit and award context
+              </Button>
+            </div>
           </section>
         ))}
       {!latest.some((x) => x.r) && (

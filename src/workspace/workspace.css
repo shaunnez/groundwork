@@ -14,6 +14,11 @@
   border: 1px solid var(--line);
   border-radius: 4px;
 }
+.settings-panel { display: grid; gap: 16px; margin-bottom: 24px; }
+.settings-panel .connected-form { border-top: 1px solid var(--line); padding-top: 16px; }
+.settings-panel .settings-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.settings-panel > :last-child { margin-bottom: 0; }
+.settings-panel code { overflow-wrap: anywhere; }
 .connected-form {
   display: grid;
   gap: 20px;
@@ -117,7 +122,63 @@
 }
 .connected-deliverable > section {
   border-bottom: 1px solid var(--line);
-  padding: 26px 0;
+  padding: 30px 0;
+  scroll-margin-top: 22px;
+}
+.connected-app .connected-deliverable > section > h2 {
+  margin: 0 0 18px;
+  color: var(--navy);
+  font-family: "Source Serif 4", Georgia, serif;
+  font-size: clamp(25px, 2.2vw, 32px);
+  font-weight: 600;
+  line-height: 1.2;
+}
+.connected-app .connected-deliverable #deliverable-overview {
+  margin: 0 0 8px;
+  padding: 28px 30px;
+  border-left: 4px solid var(--blue);
+  background: #f1f7fd;
+}
+.connected-app .connected-deliverable #deliverable-overview > p:last-child {
+  margin-bottom: 0;
+}
+.connected-app .connected-deliverable .deliverable-finding {
+  margin: 10px 0;
+  padding: 15px 18px;
+  border: 1px solid #d4e1ed;
+  border-radius: 4px;
+  background: #fff;
+}
+.connected-app .connected-deliverable .deliverable-finding:nth-of-type(even) {
+  background: #f5f9fd;
+}
+.connected-app .connected-deliverable .deliverable-finding .connected-claim {
+  margin-bottom: 0;
+}
+.connected-app
+  .connected-deliverable
+  .deliverable-finding
+  .connected-claim
+  > p:last-child {
+  margin-bottom: 0;
+}
+.connected-app .connected-deliverable .deliverable-supplier {
+  margin: 18px 0;
+  padding: 24px;
+  border: 1px solid #d4e1ed;
+  border-radius: 4px;
+  background: #f5f9fd;
+}
+.connected-app .connected-deliverable .deliverable-supplier > h3 {
+  margin: 0 0 16px;
+  color: var(--navy);
+  font-size: 20px;
+}
+@media (max-width: 520px) {
+  .connected-app .connected-deliverable #deliverable-overview,
+  .connected-app .connected-deliverable .deliverable-supplier {
+    padding: 20px;
+  }
 }
 .connected-deliverable details > section {
   margin: 26px 0;
@@ -192,6 +253,16 @@
 }
 .connected-app .candidate-row {
   grid-template-columns: minmax(150px, 0.8fr) minmax(0, 1.2fr);
+}
+.connected-app .market-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 22px;
+  margin-top: 16px;
+}
+.connected-app .market-actions .button {
+  padding-left: 0;
 }
 .connected-app .pursuit-rail .button {
   white-space: normal;
@@ -2118,5 +2189,134 @@
   }
   .connected-app .audience-banner .button {
     width: 100%;
+  }
+}
+
+.connected-app .watch-intelligence .watch-framing {
+  margin-top: 12px;
+}
+.connected-app .watch-intelligence .watch-framing h3 {
+  margin: 0 0 6px;
+}
+.connected-app .watch-intelligence .watch-framing strong:first-child {
+  color: var(--blue);
+}
+.connected-app .pursuit-read-points ul {
+  margin: 0;
+  padding-left: 20px;
+}
+.connected-app .pursuit-read-points li + li {
+  margin-top: 8px;
+}
+.connected-app .pursuit-main-actions {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #c9d9e8;
+}
+.connected-app .pursuit-main-actions h3 {
+  margin: 0 0 12px;
+  color: var(--navy);
+}
+.connected-app .pursuit-main-actions ol {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px 28px;
+  padding-left: 20px;
+  margin: 0;
+}
+.connected-app .pursuit-unassessed-flags {
+  margin-top: 22px;
+  padding: 16px 20px;
+  background: #fff7ed;
+  border-left: 3px solid #b87940;
+}
+.connected-app .pursuit-unassessed-flags h3 {
+  margin-top: 0;
+}
+.connected-app .report-mode-toggle {
+  display: flex;
+  border: 1px solid #a9bccd;
+  border-radius: 4px;
+}
+.connected-app .report-mode-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 20px;
+}
+.connected-app .report-mode-option {
+  position: relative;
+  display: flex;
+}
+.connected-app .report-mode-option + .report-mode-option {
+  border-left: 1px solid #a9bccd;
+}
+.connected-app .report-mode-toggle button {
+  min-height: 40px;
+  min-width: 90px;
+  padding: 8px 12px;
+  color: var(--navy);
+  background: #fff;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.connected-app .report-mode-option:first-child button {
+  border-radius: 3px 0 0 3px;
+}
+.connected-app .report-mode-option:last-child button {
+  border-radius: 0 3px 3px 0;
+}
+.connected-app .report-mode-toggle button.active {
+  color: #fff;
+  background: var(--blue);
+}
+.connected-app .report-mode-toggle button:hover:not(.active) {
+  background: #dfeaf5;
+}
+.connected-app .report-mode-toggle button:focus-visible {
+  outline: 3px solid #ffb550;
+  outline-offset: -3px;
+}
+.connected-app .report-mode-tip {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 8px);
+  right: 0;
+  width: max-content;
+  max-width: min(270px, calc(100vw - 48px));
+  padding: 9px 12px;
+  border-radius: 4px;
+  background: var(--navy);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.4;
+  box-shadow: 0 4px 12px #102c4c30;
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+.connected-app .report-mode-option:hover .report-mode-tip,
+.connected-app .report-mode-option:focus-within .report-mode-tip {
+  opacity: 1;
+  visibility: visible;
+}
+.connected-app .brief-sidebar-controls {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+.connected-app .brief-sidebar-controls label:first-child {
+  margin-top: 0;
+}
+.connected-app .assessment-risk-list .risk-title {
+  margin: 0;
+  color: var(--navy);
+  font-family: var(--serif);
+  font-size: 24px;
+  line-height: 1.2;
+}
+@media (max-width: 680px) {
+  .connected-app .pursuit-main-actions ol {
+    grid-template-columns: 1fr;
   }
 }
