@@ -41,14 +41,22 @@ export function WorkspaceHeader({
   go,
   onSignOut,
   opportunityId,
+  owner,
 }: {
   page: Page;
   go: Navigate;
   onSignOut: () => void;
   opportunityId?: string;
+  owner: boolean;
 }) {
   const menu = useRef<HTMLDetailsElement>(null);
-  const operator = ["ops", "delivery", "mapping", "sectors"].includes(page);
+  const operator = [
+    "ops",
+    "delivery",
+    "mapping",
+    "sectors",
+    "settings",
+  ].includes(page);
   const active = operator
     ? page
     : ["home", "market", "reports"].includes(page)
@@ -81,6 +89,7 @@ export function WorkspaceHeader({
                 ["GETS mapping", "mapping"],
                 ["Sectors", "sectors"],
                 ["Refresh & delivery", "delivery"],
+                ["Settings", "settings"],
               ]
             : [
                 ["Home", "home"],
@@ -88,16 +97,18 @@ export function WorkspaceHeader({
                 ["Market", "market"],
                 ["Reports", "reports"],
               ]
-          ).map(([label, id]) => (
-            <button
-              key={id}
-              className={active === id ? "active" : ""}
-              aria-current={active === id ? "page" : undefined}
-              onClick={() => go(id as Page)}
-            >
-              {label}
-            </button>
-          ))}
+          )
+            .filter(([, id]) => id !== "settings" || owner)
+            .map(([label, id]) => (
+              <button
+                key={id}
+                className={active === id ? "active" : ""}
+                aria-current={active === id ? "page" : undefined}
+                onClick={() => go(id as Page)}
+              >
+                {label}
+              </button>
+            ))}
         </nav>
         <details
           className="account-menu"

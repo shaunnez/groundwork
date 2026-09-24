@@ -19,6 +19,7 @@ import { DecisionsView, ReviewQueue } from "./Decisions";
 import { BriefView } from "./Brief";
 import { GetsMappingReview } from "./GetsMappingReview";
 import { SectorSettings } from "./SectorSettings";
+import { ReviewerSettings } from "./ReviewerSettings";
 import { Heading, WorkspaceHeader, WorkspaceFooter } from "./Chrome";
 import {
   request,
@@ -52,6 +53,7 @@ const pages: Page[] = [
   "delivery",
   "mapping",
   "sectors",
+  "settings",
 ];
 const subscribe = (fn: () => void) => {
   window.addEventListener("hashchange", fn);
@@ -250,6 +252,7 @@ export function WorkspaceApp() {
         delivery: "Refresh & delivery",
         mapping: "GETS mapping review",
         sectors: "Groundwork sectors",
+        settings: "Settings",
       }[page];
     document.getElementById("main-content")?.focus({ preventScroll: true });
   }, [route, page]);
@@ -427,7 +430,7 @@ export function WorkspaceApp() {
     );
   else if (
     boot.role === "reviewer" &&
-    ["upload", "request", "delivery", "firm"].includes(page)
+    ["upload", "request", "delivery", "firm", "settings"].includes(page)
   )
     content = (
       <Empty
@@ -638,6 +641,9 @@ export function WorkspaceApp() {
           />
         );
         break;
+      case "settings":
+        content = <ReviewerSettings go={go} onSaved={refresh} />;
+        break;
       default:
         content = (
           <PursuitView
@@ -660,6 +666,7 @@ export function WorkspaceApp() {
       <WorkspaceHeader
         page={page}
         go={go}
+        owner={boot.role === "owner"}
         opportunityId={contextPages.includes(page) ? opportunityId : undefined}
         onSignOut={() =>
           void action(async () => {
