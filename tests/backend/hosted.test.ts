@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, writeFile, rm } from "node:fs/promises";
+import { mkdtemp, writeFile, readFile, stat, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { loadConfig } from "../../server/config.ts";
@@ -23,6 +23,8 @@ const config = {
   publicOrigin: "https://pilot.example.com",
   staticRoot: root,
   reviewerSecret: "r".repeat(48),
+  firecrawlCredentialFile: join(root, "firecrawl.env"),
+  claudeExecutable: join(root, "missing-claude"),
 };
 const app = await createApi(config, db);
 await db.query(
@@ -100,6 +102,10 @@ test("hosted reviewer has a secure session but cannot enqueue work or change adm
   const h = { ...headers, cookie: cookie.split(";")[0] };
   const boot = await app.inject({ url: "/api/bootstrap", headers: h });
   assert.equal(boot.json().role, "reviewer");
+  assert.equal(
+    (await app.inject({ url: "/api/settings", headers: h })).statusCode,
+    403,
+  );
   const search = await app.inject({
     method: "POST",
     url: "/api/opportunities/11111111-1111-4111-8111-111111111111/search",
@@ -116,6 +122,9 @@ test("hosted reviewer has a secure session but cannot enqueue work or change adm
     "/api/opportunities",
     "/api/opportunities/11111111-1111-4111-8111-111111111111/research",
     "/api/reports/11111111-1111-4111-8111-111111111111/derive",
+    "/api/settings/firecrawl/key",
+    "/api/settings/firecrawl/budget",
+    "/api/settings/claude/logout",
   ]) {
     const denied = await app.inject({
       method: "POST",
@@ -135,6 +144,85 @@ test("hosted reviewer has a secure session but cannot enqueue work or change adm
   assert.equal(
     (await app.inject({ url: "/api/bootstrap", headers: h })).statusCode,
     401,
+  );
+});
+
+test("owner settings keep the key private and enforce the research gate", async () => {
+  const login = await app.inject({
+    method: "POST",
+    url: "/api/session",
+    headers,
+    payload: { key: config.sessionSecret },
+  });
+  const h = {
+    ...headers,
+    cookie: String(login.headers["set-cookie"]).split(";")[0],
+  };
+  const initial = await app.inject({ url: "/api/settings", headers: h });
+  assert.equal(initial.statusCode, 200, initial.body);
+  assert.equal(initial.json().firecrawl.keyConfigured, false);
+  assert.equal(initial.json().claude.authenticated, false);
+  const denied = await app.inject({
+    method: "POST",
+    url: "/api/settings/firecrawl",
+    headers: h,
+    payload: { enabled: true, confirmedIncludedCredits: true },
+  });
+  assert.equal(denied.statusCode, 409);
+  const secret = "fc-test-private-key";
+  const saved = await app.inject({
+    method: "POST",
+    url: "/api/settings/firecrawl/key",
+    headers: h,
+    payload: { key: secret },
+  });
+  assert.equal(saved.statusCode, 200, saved.body);
+  assert.doesNotMatch(saved.body, /fc-test-private-key/);
+  assert.equal(
+    (await stat(config.firecrawlCredentialFile)).mode & 0o777,
+    0o600,
+  );
+  assert.match(
+    await readFile(config.firecrawlCredentialFile, "utf8"),
+    /FIRECRAWL_API_KEY=/,
+  );
+  const unconfirmed = await app.inject({
+    method: "POST",
+    url: "/api/settings/firecrawl",
+    headers: h,
+    payload: { enabled: true },
+  });
+  assert.equal(unconfirmed.statusCode, 409);
+  const enabled = await app.inject({
+    method: "POST",
+    url: "/api/settings/firecrawl",
+    headers: h,
+    payload: { enabled: true, confirmedIncludedCredits: true },
+  });
+  assert.equal(enabled.statusCode, 200, enabled.body);
+  const cap = await app.inject({
+    method: "POST",
+    url: "/api/settings/firecrawl/budget",
+    headers: h,
+    payload: { allowance: 8 },
+  });
+  assert.equal(cap.statusCode, 200, cap.body);
+  const read = await app.inject({ url: "/api/settings", headers: h });
+  assert.equal(read.json().firecrawl.enabled, true);
+  assert.equal(read.json().firecrawl.budget.allowance, "8");
+  assert.doesNotMatch(read.body, /fc-test-private-key/);
+  const boot = await app.inject({ url: "/api/bootstrap", headers: h });
+  assert.equal(boot.json().researchEnabled, true);
+  await app.inject({
+    method: "POST",
+    url: "/api/settings/firecrawl",
+    headers: h,
+    payload: { enabled: false },
+  });
+  assert.equal(
+    (await app.inject({ url: "/api/bootstrap", headers: h })).json()
+      .researchEnabled,
+    false,
   );
 });
 

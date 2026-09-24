@@ -14,6 +14,11 @@
   border: 1px solid var(--line);
   border-radius: 4px;
 }
+.settings-panel { display: grid; gap: 16px; margin-bottom: 24px; }
+.settings-panel .connected-form { border-top: 1px solid var(--line); padding-top: 16px; }
+.settings-panel .settings-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.settings-panel > :last-child { margin-bottom: 0; }
+.settings-panel code { overflow-wrap: anywhere; }
 .connected-form {
   display: grid;
   gap: 20px;
