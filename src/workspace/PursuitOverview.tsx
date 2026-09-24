@@ -424,21 +424,36 @@ export function PursuitOverview({
           </label>
           {owner && (
             <details>
-              <summary>Use this intelligence in other reports</summary>
+              <summary>Prepare opportunity updates</summary>
+              <p className="small muted">
+                These pages reuse this saved pursuit. The portfolio weekly brief
+                covers all tracked opportunities.
+              </p>
               <div className="pursuit-next-links">
                 {(["watchlist", "competitor", "weekly"] as const).map(
-                  (kind) => (
-                    <Button
-                      key={kind}
-                      kind="text"
-                      disabled={busy}
-                      onClick={() => onDerive(kind)}
-                    >
-                      Open {kindLabel[kind].toLowerCase()}
-                    </Button>
-                  ),
+                  (kind) => {
+                    const existing = detail.reports.some(
+                      (item) =>
+                        item.kind === kind &&
+                        item.payload.sourcePursuitId === report.id,
+                    );
+                    return (
+                      <Button
+                        key={kind}
+                        kind="text"
+                        disabled={busy}
+                        onClick={() => onDerive(kind)}
+                      >
+                        {existing ? "Open saved" : "Prepare"}{" "}
+                        {kindLabel[kind].toLowerCase()}
+                      </Button>
+                    );
+                  },
                 )}
               </div>
+              <Button kind="text" onClick={() => go("brief")}>
+                Open portfolio weekly brief <I.ArrowRight size={16} />
+              </Button>
             </details>
           )}
         </section>

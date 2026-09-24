@@ -73,3 +73,7 @@ In Saved Report, keep citation and assumption text dark enough to read on pale c
 ## Connected reading modes and quick reads · 24 September 2026
 
 Keep Watchlist and Pursuit Room quick reads aligned with saved findings, including a labelled decisive factor, red flags and three main actions. Preserve the notice-only distinction when no pursuit report exists. Lead the Pursuit Room heading with the buyer and tender name, and show the Groundwork sector. Explain partial tender coverage in plain language. Saved Report has Reader and Validate modes: Reader presents the findings and limitations cleanly; Validate exposes citation, source, assessment provenance and assumption details. Place the mode toggle above the report content in the right pane, with each mode's explanation in its button tooltip. Weekly brief and saved report use the same divided sidebar pattern.
+
+## Companion report presentation · 24 September 2026
+
+Use the Pursuit Package's divided report layout, typography, structured headings and navy/blue surfaces for opportunity watchlist entries, notice-linked supplier profiles and opportunity weekly updates. State when a page covers one opportunity rather than the portfolio. In Market, a supplier profile action opens the opportunity's combined saved supplier observations; do not imply each observed name has a separately researched profile or a verified legal identity. Keep existing UI components and styling consistent rather than importing a new framework for these pages alone.

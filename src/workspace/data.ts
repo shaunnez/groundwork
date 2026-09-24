@@ -364,9 +364,9 @@ export async function uploadTenderFile(
 }
 export const kindLabel: Record<Kind, string> = {
   pursuit: "Pursuit package",
-  watchlist: "Daily watchlist",
-  competitor: "Competitor profile",
-  weekly: "Weekly brief",
+  watchlist: "Opportunity watchlist entry",
+  competitor: "Notice-linked supplier profile",
+  weekly: "Opportunity weekly update",
 };
 export const date = (s: string) =>
   new Date(s.length === 10 ? s + "T12:00:00" : s).toLocaleDateString("en-NZ", {

@@ -117,7 +117,63 @@
 }
 .connected-deliverable > section {
   border-bottom: 1px solid var(--line);
-  padding: 26px 0;
+  padding: 30px 0;
+  scroll-margin-top: 22px;
+}
+.connected-app .connected-deliverable > section > h2 {
+  margin: 0 0 18px;
+  color: var(--navy);
+  font-family: "Source Serif 4", Georgia, serif;
+  font-size: clamp(25px, 2.2vw, 32px);
+  font-weight: 600;
+  line-height: 1.2;
+}
+.connected-app .connected-deliverable #deliverable-overview {
+  margin: 0 0 8px;
+  padding: 28px 30px;
+  border-left: 4px solid var(--blue);
+  background: #f1f7fd;
+}
+.connected-app .connected-deliverable #deliverable-overview > p:last-child {
+  margin-bottom: 0;
+}
+.connected-app .connected-deliverable .deliverable-finding {
+  margin: 10px 0;
+  padding: 15px 18px;
+  border: 1px solid #d4e1ed;
+  border-radius: 4px;
+  background: #fff;
+}
+.connected-app .connected-deliverable .deliverable-finding:nth-of-type(even) {
+  background: #f5f9fd;
+}
+.connected-app .connected-deliverable .deliverable-finding .connected-claim {
+  margin-bottom: 0;
+}
+.connected-app
+  .connected-deliverable
+  .deliverable-finding
+  .connected-claim
+  > p:last-child {
+  margin-bottom: 0;
+}
+.connected-app .connected-deliverable .deliverable-supplier {
+  margin: 18px 0;
+  padding: 24px;
+  border: 1px solid #d4e1ed;
+  border-radius: 4px;
+  background: #f5f9fd;
+}
+.connected-app .connected-deliverable .deliverable-supplier > h3 {
+  margin: 0 0 16px;
+  color: var(--navy);
+  font-size: 20px;
+}
+@media (max-width: 520px) {
+  .connected-app .connected-deliverable #deliverable-overview,
+  .connected-app .connected-deliverable .deliverable-supplier {
+    padding: 20px;
+  }
 }
 .connected-deliverable details > section {
   margin: 26px 0;
@@ -192,6 +248,16 @@
 }
 .connected-app .candidate-row {
   grid-template-columns: minmax(150px, 0.8fr) minmax(0, 1.2fr);
+}
+.connected-app .market-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 22px;
+  margin-top: 16px;
+}
+.connected-app .market-actions .button {
+  padding-left: 0;
 }
 .connected-app .pursuit-rail .button {
   white-space: normal;

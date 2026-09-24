@@ -37,6 +37,18 @@ const weeklySections = [
   ["Collection agenda", "deliverable-collection"],
   ["Enrichment coverage", "deliverable-coverage"],
 ];
+const watchlistSections = [
+  ["Overview", "deliverable-overview"],
+  ["Intelligence summary", "deliverable-intelligence"],
+  ["Recommended actions", "deliverable-actions"],
+  ["Competitive context", "deliverable-competition"],
+  ["Enrichment coverage", "deliverable-coverage"],
+];
+const competitorSections = [
+  ["Overview", "deliverable-overview"],
+  ["Supplier observations", "deliverable-suppliers"],
+  ["Enrichment coverage", "deliverable-coverage"],
+];
 const ValidationContext = createContext(true);
 function getsNoticeUrl(value: string | null): string | null {
   try {
@@ -247,6 +259,36 @@ export function Changes({ report }: { report: SavedReport }) {
     </section>
   );
 }
+function renderFinding(
+  report: SavedReport,
+  onEvidence: (id: string, quote?: string) => void,
+  id: string,
+  first?: string,
+) {
+  const anchor = `finding-${report.id}-${id}`;
+  if (first)
+    return (
+      <a
+        className="finding-reference"
+        href={"#" + anchor}
+        onClick={(event) => {
+          event.preventDefault();
+          jumpTo(anchor);
+        }}
+      >
+        <I.ArrowRight size={16} />
+        <span>
+          {report.payload.assessment.claims.find((claim) => claim.id === id)
+            ?.text || "Finding"}{" "}
+          <small>Read full finding in {first}</small>
+        </span>
+      </a>
+    );
+  return (
+    <Claim report={report} id={id} onEvidence={onEvidence} anchor={anchor} />
+  );
+}
+
 function createClaimRenderer(
   report: SavedReport,
   onEvidence: (id: string, quote?: string) => void,
@@ -254,29 +296,8 @@ function createClaimRenderer(
 ) {
   return (id: string, section: string) => {
     const first = shown.get(id);
-    const anchor = `finding-${report.id}-${id}`;
-    if (first)
-      return (
-        <a
-          className="finding-reference"
-          href={"#" + anchor}
-          onClick={(e) => {
-            e.preventDefault();
-            jumpTo(anchor);
-          }}
-        >
-          <I.ArrowRight size={16} />
-          <span>
-            {report.payload.assessment.claims.find((c) => c.id === id)?.text ||
-              "Finding"}{" "}
-            <small>Read full finding in {first}</small>
-          </span>
-        </a>
-      );
-    shown.set(id, section);
-    return (
-      <Claim report={report} id={id} onEvidence={onEvidence} anchor={anchor} />
-    );
+    if (!first) shown.set(id, section);
+    return renderFinding(report, onEvidence, id, first);
   };
 }
 
@@ -729,13 +750,21 @@ export function PursuitView({
   const [firmError, setFirmError] = useState("");
   const [savingFirm, setSavingFirm] = useState(false);
   const [activeSection, setActiveSection] = useState("summary");
-  const hasWeeklyOutline = report?.payload.deliverable?.kind === "weekly";
-  const outlineSections = hasWeeklyOutline ? weeklySections : sections;
-  const sectionId = (id: string) =>
-    hasWeeklyOutline ? id : `assessment-${id}`;
+  const deliverableKind = report?.payload.deliverable?.kind;
+  const outlineSections =
+    deliverableKind === "weekly"
+      ? weeklySections
+      : deliverableKind === "watchlist"
+        ? watchlistSections
+        : deliverableKind === "competitor"
+          ? competitorSections
+          : sections;
+  const selectedSection = outlineSections.some(([, id]) => id === activeSection)
+    ? activeSection
+    : outlineSections[0][1];
+  const sectionId = (id: string) => (deliverableKind ? id : `assessment-${id}`);
   useEffect(() => {
-    if (!fixed || !report || (report.payload.deliverable && !hasWeeklyOutline))
-      return;
+    if (!fixed || !report) return;
     let frame = 0;
     const update = () => {
       frame = 0;
@@ -764,10 +793,7 @@ export function PursuitView({
       window.removeEventListener("resize", schedule);
       window.cancelAnimationFrame(frame);
     };
-  }, [fixed, report?.id, hasWeeklyOutline, report?.payload.deliverable]);
-  const companionClaim = report
-    ? createClaimRenderer(report, onEvidence)
-    : null;
+  }, [fixed, report?.id, deliverableKind]);
   return (
     <>
       <Heading
@@ -835,47 +861,45 @@ export function PursuitView({
             <div className="report-layout connected-report-layout">
               <aside className="report-outline">
                 <span className="eyebrow">IN THIS REPORT</span>
-                {(!report.payload.deliverable || hasWeeklyOutline) && (
-                  <>
-                    <label className="mobile-report-contents">
-                      Jump to section
-                      <select
-                        value={activeSection}
-                        onChange={(event) => {
-                          setActiveSection(event.target.value);
-                          jumpTo(sectionId(event.target.value));
-                        }}
-                      >
-                        {outlineSections.map(([label, id]) => (
-                          <option key={id} value={id}>
-                            {label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <nav
-                      className="package-navigation"
-                      aria-label="Report sections"
+                <>
+                  <label className="mobile-report-contents">
+                    Jump to section
+                    <select
+                      value={selectedSection}
+                      onChange={(event) => {
+                        setActiveSection(event.target.value);
+                        jumpTo(sectionId(event.target.value));
+                      }}
                     >
                       {outlineSections.map(([label, id]) => (
-                        <a
-                          key={id}
-                          href={"#" + sectionId(id)}
-                          aria-current={
-                            activeSection === id ? "location" : undefined
-                          }
-                          onClick={(event) => {
-                            event.preventDefault();
-                            setActiveSection(id);
-                            jumpTo(sectionId(id));
-                          }}
-                        >
+                        <option key={id} value={id}>
                           {label}
-                        </a>
+                        </option>
                       ))}
-                    </nav>
-                  </>
-                )}
+                    </select>
+                  </label>
+                  <nav
+                    className="package-navigation"
+                    aria-label="Report sections"
+                  >
+                    {outlineSections.map(([label, id]) => (
+                      <a
+                        key={id}
+                        href={"#" + sectionId(id)}
+                        aria-current={
+                          selectedSection === id ? "location" : undefined
+                        }
+                        onClick={(event) => {
+                          event.preventDefault();
+                          setActiveSection(id);
+                          jumpTo(sectionId(id));
+                        }}
+                      >
+                        {label}
+                      </a>
+                    ))}
+                  </nav>
+                </>
                 <label>
                   Saved version
                   <select
@@ -974,7 +998,14 @@ export function PursuitView({
                       <EnrichedSections
                         data={report.payload.deliverable}
                         comparison={report.comparison || undefined}
-                        renderClaim={(id) => companionClaim!(id, "this report")}
+                        renderClaim={(id, repeated) =>
+                          renderFinding(
+                            report,
+                            onEvidence,
+                            id,
+                            repeated ? "this report" : undefined,
+                          )
+                        }
                         showValidation={showValidation}
                       />
                       {report.payload.sourcePursuitId && (
