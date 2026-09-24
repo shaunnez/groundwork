@@ -317,6 +317,16 @@ export function AssessmentBody({
     a = p.assessment,
     intel = p.intelligence;
   const frozenClient = p.frozenClient === undefined ? client : p.frozenClient;
+  const currentPackFiles =
+    p.tenderPack?.files.filter((file) => file.status === "current") ?? [];
+  const packOriginalsAdmitted =
+    currentPackFiles.length > 0 &&
+    currentPackFiles.every(
+      (file) =>
+        file.sourceId &&
+        file.actualBytes === file.bytes &&
+        file.actualSha256?.toLowerCase() === file.sha256.toLowerCase(),
+    );
   const shown = new Map<string, string>();
   const claim = createClaimRenderer(report, onEvidence, shown);
   return (
@@ -378,7 +388,7 @@ export function AssessmentBody({
                   ? ` · ${source.coverage.read}/${source.coverage.total ?? "?"} ${source.coverage.unit}s read`
                   : ""}
                 {source.coverage?.failures?.length
-                  ? " · partial text coverage; unread content outside analysis"
+                  ? ` · partial text coverage; ${source.coverage.failures.join("; ")}`
                   : ""}
               </p>
             ))}
@@ -387,9 +397,8 @@ export function AssessmentBody({
                 GETS pack {p.tenderPack.rfxId} ·{" "}
                 {p.tenderPack.complete
                   ? "all declared originals reconciled"
-                  : p.tenderPack.counts.received ===
-                      p.tenderPack.counts.expected
-                    ? "all declared originals admitted; reader coverage partial"
+                  : packOriginalsAdmitted
+                    ? "all declared originals admitted; analytical coverage incomplete"
                     : "incomplete pack; see named file states"}
               </p>
             )}

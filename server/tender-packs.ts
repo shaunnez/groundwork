@@ -16,7 +16,15 @@ export const TENDER_FILE_LIMIT = 64 * 1024 * 1024;
 export const TENDER_PACK_LIMIT = 128 * 1024 * 1024;
 const PackFile = z.object({
   fileId: z.string().regex(/^\d{1,20}$/),
-  name: z.string().trim().min(1).max(250),
+  name: z
+    .string()
+    .trim()
+    .min(1)
+    .max(250)
+    .refine(
+      (name) => !/[\\/\x00-\x1f]/.test(name),
+      "GETS filename contains a path separator or control character",
+    ),
   bytes: z.number().int().positive().max(TENDER_FILE_LIMIT),
   sha256: z.string().regex(/^[a-f0-9]{64}$/i),
   kind: z.enum(["attachment", "addendum"]),
@@ -35,11 +43,16 @@ export const PackDeclaration = z
         code: "custom",
         message: "GETS file identifiers must be unique",
       });
+    const current = v.files.filter((f) => f.status === "current");
     if (
-      v.files
-        .filter((f) => f.status === "current")
-        .reduce((n, f) => n + f.bytes, 0) > TENDER_PACK_LIMIT
+      new Set(current.map((f) => `${f.kind}:${f.name}`)).size !== current.length
     )
+      ctx.addIssue({
+        code: "custom",
+        message:
+          "Current GETS filenames must be unique within each kind for bulk archive matching",
+      });
+    if (current.reduce((n, f) => n + f.bytes, 0) > TENDER_PACK_LIMIT)
       ctx.addIssue({ code: "custom", message: "Tender pack exceeds 128 MiB" });
   });
 export type PackDeclaration = z.infer<typeof PackDeclaration>;
@@ -126,7 +139,7 @@ export async function packDetail(
       return {
         ...expected,
         sourceId: received?.source_id ?? null,
-        actualBytes: received?.actual_bytes ?? null,
+        actualBytes: received ? Number(received.actual_bytes) : null,
         actualSha256: received?.actual_sha256 ?? null,
         reader: received?.reader ?? readerFor(expected.name),
         coverage: received?.coverage ?? null,
@@ -288,16 +301,30 @@ export async function importTenderFile(
             ? XLSX
             : "application/octet-stream";
     const previous = await db.query(
-      `SELECT f.source_id,s.hash FROM tender_pack_files f
+      `SELECT f.source_id,s.hash,s.name,coalesce(l.status,'active') AS lifecycle_status FROM tender_pack_files f
        JOIN tender_packs p ON p.id=f.pack_id AND p.account_id=f.account_id
        JOIN sources s ON s.id=f.source_id AND s.account_id=f.account_id
+       LEFT JOIN source_lifecycle l ON l.source_id=s.id AND l.account_id=s.account_id
        WHERE p.opportunity_id=$1 AND p.account_id=$2 AND f.file_id=$3 ORDER BY p.created_at DESC LIMIT 1`,
       [declared.opportunityId, accountId, fileId],
+    );
+    const origin = `https://www.gets.govt.nz/DCC/${expected.kind === "addendum" ? "ExternalGetAddendumFile" : "ExternalGetProjectFile"}.htm?projectID=${declared.rfxId}&fileID=${fileId}`;
+    const recovered = await db.query(
+      `SELECT s.id FROM active_sources s WHERE s.account_id=$1 AND s.opportunity_id=$2
+       AND s.origin=$3 AND s.hash=$4 AND s.name=$5 ORDER BY s.created_at DESC LIMIT 1`,
+      [accountId, declared.opportunityId, origin, actualSha256, expected.name],
     );
     let sourceId: string;
     let result: { reader: string; state: string; coverage: unknown } | null =
       null;
-    if (previous.rowCount && previous.rows[0].hash === actualSha256) {
+    if (recovered.rowCount) {
+      sourceId = recovered.rows[0].id;
+    } else if (
+      previous.rowCount &&
+      previous.rows[0].hash === actualSha256 &&
+      previous.rows[0].name === expected.name &&
+      previous.rows[0].lifecycle_status === "active"
+    ) {
       sourceId = previous.rows[0].source_id;
     } else {
       const admitted = await ingest(
@@ -309,7 +336,7 @@ export async function importTenderFile(
           name: expected.name,
           mediaType,
           body: input,
-          origin: `https://www.gets.govt.nz/DCC/${expected.kind === "addendum" ? "ExternalGetAddendumFile" : "ExternalGetProjectFile"}.htm?projectID=${declared.rfxId}&fileID=${fileId}`,
+          origin,
           publishedAt: null,
           purpose: expected.kind === "addendum" ? "addendum" : "rfp",
           required: true,
@@ -318,7 +345,8 @@ export async function importTenderFile(
           maxFileBytes: TENDER_FILE_LIMIT,
           skipPackPageLimit: true,
           originalPath: path,
-          ...(previous.rowCount
+          ...(previous.rowCount &&
+          previous.rows[0].lifecycle_status === "active"
             ? {
                 replacesId: previous.rows[0].source_id,
                 reason: "GETS file version changed",

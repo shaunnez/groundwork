@@ -1,4 +1,15 @@
 import { z } from "zod";
+export class ClaudeTerminalError extends Error {
+  constructor(
+    readonly callId: string,
+    readonly subtype: string,
+  ) {
+    super(
+      `Claude returned a failed result (${subtype === "invalid_structured_output" ? "invalid structured output" : subtype === "output_token_limit" ? "output token limit" : subtype}); inspect receipt before another attempt`,
+    );
+    this.name = "ClaudeTerminalError";
+  }
+}
 const Envelope = z
   .object({
     type: z.literal("result"),
@@ -22,6 +33,17 @@ export function terminalReceipt(raw: string) {
     }
   }
   return null;
+}
+export function terminalFailureSubtype(
+  envelope: NonNullable<ReturnType<typeof terminalReceipt>>,
+): string {
+  if (envelope.is_error && envelope.subtype === "success")
+    return /response exceeded the [\d,]+ output token maximum/i.test(
+      envelope.result ?? "",
+    )
+      ? "output_token_limit"
+      : "provider_error";
+  return envelope.subtype;
 }
 export function receiptPayload<T>(raw: string, schema: z.ZodType<T>): T {
   const envelope = terminalReceipt(raw);

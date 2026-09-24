@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { z } from "zod";
 import {
   terminalReceipt,
+  terminalFailureSubtype,
   receiptPayload,
 } from "../../server/claude-receipt.ts";
 test("interruption does not turn a partial response into success", () => {
@@ -40,4 +41,27 @@ test("provider success never bypasses schema validation", () => {
       z.object({ ok: z.boolean() }),
     ),
   );
+});
+test("a failed success envelope names its output cap instead of success", () => {
+  const capped = terminalReceipt(
+    JSON.stringify({
+      type: "result",
+      subtype: "success",
+      is_error: true,
+      result:
+        "API Error: Claude's response exceeded the 12000 output token maximum.",
+    }),
+  );
+  assert.ok(capped);
+  assert.equal(terminalFailureSubtype(capped), "output_token_limit");
+  const other = terminalReceipt(
+    JSON.stringify({
+      type: "result",
+      subtype: "success",
+      is_error: true,
+      result: "API Error: another terminal failure",
+    }),
+  );
+  assert.ok(other);
+  assert.equal(terminalFailureSubtype(other), "provider_error");
 });

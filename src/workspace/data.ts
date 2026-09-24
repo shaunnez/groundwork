@@ -235,7 +235,7 @@ export interface SavedReport {
       omittedFindings: number;
       readerGaps: { sourceId: string; name: string; failures: string[] }[];
     } | null;
-    tenderPack?: TenderPack | null;
+    tenderPack?: Omit<TenderPack, "counts"> | null;
     frozenClient?: Client | null;
     deliverable?: Deliverable;
   };

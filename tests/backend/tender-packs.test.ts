@@ -159,6 +159,7 @@ test("selected tender pack verifies originals and keeps missing files named", as
   assert.equal(after.counts.received, 3);
   for (const f of after.files) {
     assert.equal(f.actualSha256, f.sha256);
+    assert.equal(f.actualBytes, f.bytes);
     assert.equal(f.coverage.unread, 0);
     assert.equal(
       (
@@ -223,6 +224,7 @@ test("selected tender pack verifies originals and keeps missing files named", as
   assert.equal(manifest.method, "groundwork-segmented-v1");
   assert.equal(manifest.excludedSources.length, 0);
   assert.match(manifest.scopeNote, /High-level text-based/);
+  assert.doesNotMatch(manifest.scopeNote, /unsafe legacy DOCX/);
 });
 
 test.after(async () => {

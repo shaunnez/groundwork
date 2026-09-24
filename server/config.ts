@@ -23,6 +23,7 @@ const Config = z.object({
   claudeHome: z.string().optional(),
   reviewerSecret: z.string().min(32).optional(),
   analysisMaxModelCalls: z.number().int().min(1).max(500).default(96),
+  analysisConcurrency: z.number().int().min(1).max(4).default(4),
   analysisRunMinutes: z.number().int().min(10).max(720).default(180),
 });
 export type Config = z.infer<typeof Config>;
@@ -51,6 +52,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       analysisMaxModelCalls: Number(
         env.GROUNDWORK_ANALYSIS_MAX_MODEL_CALLS || 96,
       ),
+      analysisConcurrency: Number(env.GROUNDWORK_ANALYSIS_CONCURRENCY || 4),
       analysisRunMinutes: Number(env.GROUNDWORK_ANALYSIS_RUN_MINUTES || 180),
       port: Number(env.PORT || 4318),
     });

@@ -10,6 +10,7 @@ export async function reserveCall(
     provider: string;
     maximum: number;
     budgetId?: string;
+    runCallLimit?: number;
   },
 ): Promise<string> {
   return transaction(db, async (c) => {
@@ -23,6 +24,28 @@ export async function reserveCall(
       throw new Error(
         `Call already recorded (${existing.rows[0].status}); reconcile receipt before retry`,
       );
+    if (input.runCallLimit !== undefined) {
+      if (
+        !input.runId ||
+        !Number.isInteger(input.runCallLimit) ||
+        input.runCallLimit < 1
+      )
+        throw new Error("Invalid per-run call allowance");
+      const run = await c.query(
+        "SELECT state FROM runs WHERE id=$1 FOR UPDATE",
+        [input.runId],
+      );
+      if (run.rows[0]?.state !== "running")
+        throw new Error("Model run is no longer active");
+      const count = await c.query(
+        "SELECT count(*)::int AS count FROM provider_calls WHERE run_id=$1",
+        [input.runId],
+      );
+      if (count.rows[0].count >= input.runCallLimit)
+        throw new Error(
+          `Model call budget reached: ${input.runCallLimit} calls`,
+        );
+    }
     if (input.budgetId) {
       const r = await c.query(
         "UPDATE budgets SET reserved=reserved+$2 WHERE id=$1 AND spent+reserved+$2<=allowance RETURNING id",

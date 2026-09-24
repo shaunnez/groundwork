@@ -323,7 +323,11 @@ async function saveDetail(
     await c.query("UPDATE gets_notices SET last_checked_at=now() WHERE id=$1", [
       noticeId,
     ]);
-    return { revisionId: previous!, outcome: "unchanged" as const };
+    return {
+      revisionId: previous!,
+      opportunityId: opportunityId!,
+      outcome: "unchanged" as const,
+    };
   }
   await c.query(
     "INSERT INTO sources(id,account_id,opportunity_id,name,media_type,origin,published_at,purpose,required,hash,object_ref,reader,state,coverage,extraction_ref,provenance) VALUES($1,$2,$3,$4,'text/html',$5,$6,'notice',true,$7,$8,$9,$10,$11,$12,$13)",
@@ -449,6 +453,7 @@ async function saveDetail(
   );
   return {
     revisionId,
+    opportunityId: opportunityId!,
     outcome: previous ? ("changed" as const) : ("new" as const),
   };
 }
@@ -671,6 +676,20 @@ export class GetsIntakeWorker {
           await c.query(
             "INSERT INTO gets_brief_items(run_id,account_id,rfx_id,revision_id,state) VALUES($1,$2,$3,$4,'pending') ON CONFLICT(run_id,rfx_id) DO UPDATE SET revision_id=EXCLUDED.revision_id,state='pending',error=null",
             [run.id, run.account_id, item.rfx_id, saved.revisionId],
+          );
+        if (run.mode === "live" && run.scope === "single")
+          await c.query(
+            `INSERT INTO gets_pack_jobs(id,account_id,intake_run_id,notice_revision_id,opportunity_id,actor_id,rfx_id)
+             VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(account_id,notice_revision_id) DO NOTHING`,
+            [
+              randomUUID(),
+              run.account_id,
+              run.id,
+              saved.revisionId,
+              saved.opportunityId,
+              run.actor_id,
+              item.rfx_id,
+            ],
           );
         await c.query(
           `UPDATE gets_intake_runs SET details_read=details_read+1,attempts=attempts+1,

@@ -2,6 +2,8 @@
 
 23 September 2026. Planning document; none of the changes below is implemented by this document.
 
+The later owner-authorised hosted collector work in [hosted-gets-collector.md](hosted-gets-collector.md) supersedes this plan's deferral of server-side RealMe collection for manually changed live notices. Its queue and pack-ready contract remain separate from report analysis and production deployment.
+
 ## Local delivery status · 23 September 2026
 
 Later high-level scope decision: when all selected originals are admitted and only some content is unread, a limited text-based pursuit assessment may proceed using readable prose and structured pricing. Leave unread images and objects outside analytical coverage, skip revision-marked paragraphs, and name the exclusions. The saved legacy draft-contract extraction mixed inserted wording into ordinary text, so exclude that source until a safe text-only version exists. This does not establish exhaustive RFP, pricing or contract coverage.

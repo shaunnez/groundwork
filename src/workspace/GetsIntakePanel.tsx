@@ -38,6 +38,22 @@ type Status = {
     error: string | null;
   }[];
 };
+type CollectionStatus = {
+  queueSize: number;
+  currentTender: string | null;
+  completed: number;
+  failed: number;
+  blocked: number;
+  jobs: {
+    id: string;
+    rfx_id: string;
+    opportunity_id: string;
+    state: string;
+    pack_id: string | null;
+    error: string | null;
+    login_retries: number;
+  }[];
+};
 export function GetsIntakePanel({
   owner,
   onImported,
@@ -46,6 +62,7 @@ export function GetsIntakePanel({
   onImported: () => Promise<void>;
 }) {
   const [status, setStatus] = useState<Status | null>(null);
+  const [collections, setCollections] = useState<CollectionStatus | null>(null);
   const [scope, setScope] = useState<Scope>("current");
   const [url, setUrl] = useState("");
   const [error, setError] = useState("");
@@ -57,6 +74,13 @@ export function GetsIntakePanel({
   async function load() {
     const next = await request<Status>("/gets/status");
     setStatus(next);
+    try {
+      setCollections(await request<CollectionStatus>("/gets/collections"));
+    } catch (cause) {
+      setError(
+        `Document collection status unavailable: ${(cause as Error).message}`,
+      );
+    }
     const latest = next.runs[0];
     if (
       latest &&
@@ -73,6 +97,16 @@ export function GetsIntakePanel({
       .then((value) => {
         if (live) {
           setStatus(value);
+          void request<CollectionStatus>("/gets/collections")
+            .then((collected) => {
+              if (live) setCollections(collected);
+            })
+            .catch((cause) => {
+              if (live)
+                setError(
+                  `Document collection status unavailable: ${(cause as Error).message}`,
+                );
+            });
           const latest = value.runs[0];
           if (
             latest &&
@@ -91,12 +125,12 @@ export function GetsIntakePanel({
     };
   }, []);
   useEffect(() => {
-    if (!active) return;
+    if (!active && !collections?.queueSize) return;
     const timer = window.setInterval(() => {
       void load().catch((e) => setError(e.message));
     }, 2500);
     return () => window.clearInterval(timer);
-  }, [active?.id]);
+  }, [active?.id, collections?.queueSize]);
   async function act(fn: () => Promise<unknown>) {
     setBusy(true);
     setError("");
@@ -135,6 +169,11 @@ export function GetsIntakePanel({
           </Badge>
         )}
       </div>
+      {error && (
+        <p className="gets-error" role="alert">
+          {error}
+        </p>
+      )}
       {!status ? (
         <p className="small muted">Loading GETS status…</p>
       ) : (
@@ -153,15 +192,21 @@ export function GetsIntakePanel({
               </select>
             </label>
             {scope === "single" && (
-              <label>
-                GETS notice URL
-                <input
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  placeholder="https://www.gets.govt.nz/…/ExternalTenderDetails.htm?id=…"
-                  disabled={!owner || busy || !!active}
-                />
-              </label>
+              <>
+                <label>
+                  GETS notice URL
+                  <input
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                    placeholder="https://www.gets.govt.nz/…/ExternalTenderDetails.htm?id=…"
+                    disabled={!owner || busy || !!active}
+                  />
+                </label>
+                <p className="small muted">
+                  A single-notice check also collects its attachment pack with
+                  the configured GETS account and may subscribe to that RFx.
+                </p>
+              </>
             )}
             <Button
               onClick={() =>
@@ -199,11 +244,6 @@ export function GetsIntakePanel({
               </Button>
             )}
           </div>
-          {error && (
-            <p className="gets-error" role="alert">
-              {error}
-            </p>
-          )}
           {latest && (
             <div className="gets-progress" aria-live="polite">
               <strong>
@@ -249,6 +289,80 @@ export function GetsIntakePanel({
                   </ul>
                 </div>
               )}
+            </div>
+          )}
+          {collections && collections.jobs.length > 0 && (
+            <div className="gets-progress" aria-live="polite">
+              <strong>Authenticated document collection</strong>
+              <span>
+                {collections.queueSize} queued or active ·{" "}
+                {collections.completed} packs reconciled · {collections.failed}{" "}
+                failed · {collections.blocked} blocked
+                {collections.currentTender
+                  ? ` · working on RFx ${collections.currentTender}`
+                  : ""}
+              </span>
+              <p className="small muted">
+                Pack admission records reader coverage and gaps. A collected
+                pack does not start or complete a pursuit report.
+              </p>
+              <ul className="gets-failures">
+                {collections.jobs.slice(0, 8).map((job) => (
+                  <li key={job.id}>
+                    RFx {job.rfx_id}: {job.state}
+                    {job.pack_id && (
+                      <>
+                        {" "}
+                        ·{" "}
+                        <a href={`#/pursuit?opportunity=${job.opportunity_id}`}>
+                          Open pursuit and sources
+                        </a>
+                      </>
+                    )}
+                    {job.login_retries > 0 &&
+                      ` · ${job.login_retries} re-login attempts`}
+                    {job.error && ` · ${job.error}`}
+                    {owner &&
+                      [
+                        "discovered",
+                        "access_needed",
+                        "downloading",
+                        "downloaded",
+                      ].includes(job.state) && (
+                        <Button
+                          kind="text"
+                          disabled={busy}
+                          onClick={() =>
+                            void act(() =>
+                              request(`/gets/collections/${job.id}/cancel`, {}),
+                            )
+                          }
+                        >
+                          Cancel collection
+                        </Button>
+                      )}
+                    {owner &&
+                      ["failed", "blocked", "cancelled"].includes(
+                        job.state,
+                      ) && (
+                        <Button
+                          kind="text"
+                          disabled={busy}
+                          onClick={() =>
+                            void act(() =>
+                              request(
+                                `/gets/collections/${job.id}/continue`,
+                                {},
+                              ),
+                            )
+                          }
+                        >
+                          Continue after resolving cause
+                        </Button>
+                      )}
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
         </>

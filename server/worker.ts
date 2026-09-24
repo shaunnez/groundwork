@@ -30,7 +30,9 @@ import {
   RequirementsSchema,
 } from "../shared/contracts.ts";
 import { callClaude, MODEL_SYSTEM_PROMPT } from "./claude.ts";
+import { ClaudeTerminalError } from "./claude-receipt.ts";
 import { GetsIntakeWorker } from "./gets/intake.ts";
+import { GetsPackWorker } from "./gets/collection-queue.ts";
 import { runReadinessIssues } from "./run-readiness.ts";
 import {
   analyseReadableUnits,
@@ -40,12 +42,20 @@ import {
 import {
   ANALYSIS_METHOD,
   BatchAnalysisSchema,
+  CompactBatchAnalysisSchema,
   MAX_TOTAL_INPUT_TOKEN_UPPER_BOUND,
+  compactAnalysisPrompt,
+  expandCompactBatchAnalysis,
 } from "./analysis-pipeline.ts";
 import {
   validateAssessment,
+  validateCommercialPricing,
   composeReport,
   assessmentPrompt,
+  assessmentCorrectionPrompt,
+  alignAssessmentEvidence,
+  removeModelProcessingLimitations,
+  reviseChangedClaimIds,
   supportPrompt,
 } from "./report.ts";
 const version = "worker-v5";
@@ -137,7 +147,7 @@ export class Worker {
     );
     await this.db.query(
       "UPDATE runs SET stage=$2,updated_at=now() WHERE id=$1",
-      [run.id, name],
+      [run.id, name.startsWith("analyse-") ? "analyse" : name],
     );
     try {
       const output = await action();
@@ -188,25 +198,51 @@ export class Worker {
       transport: "claude-stream-v1",
     };
     return this.stage(run, name, boundedInput, async () => {
-      const count = await this.db.query(
-        "SELECT count(*)::int AS count FROM provider_calls WHERE run_id=$1",
-        [run.id],
-      );
-      if (count.rows[0].count >= this.config.analysisMaxModelCalls)
-        throw new Error(
-          `Model call budget reached: ${this.config.analysisMaxModelCalls} calls`,
+      const callKey = `${run.id}:${name}:${hash(JSON.stringify({ input: boundedInput, version }))}`;
+      const invoke = (key: string, callPrompt: string) =>
+        callClaude(
+          this.config,
+          this.db,
+          this.store,
+          run.account_id,
+          run.id,
+          key,
+          callPrompt,
+          schema,
+          this.controllers.get(run.id)?.signal,
         );
-      return callClaude(
-        this.config,
-        this.db,
-        this.store,
-        run.account_id,
-        run.id,
-        `${run.id}:${name}:${hash(JSON.stringify({ input: boundedInput, version }))}`,
-        prompt,
-        schema,
-        this.controllers.get(run.id)?.signal,
-      );
+      try {
+        return await invoke(callKey, prompt);
+      } catch (error) {
+        if (
+          !(error instanceof ClaudeTerminalError) ||
+          error.subtype !== "output_token_limit" ||
+          !(name === "assess" || name.startsWith("correct-"))
+        )
+          throw error;
+        const retryPrompt = `${prompt}\nThe previous response exceeded the output token limit. Return the same complete schema more concisely: use at most 16 claims and 10 short quotes, keep each claim under 25 words, and keep every rationale, indicator, assumption and limitation to one short sentence. Preserve all required sections and exact citations. Do not omit a material uncertainty.`;
+        if (
+          Buffer.byteLength(retryPrompt, "utf8") > 48_000 ||
+          Buffer.byteLength(retryPrompt, "utf8") +
+            Buffer.byteLength(schemaDefinition, "utf8") +
+            Buffer.byteLength(MODEL_SYSTEM_PROMPT, "utf8") >
+            MAX_TOTAL_INPUT_TOKEN_UPPER_BOUND
+        )
+          throw new Error(
+            "Compact report retry exceeds the model input budget",
+          );
+        const output = await invoke(`${callKey}:compact-retry`, retryPrompt);
+        const recovered = await this.db.query(
+          `UPDATE provider_calls SET usage=coalesce(usage,'{}'::jsonb)||'{"recoveredByRetry":true}'::jsonb
+           WHERE id=$1 AND run_id=$2 AND status='failed' AND usage->>'providerTerminal'='output_token_limit'`,
+          [error.callId, run.id],
+        );
+        if (recovered.rowCount !== 1)
+          throw new Error(
+            "Output-limit retry did not reconcile its failed receipt",
+          );
+        return output;
+      }
     });
   }
   async process(run: any) {
@@ -432,6 +468,8 @@ export class Worker {
         },
       );
       let requirements: unknown = { status: "not_requested" };
+      let rejectedAnalysisQuotes = 0;
+      let rejectedMandatoryQuotes = 0;
       let analysisSelection: {
         items: unknown[];
         omitted: number;
@@ -450,11 +488,31 @@ export class Worker {
             this.db,
             run,
             streamSourceUnits(this.db, run.account_id, sourceIds),
-            (name, input, prompt) =>
-              this.model(run, name, input, prompt, BatchAnalysisSchema),
+            async (name, input, prompt, segments) =>
+              run.manifest.analysisOutput === "compact-v1"
+                ? expandCompactBatchAnalysis(
+                    segments,
+                    await this.model(
+                      run,
+                      name,
+                      input,
+                      compactAnalysisPrompt(
+                        segments,
+                        name.includes("-repair-"),
+                      ),
+                      CompactBatchAnalysisSchema,
+                    ),
+                  )
+                : this.model(run, name, input, prompt, BatchAnalysisSchema),
             () => this.assertActive(run.id),
+            this.config.analysisConcurrency,
+            run.manifest.analysisOutput === "compact-v1"
+              ? compactAnalysisPrompt
+              : undefined,
           );
           const digest = await analysisDigest(this.db, run.id);
+          rejectedAnalysisQuotes = ledger.rejectedQuotes;
+          rejectedMandatoryQuotes = ledger.rejectedMandatoryQuotes;
           if (
             ledger.segmentsProcessed !==
               run.manifest.analysisPreflight?.segments ||
@@ -466,6 +524,7 @@ export class Worker {
             );
           const complete =
             ledger.unitsExcluded === 0 &&
+            ledger.rejectedQuotes === 0 &&
             src.rows.every((s) => completeCoverage(s.coverage));
           requirements = {
             status: hasTender
@@ -491,7 +550,7 @@ export class Worker {
               ],
             })),
             ledgerRunId: run.id,
-            limitation: `Every included readable segment has a recorded outcome; ${ledger.unitsExcluded} paragraphs with content outside scope were excluded from high-level analysis. The report shows at most 100 distinct requirement examples; the durable analysis ledger retains every verified extraction. ${!hasTender ? "No RFP or addendum was selected, so tender requirements were not requested." : complete ? "Reader coverage is complete." : "Reader coverage is partial; the RFP reassessment is not complete."} Full unit accounting does not prove perfect model recall.`,
+            limitation: `Every included readable segment has a recorded outcome; ${ledger.unitsExcluded} paragraphs with content outside scope were excluded from high-level analysis, and ${ledger.rejectedQuotes} model items with ungrounded quotes were quarantined after correction attempts (${ledger.rejectedMandatoryQuotes} marked mandatory). The report shows at most 100 distinct requirement examples; the durable analysis ledger retains every verified extraction. ${!hasTender ? "No RFP or addendum was selected, so tender requirements were not requested." : complete ? "Reader coverage is complete." : "Reader coverage is partial; the RFP reassessment is not complete."} Full unit accounting does not prove perfect model recall.`,
           };
           const selected = digest.items;
           const selectedIds = [
@@ -634,7 +693,13 @@ export class Worker {
       if (analysisSelection) {
         const chosen = [...analysisSelection.items] as Array<{
           unit_id: string;
+          name: string;
+          purpose: string;
+          kind: "fact" | "requirement";
+          text_content: string;
           quote: string;
+          mandatory: boolean;
+          contradiction: string | null;
         }>;
         const originalById = new Map(
           validationUnits.map((unit) => [unit.id, unit]),
@@ -652,7 +717,14 @@ export class Worker {
             });
           }
           context.units = [...excerpts.values()];
-          context.verifiedFindings = chosen;
+          context.verifiedFindings = chosen.map((item) => ({
+            unitId: item.unit_id,
+            kind: item.kind,
+            text: item.text_content,
+            quote: item.quote,
+            mandatory: item.mandatory,
+            contradiction: item.contradiction,
+          }));
           context.analysisSelection = {
             selected: chosen.length,
             omitted:
@@ -661,7 +733,34 @@ export class Worker {
               chosen.length,
             note: "Selected source-linked findings for bounded synthesis; all readable outcomes and requirements remain in the durable ledger.",
           };
-          if (Buffer.byteLength(assessmentPrompt(context), "utf8") <= 32_000) {
+          context.commercialPricingLeads = chosen
+            .filter(
+              (item) =>
+                /\.xlsx$/i.test(item.name) &&
+                /contract price|tendered price|dayworks|rate schedule|total price|price structure|standard columns/i.test(
+                  item.text_content,
+                ),
+            )
+            .slice(0, 3)
+            .map((item) => ({
+              unitId: item.unit_id,
+              sourceName: item.name,
+              quote: item.quote,
+            }));
+          context.tenderTimingLeads = chosen
+            .filter(
+              (item) =>
+                item.purpose === "notice" &&
+                /close date|closing date|submission deadline|tender closes|works required to commence|commencement date/i.test(
+                  item.text_content,
+                ),
+            )
+            .slice(0, 3)
+            .map((item) => ({
+              unitId: item.unit_id,
+              quote: item.quote,
+            }));
+          if (Buffer.byteLength(assessmentPrompt(context), "utf8") <= 36_000) {
             analysisSelection.units = context.units as SourceUnit[];
             analysisSelection.omitted = (
               context.analysisSelection as { omitted: number }
@@ -670,17 +769,62 @@ export class Worker {
           }
           if (!chosen.length)
             throw new Error(
-              "Frozen report context exceeds the 32,000-byte synthesis budget before source findings; reduce non-evidence context explicitly",
+              "Frozen report context exceeds the 36,000-byte synthesis budget before source findings; reduce non-evidence context explicitly",
             );
           chosen.pop();
         }
       }
-      const raw = await this.model(
-        run,
-        "assess",
-        context,
-        assessmentPrompt(context),
-        AssessmentSchema,
+      const supportSystemMetadata = {
+        assessmentCutoff: cutoff,
+        commercialPricingLeads: context.commercialPricingLeads ?? [],
+        tenderTimingLeads: context.tenderTimingLeads ?? [],
+        analysisSelection: context.analysisSelection ?? null,
+        sourceReaders: sourceInventory.map((source) => ({
+          name: source.name,
+          reader: source.reader,
+          state: source.state,
+          coverage: {
+            total: source.coverage.total,
+            read: source.coverage.read,
+            unread: source.coverage.unread,
+            unit: source.coverage.unit,
+          },
+        })),
+        excludedSources: context.excludedSources,
+      };
+      let alignedAssessmentQuotes = 0;
+      let mechanicallyRevisedClaimIds = 0;
+      let removedProcessingLimitations = 0;
+      const alignEvidence = (value: z.infer<typeof AssessmentSchema>) => {
+        if (!segmented) return value;
+        const cleaned = removeModelProcessingLimitations(value);
+        removedProcessingLimitations += cleaned.removed;
+        if (!analysisSelection) return cleaned.assessment;
+        const aligned = alignAssessmentEvidence(
+          cleaned.assessment,
+          validationUnits,
+          context.verifiedFindings as Array<{ unitId: string; quote: string }>,
+        );
+        alignedAssessmentQuotes += aligned.alignedEvidenceIds.length;
+        return aligned.assessment;
+      };
+      const reviseClaims = (
+        previous: z.infer<typeof AssessmentSchema>,
+        value: z.infer<typeof AssessmentSchema>,
+        revision: 2 | 3 | 4,
+      ) => {
+        const revised = reviseChangedClaimIds(previous, value, revision);
+        mechanicallyRevisedClaimIds += revised.revisedClaimIds.length;
+        return revised.assessment;
+      };
+      const raw = alignEvidence(
+        await this.model(
+          run,
+          "assess",
+          context,
+          assessmentPrompt(context),
+          AssessmentSchema,
+        ),
       );
       const sourcePurposes = src.rows.map((s) => ({
         id: s.id,
@@ -704,6 +848,10 @@ export class Worker {
               `Assessment excerpt is outside the verified-finding selection for unit ${evidence.unitId}`,
             );
         }
+        validateCommercialPricing(
+          value,
+          (context.commercialPricingLeads as Array<{ unitId: string }>) ?? [],
+        );
       };
       let assessment: z.infer<typeof AssessmentSchema>;
       try {
@@ -715,28 +863,29 @@ export class Worker {
           run,
           "correct-invalid-assessment",
           { context, raw, failure },
-          assessmentPrompt(context) +
-            "\nThe previous structured assessment failed deterministic evidence validation. Correct only that defect and dependent wording. An unsupported factual claim must gain an exact quote from a saved unit or be removed; do not fabricate a citation. Reworded claims need new IDs. Return the full assessment schema. Previous assessment and failure: " +
-            JSON.stringify(segmented ? { failure } : { raw, failure }),
+          segmented
+            ? assessmentCorrectionPrompt(context, raw, null, failure, 1)
+            : assessmentPrompt(context) +
+                "\nThe previous structured assessment failed deterministic evidence validation. Correct only that defect and dependent wording. An unsupported factual claim must gain an exact quote from a saved unit or be removed; do not fabricate a citation. Reworded claims need new IDs. Return the full assessment schema. Previous assessment and failure: " +
+                JSON.stringify({ raw, failure }),
           AssessmentSchema,
         );
         assessment = validateAssessment(
-          revised,
+          reviseClaims(raw, alignEvidence(revised), 2),
           validationUnits,
           sourcePurposes,
         );
         validateSelectedEvidence(assessment);
-        for (const claim of assessment.claims) {
-          const old = raw.claims.find((c) => c.id === claim.id);
-          if (old && old.text !== claim.text)
-            throw new Error("A reworded claim needs a new revision ID");
-        }
       }
       let support = await this.model(
         run,
         "verify",
         { assessment, units },
-        supportPrompt(assessment, analysisSelection?.units ?? units),
+        supportPrompt(
+          assessment,
+          analysisSelection?.units ?? units,
+          supportSystemMetadata,
+        ),
         SupportSchema,
       );
       const checkPosture = () => {
@@ -771,36 +920,35 @@ export class Worker {
           run,
           "correct-assessment",
           correctionInput,
-          assessmentPrompt(context) +
-            "\nCreate one corrected claim revision addressing ONLY the rejected/overstated claims and all dependent sections. This is a new assessment, separate from the verifier. Give reworded claims NEW IDs (suffix -r2); preserve stable keys for future comparison. Do not strengthen confidence or introduce unsupported facts. State missing evidence as a scoped gap. Previous assessment and verification:" +
-            JSON.stringify(
-              segmented
-                ? {
-                    previous,
-                    support: support.checks,
-                    failure: (error as Error).message,
-                  }
-                : correctionInput,
-            ),
+          segmented
+            ? assessmentCorrectionPrompt(
+                context,
+                previous,
+                support,
+                (error as Error).message,
+                1,
+              )
+            : assessmentPrompt(context) +
+                "\nCreate one corrected claim revision addressing ONLY the rejected/overstated claims and all dependent sections. This is a new assessment, separate from the verifier. Give reworded claims NEW IDs (suffix -r2); preserve stable keys for future comparison. Do not strengthen confidence or introduce unsupported facts. State missing evidence as a scoped gap. Previous assessment and verification:" +
+                JSON.stringify(correctionInput),
           AssessmentSchema,
         );
         try {
           assessment = validateAssessment(
-            revised,
+            reviseClaims(previous, alignEvidence(revised), 2),
             validationUnits,
             sourcePurposes,
           );
           validateSelectedEvidence(assessment);
-          for (const claim of assessment.claims) {
-            const old = previous.claims.find((c) => c.id === claim.id);
-            if (old && old.text !== claim.text)
-              throw new Error("A reworded claim needs a new revision ID");
-          }
           support = await this.model(
             run,
             "verify-correction",
             { assessment, units },
-            supportPrompt(assessment, analysisSelection?.units ?? units),
+            supportPrompt(
+              assessment,
+              analysisSelection?.units ?? units,
+              supportSystemMetadata,
+            ),
             SupportSchema,
           );
           if (support.sectionIssues.length)
@@ -825,46 +973,96 @@ export class Worker {
             run,
             "correct-assessment-2",
             secondInput,
-            assessmentPrompt(context) +
-              "\nThis is the final permitted correction. The prior revision failed deterministic quote validation or independent support review. Fix each exact quote against its cited source unit; remove unsupported wording when no unit supports it. Keep unrelated supported findings intact. Give reworded claims new IDs (suffix -r3). Do not introduce new factual claims. Return the full assessment schema. Prior revision and failure: " +
-              JSON.stringify(
-                segmented
-                  ? {
-                      previous: previousRevision,
-                      support,
-                      failure: (secondError as Error).message,
-                    }
-                  : secondInput,
-              ),
+            segmented
+              ? assessmentCorrectionPrompt(
+                  context,
+                  previousRevision,
+                  support,
+                  (secondError as Error).message,
+                  2,
+                )
+              : assessmentPrompt(context) +
+                  "\nThis is the final permitted correction. The prior revision failed deterministic quote validation or independent support review. Fix each exact quote against its cited source unit; remove unsupported wording when no unit supports it. Keep unrelated supported findings intact. Give reworded claims new IDs (suffix -r3). Do not introduce new factual claims. Return the full assessment schema. Prior revision and failure: " +
+                  JSON.stringify(secondInput),
             AssessmentSchema,
           );
-          assessment = validateAssessment(
-            revisedAgain,
-            validationUnits,
-            sourcePurposes,
-          );
-          validateSelectedEvidence(assessment);
-          for (const claim of assessment.claims) {
-            const old = previousRevision.claims.find((c) => c.id === claim.id);
-            if (old && old.text !== claim.text)
-              throw new Error("A reworded claim needs a new revision ID");
+          try {
+            assessment = validateAssessment(
+              reviseClaims(previousRevision, alignEvidence(revisedAgain), 3),
+              validationUnits,
+              sourcePurposes,
+            );
+            validateSelectedEvidence(assessment);
+            support = await this.model(
+              run,
+              "verify-correction-2",
+              { assessment, units },
+              supportPrompt(
+                assessment,
+                analysisSelection?.units ?? units,
+                supportSystemMetadata,
+              ),
+              SupportSchema,
+            );
+            if (support.sectionIssues.length)
+              throw new Error(support.sectionIssues.join("; "));
+            checkPosture();
+            payload = composeReport(
+              assessment,
+              support.checks,
+              validationUnits,
+              requirements,
+            );
+          } catch (finalError) {
+            if (!segmented) throw finalError;
+            const previousFinal = assessment;
+            const finalInput = {
+              context,
+              previous: previousFinal,
+              failedRevision: revisedAgain,
+              support,
+              failure: (finalError as Error).message,
+            };
+            const finalRevision = await this.model(
+              run,
+              "correct-assessment-3",
+              finalInput,
+              assessmentCorrectionPrompt(
+                context,
+                previousFinal,
+                support,
+                (finalError as Error).message,
+                3,
+              ),
+              AssessmentSchema,
+            );
+            assessment = validateAssessment(
+              reviseClaims(previousFinal, alignEvidence(finalRevision), 4),
+              validationUnits,
+              sourcePurposes,
+            );
+            validateSelectedEvidence(assessment);
+            support = await this.model(
+              run,
+              "verify-correction-3",
+              { assessment, units },
+              supportPrompt(
+                assessment,
+                analysisSelection?.units ?? units,
+                supportSystemMetadata,
+              ),
+              SupportSchema,
+            );
+            if (support.sectionIssues.length)
+              throw new Error(support.sectionIssues.join("; "));
+            checkPosture();
+            payload = composeReport(
+              assessment,
+              support.checks,
+              validationUnits,
+              requirements,
+            );
           }
-          support = await this.model(
-            run,
-            "verify-correction-2",
-            { assessment, units },
-            supportPrompt(assessment, analysisSelection?.units ?? units),
-            SupportSchema,
-          );
-          if (support.sectionIssues.length)
-            throw new Error(support.sectionIssues.join("; "));
-          checkPosture();
-          payload = composeReport(
-            assessment,
-            support.checks,
-            validationUnits,
-            requirements,
-          );
         }
       }
       const hasOcr = segmented
@@ -880,6 +1078,33 @@ export class Worker {
       if (hasOcr)
         payload.limitations.push(
           "Some PDF pages were read using OCR. Quote verification checks extracted text; inspect the original page for transcription errors.",
+        );
+      if (
+        segmented &&
+        src.rows.some(
+          (source) =>
+            source.media_type === "application/pdf" &&
+            /\bdrawings?\b/i.test(source.name),
+        )
+      )
+        payload.limitations.push(
+          "Original PDF drawings are retained, but engineering interpretation of their visual content is outside this text-based assessment.",
+        );
+      if (rejectedAnalysisQuotes)
+        payload.limitations.push(
+          `${rejectedAnalysisQuotes} extracted model items had quotes absent from their saved source segment after bounded correction and were quarantined (${rejectedMandatoryQuotes} marked mandatory). They are not report evidence; inspect the saved provider stages for the rejected outputs.`,
+        );
+      if (alignedAssessmentQuotes)
+        payload.limitations.push(
+          `${alignedAssessmentQuotes} assessment excerpts were replaced with previously verified exact quotes from the same saved unit before independent support review.`,
+        );
+      if (mechanicallyRevisedClaimIds)
+        payload.limitations.push(
+          `${mechanicallyRevisedClaimIds} changed claims received new revision IDs with all assessment references updated before independent support review.`,
+        );
+      if (removedProcessingLimitations)
+        payload.limitations.push(
+          `${removedProcessingLimitations} model-written processing or reader-coverage limitations were replaced by the saved run's system-generated coverage disclosures.`,
         );
       if (analysisSelection)
         payload.limitations.push(
@@ -1011,7 +1236,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const config = loadConfig();
   const db = database(config),
     worker = new Worker(config, db),
-    gets = new GetsIntakeWorker(config, db);
+    gets = new GetsIntakeWorker(config, db),
+    packs = new GetsPackWorker(config, db);
   let stopping = false;
   const selectedRun = process.argv
     .find((arg) => arg.startsWith("--run-id="))
@@ -1032,9 +1258,11 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     if (
       !(await worker.tick()) &&
       !(await gets.tick()) &&
+      !(await packs.tick()) &&
       !(await scheduleTick(db, config))
     )
       await new Promise((r) => setTimeout(r, 1000));
   }
+  await packs.close();
   await db.end();
 }

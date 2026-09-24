@@ -1,14 +1,16 @@
 import { createHash } from "node:crypto";
 import type { Database } from "./db.ts";
 import { transaction } from "./db.ts";
-import type { SourceUnit } from "./domain/evidence.ts";
+import { quoteState, type SourceUnit } from "./domain/evidence.ts";
+import { ClaudeTerminalError } from "./claude-receipt.ts";
 import {
   ANALYSIS_METHOD,
-  BatchAnalysisSchema,
   analysisBatchesAsync,
+  analysisPrompt,
   excludedUnitId,
   highLevelExclusionReason,
   validateBatchAnalysis,
+  type AnalysisSegment,
   type BatchAnalysis,
 } from "./analysis-pipeline.ts";
 
@@ -19,6 +21,208 @@ type Run = {
   account_id: string;
   manifest: { sourceIds: string[]; sourceHashes: string[] };
 };
+type RejectedQuotes = { total: number; mandatory: number };
+type ValidatedBatch = BatchAnalysis & {
+  rejectedBySegment: Record<string, RejectedQuotes>;
+  recoveredCallIds: string[];
+};
+
+export async function validatedAnalysisBatch(
+  name: string,
+  input: unknown,
+  batch: {
+    segments: Parameters<typeof validateBatchAnalysis>[0];
+    prompt: string;
+  },
+  model: (
+    name: string,
+    input: unknown,
+    prompt: string,
+    segments: AnalysisSegment[],
+  ) => Promise<BatchAnalysis>,
+  splitDepth = 0,
+): Promise<ValidatedBatch> {
+  const byId = new Map(batch.segments.map((segment) => [segment.id, segment]));
+  const discardUnknown = (
+    segments: typeof batch.segments,
+    value: BatchAnalysis,
+  ): BatchAnalysis => {
+    const expected = new Set(segments.map((segment) => segment.id));
+    return {
+      outcomes: value.outcomes.filter((outcome) =>
+        expected.has(outcome.segmentId),
+      ),
+    };
+  };
+  const reconciles = (segments: typeof batch.segments, value: BatchAnalysis) =>
+    value.outcomes.length === segments.length &&
+    new Set(value.outcomes.map((outcome) => outcome.segmentId)).size ===
+      segments.length &&
+    value.outcomes.every((outcome) =>
+      segments.some((segment) => segment.id === outcome.segmentId),
+    );
+  let candidate: BatchAnalysis;
+  try {
+    candidate = discardUnknown(
+      batch.segments,
+      await model(name, input, batch.prompt, batch.segments),
+    );
+  } catch (error) {
+    if (
+      !(error instanceof ClaudeTerminalError) ||
+      ![
+        "error_max_turns",
+        "invalid_structured_output",
+        "output_token_limit",
+      ].includes(error.subtype) ||
+      batch.segments.length < 2 ||
+      splitDepth >= 2
+    )
+      throw error;
+    const middle = Math.ceil(batch.segments.length / 2);
+    const halves = [
+      batch.segments.slice(0, middle),
+      batch.segments.slice(middle),
+    ];
+    const results: ValidatedBatch[] = [];
+    for (const [index, segments] of halves.entries())
+      results.push(
+        await validatedAnalysisBatch(
+          `${name}-split-${index + 1}`,
+          { parentInput: input, splitSegmentIds: segments.map((s) => s.id) },
+          { segments, prompt: analysisPrompt(segments) },
+          model,
+          splitDepth + 1,
+        ),
+      );
+    return {
+      ...validateBatchAnalysis(batch.segments, {
+        outcomes: results.flatMap((result) => result.outcomes),
+      }),
+      rejectedBySegment: Object.assign(
+        {},
+        ...results.map((result) => result.rejectedBySegment),
+      ),
+      recoveredCallIds: [
+        error.callId,
+        ...results.flatMap((result) => result.recoveredCallIds),
+      ],
+    };
+  }
+  for (let attempt = 0; attempt <= 2; attempt++) {
+    try {
+      return {
+        ...validateBatchAnalysis(batch.segments, candidate),
+        rejectedBySegment: {},
+        recoveredCallIds: [],
+      };
+    } catch (error) {
+      if (
+        !(error instanceof Error) ||
+        !(
+          error.message.startsWith("Quote does not match saved segment ") ||
+          error.message === "Unknown analysis segment" ||
+          error.message === "Batch outcomes do not reconcile with inputs"
+        )
+      )
+        throw error;
+      if (attempt === 2) {
+        if (!reconciles(batch.segments, candidate)) throw error;
+        const rejectedBySegment: Record<string, RejectedQuotes> = {};
+        const grounded = {
+          outcomes: candidate.outcomes.map((outcome) => {
+            const segment = byId.get(outcome.segmentId);
+            if (!segment) throw error;
+            const items = outcome.items.filter((item) => {
+              if (quoteState(item.quote, segment.text) !== "NOT_FOUND")
+                return true;
+              const count = (rejectedBySegment[outcome.segmentId] ??= {
+                total: 0,
+                mandatory: 0,
+              });
+              count.total++;
+              if (item.mandatory) count.mandatory++;
+              return false;
+            });
+            return { ...outcome, items };
+          }),
+        };
+        return {
+          ...validateBatchAnalysis(batch.segments, grounded),
+          rejectedBySegment,
+          recoveredCallIds: [],
+        };
+      }
+      const counts = new Map<string, number>();
+      for (const outcome of candidate.outcomes)
+        counts.set(outcome.segmentId, (counts.get(outcome.segmentId) ?? 0) + 1);
+      const invalidIds = new Set(
+        batch.segments
+          .filter(
+            (segment) =>
+              counts.get(segment.id) !== 1 ||
+              candidate.outcomes
+                .find((outcome) => outcome.segmentId === segment.id)
+                ?.items.some(
+                  (item) =>
+                    quoteState(item.quote, segment.text) === "NOT_FOUND",
+                ),
+          )
+          .map((segment) => segment.id),
+      );
+      if (!invalidIds.size) throw error;
+      const invalidSegments = batch.segments.filter((segment) =>
+        invalidIds.has(segment.id),
+      );
+      const structural = !reconciles(batch.segments, candidate);
+      const repairKind = structural ? "segment-repair" : "quote-repair";
+      const corrected = discardUnknown(
+        invalidSegments,
+        await model(
+          `${name}-${repairKind}-${attempt + 1}`,
+          {
+            input,
+            repairAttempt: attempt + 1,
+            repairSegmentIds: [...invalidIds],
+            previousOutputHash: hash(JSON.stringify(candidate)),
+          },
+          `${analysisPrompt(invalidSegments)}\nThe earlier response failed ${structural ? "segment ID reconciliation" : "exact quote validation"} for these segments. Regenerate only their outcomes, with exactly one outcome per listed segmentId copied without alteration. Use short, meaningful quotes of 4-16 consecutive words copied directly from the listed source text, including its spelling and punctuation. Omit an item if you cannot copy a supporting excerpt exactly; do not paraphrase or combine segments.`,
+          invalidSegments,
+        ),
+      );
+      try {
+        validateBatchAnalysis(invalidSegments, corrected);
+      } catch (repairError) {
+        if (
+          !(repairError instanceof Error) ||
+          !(
+            repairError.message.startsWith(
+              "Quote does not match saved segment ",
+            ) ||
+            repairError.message === "Unknown analysis segment" ||
+            repairError.message ===
+              "Batch outcomes do not reconcile with inputs"
+          )
+        )
+          throw repairError;
+      }
+      if (!reconciles(invalidSegments, corrected)) continue;
+      const replacements = new Map(
+        corrected.outcomes.map((outcome) => [outcome.segmentId, outcome]),
+      );
+      candidate = {
+        outcomes: batch.segments.map(
+          (segment) =>
+            replacements.get(segment.id) ??
+            candidate.outcomes.find(
+              (outcome) => outcome.segmentId === segment.id,
+            )!,
+        ),
+      };
+    }
+  }
+  throw new Error("Quote repair attempts exhausted");
+}
 
 export async function* streamSourceUnits(
   db: Database,
@@ -44,6 +248,52 @@ export async function* streamSourceUnits(
   }
 }
 
+/** Keep a bounded window of independent batches and drain submitted work on failure. */
+export async function runBatchesBounded<T>(
+  batches: AsyncIterable<T>,
+  concurrency: number,
+  process: (batch: T, index: number) => Promise<void>,
+): Promise<number> {
+  if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 4)
+    throw new Error("Analysis concurrency must be between 1 and 4");
+  type Result =
+    { index: number; ok: true } | { index: number; ok: false; error: unknown };
+  const pending = new Map<number, Promise<Result>>();
+  let nextIndex = 0;
+  let failure: { error: unknown } | null = null;
+  try {
+    for await (const batch of batches) {
+      if (pending.size === concurrency) {
+        const finished = await Promise.race(pending.values());
+        pending.delete(finished.index);
+        if (!finished.ok) {
+          failure = { error: finished.error };
+          break;
+        }
+      }
+      const index = nextIndex++;
+      pending.set(
+        index,
+        Promise.resolve()
+          .then(() => process(batch, index))
+          .then(
+            (): Result => ({ index, ok: true }),
+            (error: unknown): Result => ({ index, ok: false, error }),
+          ),
+      );
+    }
+  } catch (error) {
+    failure = { error };
+  }
+  const remaining = await Promise.all(pending.values());
+  const failed = remaining.find(
+    (result): result is Extract<Result, { ok: false }> => !result.ok,
+  );
+  failure ??= failed ? { error: failed.error } : null;
+  if (failure) throw failure.error;
+  return nextIndex;
+}
+
 export async function analyseReadableUnits(
   db: Database,
   run: Run,
@@ -52,8 +302,11 @@ export async function analyseReadableUnits(
     name: string,
     input: unknown,
     prompt: string,
+    segments: AnalysisSegment[],
   ) => Promise<BatchAnalysis>,
   active: () => Promise<void>,
+  concurrency = 1,
+  promptForBatch = analysisPrompt,
 ) {
   let batchNumber = 0;
   let peakPromptBytes = 0;
@@ -81,10 +334,12 @@ export async function analyseReadableUnits(
       } else yield unit;
     }
   }
-  for await (const batch of analysisBatchesAsync(eligible())) {
+  const processBatch = async (
+    batch: { segments: AnalysisSegment[]; prompt: string; promptBytes: number },
+    index: number,
+  ) => {
     await active();
-    const name = `analyse-${String(batchNumber++).padStart(5, "0")}`;
-    peakPromptBytes = Math.max(peakPromptBytes, batch.promptBytes);
+    const name = `analyse-${String(index).padStart(5, "0")}`;
     await transaction(db, async (c) => {
       for (const segment of batch.segments)
         await c.query(
@@ -108,9 +363,9 @@ export async function analyseReadableUnits(
       "SELECT count(*)::int AS count FROM analysis_segments WHERE run_id=$1 AND segment_id=ANY($2::text[]) AND state='processed'",
       [run.id, batch.segments.map((s) => s.id)],
     );
-    if (done.rows[0].count === batch.segments.length) continue;
+    if (done.rows[0].count === batch.segments.length) return;
     try {
-      const raw = await model(
+      const output = await validatedAnalysisBatch(
         name,
         {
           method: ANALYSIS_METHOD,
@@ -125,11 +380,8 @@ export async function analyseReadableUnits(
             textHash: hash(s.text),
           })),
         },
-        batch.prompt,
-      );
-      const output = validateBatchAnalysis(
-        batch.segments,
-        BatchAnalysisSchema.parse(raw),
+        batch,
+        model,
       );
       await active();
       await transaction(db, async (c) => {
@@ -137,9 +389,25 @@ export async function analyseReadableUnits(
           const segment = batch.segments.find(
             (s) => s.id === outcome.segmentId,
           )!;
+          const rejected = output.rejectedBySegment[segment.id] ?? {
+            total: 0,
+            mandatory: 0,
+          };
           await c.query(
-            "UPDATE analysis_segments SET state='processed',outcome=$3,reason=null,prompt_bytes=$4,updated_at=now() WHERE run_id=$1 AND segment_id=$2",
-            [run.id, segment.id, outcome, batch.promptBytes],
+            "UPDATE analysis_segments SET state='processed',outcome=$3,reason=$4,prompt_bytes=$5,updated_at=now() WHERE run_id=$1 AND segment_id=$2",
+            [
+              run.id,
+              segment.id,
+              {
+                ...outcome,
+                rejectedQuoteCount: rejected.total,
+                rejectedMandatoryQuoteCount: rejected.mandatory,
+              },
+              rejected.total
+                ? `${rejected.total} ungrounded quote item(s) quarantined after bounded correction`
+                : null,
+              batch.promptBytes,
+            ],
           );
           for (const item of outcome.items) {
             const itemId = hash(
@@ -166,6 +434,17 @@ export async function analyseReadableUnits(
             );
           }
         }
+        if (output.recoveredCallIds.length) {
+          const recovered = await c.query(
+            `UPDATE provider_calls SET usage=coalesce(usage,'{}'::jsonb)||'{"recoveredBySplit":true}'::jsonb
+             WHERE run_id=$1 AND id=ANY($2::uuid[]) AND status='failed'
+               AND (usage->>'providerTerminal' IN ('error_max_turns','output_token_limit')
+                 OR usage->>'outputValidation'='invalid')`,
+            [run.id, output.recoveredCallIds],
+          );
+          if (recovered.rowCount !== output.recoveredCallIds.length)
+            throw new Error("Split recovery receipt reconciliation failed");
+        }
       });
     } catch (error) {
       await db.query(
@@ -174,9 +453,17 @@ export async function analyseReadableUnits(
       );
       throw error;
     }
-  }
+  };
+  batchNumber = await runBatchesBounded(
+    analysisBatchesAsync(eligible(), promptForBatch),
+    concurrency,
+    (batch, index) => {
+      peakPromptBytes = Math.max(peakPromptBytes, batch.promptBytes);
+      return processBatch(batch, index);
+    },
+  );
   const status = await db.query(
-    "SELECT state,count(*)::int AS count FROM analysis_segments WHERE run_id=$1 GROUP BY state",
+    "SELECT state,count(*)::int AS count,coalesce(sum((outcome->>'rejectedQuoteCount')::int),0)::int AS rejected_quotes,coalesce(sum((outcome->>'rejectedMandatoryQuoteCount')::int),0)::int AS rejected_mandatory_quotes FROM analysis_segments WHERE run_id=$1 GROUP BY state",
     [run.id],
   );
   const counts = Object.fromEntries(status.rows.map((r) => [r.state, r.count]));
@@ -188,14 +475,27 @@ export async function analyseReadableUnits(
     peakPromptBytes,
     segmentsProcessed: counts.processed ?? 0,
     unitsExcluded: counts.excluded ?? 0,
+    rejectedQuotes:
+      status.rows.find((row) => row.state === "processed")?.rejected_quotes ??
+      0,
+    rejectedMandatoryQuotes:
+      status.rows.find((row) => row.state === "processed")
+        ?.rejected_mandatory_quotes ?? 0,
   };
 }
 
 export async function analysisDigest(db: Database, runId: string) {
   const rows = await db.query(
     `WITH ranked AS (
-       SELECT i.*,row_number() OVER(PARTITION BY i.source_id ORDER BY i.mandatory DESC,i.kind DESC,i.item_id) AS source_rank
-       FROM analysis_items i WHERE i.run_id=$1
+       SELECT i.*,row_number() OVER(PARTITION BY i.source_id ORDER BY
+         CASE
+           WHEN s.purpose='notice' AND i.text_content ~* '(close date|closing date|submission deadline|tender closes|works required to commence|commencement date)' THEN 0
+           WHEN s.media_type LIKE '%spreadsheet%' AND i.text_content ~* '(contract price|tendered price|dayworks|rate schedule|total price|price structure|standard columns)' THEN 0
+           WHEN s.media_type LIKE '%spreadsheet%' AND i.text_content ~* '(provisional sum|lump sum|rate|amount|price|gst)' THEN 1
+           ELSE 2
+         END,
+         i.mandatory DESC,i.kind DESC,i.item_id) AS source_rank
+       FROM analysis_items i JOIN sources s ON s.id=i.source_id WHERE i.run_id=$1
      )
      SELECT i.item_id,i.source_id,i.unit_id,i.location,i.kind,i.text_content,i.quote,i.mandatory,i.contradiction,
             s.purpose,s.name FROM ranked i JOIN sources s ON s.id=i.source_id

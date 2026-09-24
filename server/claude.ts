@@ -1,4 +1,9 @@
-import { terminalReceipt, receiptPayload } from "./claude-receipt.ts";
+import {
+  ClaudeTerminalError,
+  terminalReceipt,
+  terminalFailureSubtype,
+  receiptPayload,
+} from "./claude-receipt.ts";
 import { finished } from "node:stream/promises";
 import { spawn, execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -123,9 +128,7 @@ export async function callClaude<T>(
                 }),
               ],
             );
-          throw new Error(
-            "Completed provider receipt contains invalid structured output; correct the cause before a new assessment. It will not be replayed by resume.",
-          );
+          throw new ClaudeTerminalError(call.id, "invalid_structured_output");
         }
         if (call.status !== "succeeded")
           await settleCall(db, call.id, {
@@ -141,6 +144,22 @@ export async function callClaude<T>(
           });
         return payload;
       }
+      if (terminal) {
+        const subtype = terminalFailureSubtype(terminal);
+        if (["reserved", "uncertain"].includes(call.status))
+          await settleCall(db, call.id, {
+            status: "failed",
+            receiptRef: call.receipt_ref,
+            usage: {
+              transport: "claude-subscription",
+              apiEquivalentUsd: terminal.total_cost_usd ?? null,
+              actualBilledUsd: null,
+              models: terminal.modelUsage ?? {},
+              providerTerminal: subtype,
+            },
+          });
+        throw new ClaudeTerminalError(call.id, subtype);
+      }
     }
     throw new Error(
       "Prior provider call has no recoverable completed receipt; reconcile before replay",
@@ -155,6 +174,7 @@ export async function callClaude<T>(
     key,
     provider: "claude-subscription",
     maximum: 0,
+    ...(runId ? { runCallLimit: config.analysisMaxModelCalls } : {}),
   });
   const spool = await store.receipt(accountId);
   await db.query("UPDATE provider_calls SET receipt_ref=$2 WHERE id=$1", [
@@ -256,6 +276,7 @@ export async function callClaude<T>(
     const envelope = terminalReceipt(raw);
     if (!envelope) throw new Error("Claude returned no terminal receipt");
     if (envelope.is_error || envelope.subtype !== "success") {
+      const subtype = terminalFailureSubtype(envelope);
       await settleCall(db, callId, {
         status: "failed",
         receiptRef,
@@ -264,11 +285,10 @@ export async function callClaude<T>(
           apiEquivalentUsd: envelope.total_cost_usd ?? null,
           actualBilledUsd: null,
           models: envelope.modelUsage ?? {},
+          providerTerminal: subtype,
         },
       });
-      throw new Error(
-        "Claude returned a failed result; inspect receipt before another attempt",
-      );
+      throw new ClaudeTerminalError(callId, subtype);
     }
     let payload: T;
     try {
@@ -286,9 +306,7 @@ export async function callClaude<T>(
           outputValidation: "invalid",
         },
       });
-      throw new Error(
-        "Provider completed but structured output was invalid; receipt and usage retained. Correct the cause before a new assessment.",
-      );
+      throw new ClaudeTerminalError(callId, "invalid_structured_output");
     }
     await settleCall(db, callId, {
       status: "succeeded",

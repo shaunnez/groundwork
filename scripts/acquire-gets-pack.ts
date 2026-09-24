@@ -1,13 +1,15 @@
 import { createHash, randomUUID } from "node:crypto";
-import { createReadStream, createWriteStream, existsSync } from "node:fs";
-import { mkdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { resolve, join } from "node:path";
-import { pipeline } from "node:stream/promises";
-import { Transform } from "node:stream";
 import { createInterface } from "node:readline/promises";
 import { chromium } from "@playwright/test";
-import * as yauzl from "yauzl";
 import { parseSubscribedPack } from "../server/gets/subscribed-pack.ts";
+import {
+  extractGetsArchive,
+  streamGetsResponse,
+  verifyOriginal,
+} from "../server/gets/pack-transfer.ts";
 import type { PackDeclaration } from "../server/tender-packs.ts";
 import { TENDER_PACK_LIMIT } from "../server/tender-packs.ts";
 
@@ -48,136 +50,10 @@ if (!!realmeUsername !== !!realmePassword)
     "Set both GROUNDWORK_REALME_USERNAME and GROUNDWORK_REALME_PASSWORD, or neither",
   );
 
-async function verifyFile(
-  path: string,
-  expected: { bytes: number; sha256: string },
-) {
-  try {
-    if ((await stat(path)).size !== expected.bytes) return false;
-    const digest = createHash("sha256");
-    for await (const chunk of createReadStream(path)) digest.update(chunk);
-    return digest.digest("hex") === expected.sha256.toLowerCase();
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return false;
-    throw error;
-  }
-}
-
+const originalName = (file: PackDeclaration["files"][number]) =>
+  `${file.fileId}-${file.name}`;
 async function extractArchive(path: string, manifest: PackDeclaration) {
-  const expected = new Map(
-    manifest.files.map((file) => [
-      `${file.kind === "attachment" ? "project_files" : "addendum"}/${file.name}`,
-      file,
-    ]),
-  );
-  const seen = new Set<string>();
-  let expanded = 0;
-  await new Promise<void>((resolveDone, rejectDone) => {
-    yauzl.open(
-      path,
-      { lazyEntries: true, validateEntrySizes: true, strictFileNames: true },
-      (error, zip) => {
-        if (error || !zip)
-          return rejectDone(new Error("GETS archive is not a readable ZIP"));
-        let done = false;
-        const fail = (cause: Error) => {
-          if (done) return;
-          done = true;
-          zip.close();
-          rejectDone(cause);
-        };
-        zip.on("error", fail);
-        zip.on("end", () => {
-          if (done) return;
-          if (seen.size !== manifest.files.length)
-            return fail(
-              new Error(
-                `Archive contains ${seen.size}/${manifest.files.length} declared files`,
-              ),
-            );
-          done = true;
-          resolveDone();
-        });
-        zip.on("entry", (entry: yauzl.Entry) => {
-          if (entry.fileName.endsWith("/")) return zip.readEntry();
-          const file = manifest.files.find(
-            (candidate) =>
-              (entry.fileName === `project_files/${candidate.name}` &&
-                candidate.kind === "attachment") ||
-              (/^addendum\d+_files\//.test(entry.fileName) &&
-                entry.fileName.endsWith(`/${candidate.name}`) &&
-                candidate.kind === "addendum"),
-          );
-          if (!file || seen.has(file.fileId))
-            return fail(
-              new Error(
-                `Unexpected or duplicate GETS archive entry: ${entry.fileName}`,
-              ),
-            );
-          if (
-            entry.uncompressedSize !== file.bytes ||
-            (expanded += file.bytes) > TENDER_PACK_LIMIT
-          )
-            return fail(new Error(`GETS archive size mismatch: ${file.name}`));
-          seen.add(file.fileId);
-          const destination = join(originals, `${file.fileId}-${file.name}`);
-          if (expected.size !== manifest.files.length)
-            return fail(new Error("Ambiguous declared filenames"));
-          void (async () => {
-            if (await verifyFile(destination, file)) return;
-            const temporary = join(
-              scratch,
-              `${file.fileId}-${randomUUID()}.part`,
-            );
-            try {
-              const stream = await new Promise<NodeJS.ReadableStream>(
-                (res, rej) =>
-                  zip.openReadStream(entry, (e, value) =>
-                    e || !value
-                      ? rej(e ?? new Error("ZIP entry unreadable"))
-                      : res(value),
-                  ),
-              );
-              const digest = createHash("sha256");
-              let bytes = 0;
-              await pipeline(
-                stream,
-                new Transform({
-                  transform(chunk: Buffer, _encoding, callback) {
-                    bytes += chunk.length;
-                    if (bytes > file.bytes)
-                      return callback(
-                        new Error("GETS file exceeded declared size"),
-                      );
-                    digest.update(chunk);
-                    callback(null, chunk);
-                  },
-                }),
-                createWriteStream(temporary, { flags: "wx", mode: 0o600 }),
-              );
-              if (
-                bytes !== file.bytes ||
-                digest.digest("hex") !== file.sha256.toLowerCase()
-              )
-                throw new Error(`GETS checksum mismatch: ${file.name}`);
-              await rename(temporary, destination);
-            } catch (cause) {
-              await rm(temporary, { force: true });
-              throw cause;
-            }
-          })()
-            .then(() => zip.readEntry())
-            .catch(fail);
-        });
-        zip.readEntry();
-      },
-    );
-  });
-  for (const file of manifest.files)
-    if (
-      !(await verifyFile(join(originals, `${file.fileId}-${file.name}`), file))
-    )
-      throw new Error(`Original did not reconcile: ${file.name}`);
+  await extractGetsArchive(path, manifest, originals, originalName);
 }
 
 let html: string;
@@ -289,7 +165,7 @@ if (args.notice && args.archive) {
     const allPresent = (
       await Promise.all(
         manifest.files.map((file) =>
-          verifyFile(join(originals, `${file.fileId}-${file.name}`), file),
+          verifyOriginal(join(originals, `${file.fileId}-${file.name}`), file),
         ),
       )
     ).every(Boolean);
@@ -301,45 +177,16 @@ if (args.notice && args.archive) {
         .join("; ");
       if (!cookie)
         throw new Error("GETS browser session has no authentication cookies");
-      const controller = new AbortController();
-      const deadline = setTimeout(() => controller.abort(), 180000);
-      try {
-        const response = await fetch(
-          `https://www.gets.govt.nz/DCC/ExternalGetAllFiles.htm?projectID=${rfx}`,
-          {
-            headers: { Cookie: cookie },
-            redirect: "manual",
-            signal: controller.signal,
-          },
-        );
-        if (response.status !== 200 || !response.body)
-          throw new Error(
-            `GETS bulk download returned HTTP ${response.status}; sign-in may have expired`,
-          );
-        const declared = Number(response.headers.get("content-length"));
-        if (declared > TENDER_PACK_LIMIT)
-          throw new Error(
-            "GETS bulk archive exceeds the 128 MiB transfer limit",
-          );
-        let bytes = 0;
-        await pipeline(
-          response.body,
-          new Transform({
-            transform(chunk: Buffer, _encoding, callback) {
-              bytes += chunk.length;
-              if (bytes > TENDER_PACK_LIMIT)
-                return callback(
-                  new Error("GETS bulk archive exceeded 128 MiB"),
-                );
-              callback(null, chunk);
-            },
-          }),
-          createWriteStream(archivePath, { flags: "wx", mode: 0o600 }),
-        );
-        downloaded = true;
-      } finally {
-        clearTimeout(deadline);
-      }
+      const response = await fetch(
+        `https://www.gets.govt.nz/DCC/ExternalGetAllFiles.htm?projectID=${rfx}`,
+        {
+          headers: { Cookie: cookie },
+          redirect: "manual",
+          signal: AbortSignal.timeout(180000),
+        },
+      );
+      await streamGetsResponse(response, archivePath, TENDER_PACK_LIMIT);
+      downloaded = true;
     }
   } finally {
     await context.close();
@@ -361,7 +208,7 @@ try {
   const present = (
     await Promise.all(
       manifest.files.map((file) =>
-        verifyFile(join(originals, `${file.fileId}-${file.name}`), file),
+        verifyOriginal(join(originals, `${file.fileId}-${file.name}`), file),
       ),
     )
   ).every(Boolean);

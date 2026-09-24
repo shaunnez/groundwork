@@ -55,6 +55,11 @@ import {
   retryGetsRun,
 } from "./gets/intake.ts";
 import {
+  changeCollectionJob,
+  getsCollectionDetail,
+  getsCollectionStatus,
+} from "./gets/collection-queue.ts";
+import {
   backfillMappings,
   correctMapping,
   mappingQueue,
@@ -72,7 +77,10 @@ import {
   hasUnmarkedLegacyRevisions,
   runReadinessIssues,
 } from "./run-readiness.ts";
-import { preflightAnalysisAsync } from "./analysis-pipeline.ts";
+import {
+  compactAnalysisPrompt,
+  preflightAnalysisAsync,
+} from "./analysis-pipeline.ts";
 import { streamSourceUnits } from "./analysis-engine.ts";
 import {
   claudeLoginCommand,
@@ -401,6 +409,18 @@ export async function createApi(config: Config, db: Database) {
   app.post("/api/gets/runs/:id/retry", async (req) =>
     retryGetsRun(db, req.accountId, asId(req.params)),
   );
+  app.get("/api/gets/collections", async (req) =>
+    getsCollectionStatus(db, req.accountId),
+  );
+  app.get("/api/gets/collections/:id", async (req) =>
+    getsCollectionDetail(db, req.accountId, asId(req.params)),
+  );
+  app.post("/api/gets/collections/:id/cancel", async (req) =>
+    changeCollectionJob(db, req.accountId, asId(req.params), "cancel"),
+  );
+  app.post("/api/gets/collections/:id/continue", async (req) =>
+    changeCollectionJob(db, req.accountId, asId(req.params), "continue"),
+  );
   app.get("/api/gets/mappings", async (req) => {
     const { filter, page } = z
       .object({
@@ -553,7 +573,7 @@ export async function createApi(config: Config, db: Database) {
   app.get("/api/opportunities/:id/analysis-preflight", async (req) => {
     const opportunityId = asId(req.params);
     await owned(req.accountId, opportunityId);
-    const [sources, usage] = await Promise.all([
+    const [allSources, usage] = await Promise.all([
       db.query(
         "SELECT id,name,reader,required,coverage,hash FROM active_sources WHERE account_id=$1 AND opportunity_id=$2 ORDER BY id",
         [req.accountId, opportunityId],
@@ -562,15 +582,20 @@ export async function createApi(config: Config, db: Database) {
         "SELECT avg((usage->>'apiEquivalentUsd')::numeric) AS average FROM provider_calls WHERE provider='claude-subscription' AND status='succeeded' AND usage->>'apiEquivalentUsd' ~ '^[0-9]+(\\.[0-9]+)?$'",
       ),
     ]);
+    const excludedSources = allSources.rows.filter(hasUnmarkedLegacyRevisions);
+    const sources = allSources.rows.filter(
+      (source) => !hasUnmarkedLegacyRevisions(source),
+    );
     const plan = await preflightAnalysisAsync(
       streamSourceUnits(
         db,
         req.accountId,
-        sources.rows.map((source) => source.id),
+        sources.map((source) => source.id),
       ),
+      compactAnalysisPrompt,
     );
     const characters = plan.characters;
-    const gaps = sources.rows
+    const gaps = allSources.rows
       .filter((source) => source.required && !completeCoverage(source.coverage))
       .map((source) => ({
         sourceId: source.id,
@@ -582,7 +607,12 @@ export async function createApi(config: Config, db: Database) {
       usage.rows[0]?.average === null ? null : Number(usage.rows[0].average);
     return {
       ...plan,
-      sourceCount: sources.rows.length,
+      sourceCount: sources.length,
+      excludedSources: excludedSources.map((source) => ({
+        sourceId: source.id,
+        name: source.name,
+        reason: "Unsafe legacy DOCX tracked-change extraction",
+      })),
       unitCount: plan.unitCount,
       characters,
       readerGaps: gaps,
@@ -696,8 +726,12 @@ export async function createApi(config: Config, db: Database) {
         resumable:
           ["failed", "budget-blocked"].includes(latestRun.state) &&
           config.claudeSubscriptionApproved &&
-          !callRows.rows.some((row) =>
-            ["failed", "reserved", "uncertain"].includes(row.status),
+          !callRows.rows.some(
+            (row) =>
+              ["reserved", "uncertain"].includes(row.status) ||
+              (row.status === "failed" &&
+                row.usage?.recoveredBySplit !== true &&
+                row.usage?.recoveredByRetry !== true),
           ),
       };
     }
@@ -1093,7 +1127,7 @@ export async function createApi(config: Config, db: Database) {
       const scopeNote =
         input.scopeNote.trim() ||
         (textOnlyPartial || legacyExcludedIds.length
-          ? "High-level text-based assessment of readable saved content; unread visual material and unsafe legacy DOCX extraction are outside scope."
+          ? `High-level text-based assessment of readable saved content; material without verified reader coverage is outside scope${legacyExcludedIds.length ? ", including sources with unsafe legacy DOCX revision extraction" : ""}`
           : "");
       const sources = {
         rows: allSources.rows.filter((s) => !excludedSourceIds.includes(s.id)),
@@ -1122,6 +1156,7 @@ export async function createApi(config: Config, db: Database) {
           req.accountId,
           sources.rows.map((s) => s.id),
         ),
+        compactAnalysisPrompt,
       );
       const segmented =
         allowPartial ||
@@ -1218,6 +1253,7 @@ export async function createApi(config: Config, db: Database) {
         clientId: opp.rows[0].client_id,
         parentReportId: input.parentReportId,
         method: segmented ? "groundwork-segmented-v1" : "groundwork-v1",
+        analysisOutput: segmented ? "compact-v1" : null,
         analysisPreflight: preflight,
       };
       // Usage history and operator allowance are frozen for observability, not run identity.
@@ -1287,7 +1323,7 @@ export async function createApi(config: Config, db: Database) {
           "External call outcome unresolved; inspect and reconcile before resuming",
         );
       const failedCalls = await c.query(
-        "SELECT id FROM provider_calls WHERE run_id=$1 AND status='failed'",
+        "SELECT id FROM provider_calls WHERE run_id=$1 AND status='failed' AND coalesce(usage->>'recoveredBySplit','false')<>'true' AND coalesce(usage->>'recoveredByRetry','false')<>'true'",
         [runId],
       );
       if (failedCalls.rowCount)
